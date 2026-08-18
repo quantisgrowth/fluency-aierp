@@ -98,6 +98,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { isActive } = useModules();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
+  if (pathname === "/login") {
+    return <div className="min-h-screen w-full bg-background">{children}</div>;
+  }
+
   return (
     <div className="flex min-h-screen w-full bg-background">
       <aside
