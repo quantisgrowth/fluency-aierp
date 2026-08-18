@@ -19,6 +19,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useModules } from "@/modules/module-context";
 import type { ModuleId } from "@/modules/registry";
+import { useTenant } from "@/modules/tenant-context";
 
 type NavItem = {
   to: string;
@@ -30,7 +31,10 @@ type NavItem = {
 const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Visão geral",
-    items: [{ to: "/", label: "Dashboard", icon: LayoutDashboard }],
+    items: [
+      { to: "/", label: "Dashboard", icon: LayoutDashboard },
+      { to: "/portal/aluno", label: "Portal do Aluno", icon: GraduationCap },
+    ],
   },
   {
     label: "Pedagógico",
@@ -73,6 +77,7 @@ function useTheme() {
 }
 
 function Brand({ collapsed }: { collapsed: boolean }) {
+  const { tenant } = useTenant();
   return (
     <Link to="/" className="flex items-center gap-3 px-3 py-1">
       <span className="grid size-9 shrink-0 place-items-center rounded-xl border border-hairline bg-surface-elevated">
@@ -81,10 +86,10 @@ function Brand({ collapsed }: { collapsed: boolean }) {
       {!collapsed && (
         <span className="leading-tight">
           <span className="block text-sm font-semibold tracking-tight text-foreground">
-            Lumen ERP
+            {tenant.name}
           </span>
           <span className="block text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            Language Schools
+            {tenant.tagline}
           </span>
         </span>
       )}

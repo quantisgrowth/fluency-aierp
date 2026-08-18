@@ -10,11 +10,33 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AlunosRouteImport } from './routes/alunos'
+import { Route as CrmRouteImport } from './routes/crm'
+import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as RetencaoRouteImport } from './routes/retencao'
+import { Route as TurmasRouteImport } from './routes/turmas'
+import { Route as AdminModulosRouteImport } from './routes/admin/modulos'
+import { Route as PortalAlunoRouteImport } from './routes/portal/aluno'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlunosRoute = AlunosRouteImport.update({
+  id: '/alunos',
+  path: '/alunos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CrmRoute = CrmRouteImport.update({
+  id: '/crm',
+  path: '/crm',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FinanceiroRoute = FinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -22,31 +44,107 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RetencaoRoute = RetencaoRouteImport.update({
+  id: '/retencao',
+  path: '/retencao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TurmasRoute = TurmasRouteImport.update({
+  id: '/turmas',
+  path: '/turmas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminModulosRoute = AdminModulosRouteImport.update({
+  id: '/admin/modulos',
+  path: '/admin/modulos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PortalAlunoRoute = PortalAlunoRouteImport.update({
+  id: '/portal/aluno',
+  path: '/portal/aluno',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/alunos': typeof AlunosRoute
+  '/crm': typeof CrmRoute
+  '/financeiro': typeof FinanceiroRoute
   '/login': typeof LoginRoute
+  '/retencao': typeof RetencaoRoute
+  '/turmas': typeof TurmasRoute
+  '/admin/modulos': typeof AdminModulosRoute
+  '/portal/aluno': typeof PortalAlunoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/alunos': typeof AlunosRoute
+  '/crm': typeof CrmRoute
+  '/financeiro': typeof FinanceiroRoute
   '/login': typeof LoginRoute
+  '/retencao': typeof RetencaoRoute
+  '/turmas': typeof TurmasRoute
+  '/admin/modulos': typeof AdminModulosRoute
+  '/portal/aluno': typeof PortalAlunoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/alunos': typeof AlunosRoute
+  '/crm': typeof CrmRoute
+  '/financeiro': typeof FinanceiroRoute
   '/login': typeof LoginRoute
+  '/retencao': typeof RetencaoRoute
+  '/turmas': typeof TurmasRoute
+  '/admin/modulos': typeof AdminModulosRoute
+  '/portal/aluno': typeof PortalAlunoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login'
+  fullPaths:
+    | '/'
+    | '/alunos'
+    | '/crm'
+    | '/financeiro'
+    | '/login'
+    | '/retencao'
+    | '/turmas'
+    | '/admin/modulos'
+    | '/portal/aluno'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login'
-  id: '__root__' | '/' | '/login'
+  to:
+    | '/'
+    | '/alunos'
+    | '/crm'
+    | '/financeiro'
+    | '/login'
+    | '/retencao'
+    | '/turmas'
+    | '/admin/modulos'
+    | '/portal/aluno'
+  id:
+    | '__root__'
+    | '/'
+    | '/alunos'
+    | '/crm'
+    | '/financeiro'
+    | '/login'
+    | '/retencao'
+    | '/turmas'
+    | '/admin/modulos'
+    | '/portal/aluno'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AlunosRoute: typeof AlunosRoute
+  CrmRoute: typeof CrmRoute
+  FinanceiroRoute: typeof FinanceiroRoute
   LoginRoute: typeof LoginRoute
+  RetencaoRoute: typeof RetencaoRoute
+  TurmasRoute: typeof TurmasRoute
+  AdminModulosRoute: typeof AdminModulosRoute
+  PortalAlunoRoute: typeof PortalAlunoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,6 +156,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/alunos': {
+      id: '/alunos'
+      path: '/alunos'
+      fullPath: '/alunos'
+      preLoaderRoute: typeof AlunosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/crm': {
+      id: '/crm'
+      path: '/crm'
+      fullPath: '/crm'
+      preLoaderRoute: typeof CrmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/financeiro': {
+      id: '/financeiro'
+      path: '/financeiro'
+      fullPath: '/financeiro'
+      preLoaderRoute: typeof FinanceiroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -65,12 +184,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/retencao': {
+      id: '/retencao'
+      path: '/retencao'
+      fullPath: '/retencao'
+      preLoaderRoute: typeof RetencaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/turmas': {
+      id: '/turmas'
+      path: '/turmas'
+      fullPath: '/turmas'
+      preLoaderRoute: typeof TurmasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/modulos': {
+      id: '/admin/modulos'
+      path: '/admin/modulos'
+      fullPath: '/admin/modulos'
+      preLoaderRoute: typeof AdminModulosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/portal/aluno': {
+      id: '/portal/aluno'
+      path: '/portal/aluno'
+      fullPath: '/portal/aluno'
+      preLoaderRoute: typeof PortalAlunoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AlunosRoute: AlunosRoute,
+  CrmRoute: CrmRoute,
+  FinanceiroRoute: FinanceiroRoute,
   LoginRoute: LoginRoute,
+  RetencaoRoute: RetencaoRoute,
+  TurmasRoute: TurmasRoute,
+  AdminModulosRoute: AdminModulosRoute,
+  PortalAlunoRoute: PortalAlunoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
