@@ -14,6 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ModuleProvider } from "@/modules/module-context";
 import { AppShell } from "@/components/app-shell";
 import { TenantProvider } from "@/modules/tenant-context";
+import { UserProvider } from "@/modules/user-context";
 
 function NotFoundComponent() {
   return (
@@ -136,12 +137,14 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <TenantProvider>
-        <ModuleProvider>
-          <AppShell>
-            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-            <Outlet />
-          </AppShell>
-        </ModuleProvider>
+        <UserProvider>
+          <ModuleProvider>
+            <AppShell>
+              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+              <Outlet />
+            </AppShell>
+          </ModuleProvider>
+        </UserProvider>
       </TenantProvider>
     </QueryClientProvider>
   );

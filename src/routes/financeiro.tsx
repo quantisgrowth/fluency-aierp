@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Wallet, AlertTriangle, PlayCircle, Send, CheckCircle2 } from "lucide-react";
+import { Wallet, AlertTriangle, PlayCircle, Send, CheckCircle2, XCircle } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -15,6 +15,7 @@ import { StatusPill } from "@/components/kit/status-pill";
 import { ModuleGate } from "@/components/module-gate";
 import { brl, delinquency, dunningSteps, revenueSeries } from "@/data/mock";
 import { toast } from "sonner";
+import { useUser } from "@/modules/user-context";
 
 export const Route = createFileRoute("/financeiro")({
   head: () => ({
@@ -27,10 +28,22 @@ export const Route = createFileRoute("/financeiro")({
 });
 
 function FinanceiroPage() {
+  const { activeRole } = useUser();
+
   const triggerDunningSim = (aluno: string) => {
     toast.success(`Simulação ativada para ${aluno}`, {
       description: "Disparando régua automática de e-mail e WhatsApp em sandbox.",
     });
+  };
+
+  const handleCancelBilling = (aluno: string) => {
+    if (activeRole === "operador") {
+      toast.error("Permissão negada", {
+        description: "Operadores não possuem permissão para cancelar cobranças no sistema.",
+      });
+      return;
+    }
+    toast.success(`Cobrança de ${aluno} cancelada com sucesso!`);
   };
 
   return (
@@ -158,10 +171,21 @@ function FinanceiroPage() {
                     </div>
                     <button
                       onClick={() => triggerDunningSim(d.aluno)}
-                      aria-label={`Cobrar ${d.aluno}`}
+                      title="Enviar Cobrança"
                       className="grid size-8 place-items-center rounded-lg border border-hairline hover:bg-accent text-muted-foreground hover:text-foreground transition-all cursor-pointer"
                     >
                       <Send className="size-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleCancelBilling(d.aluno)}
+                      title={activeRole === "operador" ? "Operador não pode cancelar cobranças" : "Cancelar Cobrança"}
+                      className={`grid size-8 place-items-center rounded-lg border border-hairline transition-all ${
+                        activeRole === "operador"
+                          ? "opacity-25 cursor-not-allowed"
+                          : "hover:bg-overdue/10 text-muted-foreground hover:text-overdue cursor-pointer"
+                      }`}
+                    >
+                      <XCircle className="size-3.5" />
                     </button>
                   </div>
                 </li>

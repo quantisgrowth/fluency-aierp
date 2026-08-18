@@ -17,6 +17,8 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as RetencaoRouteImport } from './routes/retencao'
 import { Route as TurmasRouteImport } from './routes/turmas'
 import { Route as AdminModulosRouteImport } from './routes/admin/modulos'
+import { Route as AdminPerfilRouteImport } from './routes/admin/perfil'
+import { Route as AdminUsuariosRouteImport } from './routes/admin/usuarios'
 import { Route as PortalAlunoRouteImport } from './routes/portal/aluno'
 
 const IndexRoute = IndexRouteImport.update({
@@ -59,6 +61,16 @@ const AdminModulosRoute = AdminModulosRouteImport.update({
   path: '/admin/modulos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminPerfilRoute = AdminPerfilRouteImport.update({
+  id: '/admin/perfil',
+  path: '/admin/perfil',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
+  id: '/admin/usuarios',
+  path: '/admin/usuarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PortalAlunoRoute = PortalAlunoRouteImport.update({
   id: '/portal/aluno',
   path: '/portal/aluno',
@@ -74,6 +86,8 @@ export interface FileRoutesByFullPath {
   '/retencao': typeof RetencaoRoute
   '/turmas': typeof TurmasRoute
   '/admin/modulos': typeof AdminModulosRoute
+  '/admin/perfil': typeof AdminPerfilRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
   '/portal/aluno': typeof PortalAlunoRoute
 }
 export interface FileRoutesByTo {
@@ -85,6 +99,8 @@ export interface FileRoutesByTo {
   '/retencao': typeof RetencaoRoute
   '/turmas': typeof TurmasRoute
   '/admin/modulos': typeof AdminModulosRoute
+  '/admin/perfil': typeof AdminPerfilRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
   '/portal/aluno': typeof PortalAlunoRoute
 }
 export interface FileRoutesById {
@@ -97,6 +113,8 @@ export interface FileRoutesById {
   '/retencao': typeof RetencaoRoute
   '/turmas': typeof TurmasRoute
   '/admin/modulos': typeof AdminModulosRoute
+  '/admin/perfil': typeof AdminPerfilRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
   '/portal/aluno': typeof PortalAlunoRoute
 }
 export interface FileRouteTypes {
@@ -110,6 +128,8 @@ export interface FileRouteTypes {
     | '/retencao'
     | '/turmas'
     | '/admin/modulos'
+    | '/admin/perfil'
+    | '/admin/usuarios'
     | '/portal/aluno'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -121,6 +141,8 @@ export interface FileRouteTypes {
     | '/retencao'
     | '/turmas'
     | '/admin/modulos'
+    | '/admin/perfil'
+    | '/admin/usuarios'
     | '/portal/aluno'
   id:
     | '__root__'
@@ -132,6 +154,8 @@ export interface FileRouteTypes {
     | '/retencao'
     | '/turmas'
     | '/admin/modulos'
+    | '/admin/perfil'
+    | '/admin/usuarios'
     | '/portal/aluno'
   fileRoutesById: FileRoutesById
 }
@@ -144,6 +168,8 @@ export interface RootRouteChildren {
   RetencaoRoute: typeof RetencaoRoute
   TurmasRoute: typeof TurmasRoute
   AdminModulosRoute: typeof AdminModulosRoute
+  AdminPerfilRoute: typeof AdminPerfilRoute
+  AdminUsuariosRoute: typeof AdminUsuariosRoute
   PortalAlunoRoute: typeof PortalAlunoRoute
 }
 
@@ -205,6 +231,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminModulosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/perfil': {
+      id: '/admin/perfil'
+      path: '/admin/perfil'
+      fullPath: '/admin/perfil'
+      preLoaderRoute: typeof AdminPerfilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/usuarios': {
+      id: '/admin/usuarios'
+      path: '/admin/usuarios'
+      fullPath: '/admin/usuarios'
+      preLoaderRoute: typeof AdminUsuariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/portal/aluno': {
       id: '/portal/aluno'
       path: '/portal/aluno'
@@ -224,6 +264,8 @@ const rootRouteChildren: RootRouteChildren = {
   RetencaoRoute: RetencaoRoute,
   TurmasRoute: TurmasRoute,
   AdminModulosRoute: AdminModulosRoute,
+  AdminPerfilRoute: AdminPerfilRoute,
+  AdminUsuariosRoute: AdminUsuariosRoute,
   PortalAlunoRoute: PortalAlunoRoute,
 }
 export const routeTree = rootRouteImport

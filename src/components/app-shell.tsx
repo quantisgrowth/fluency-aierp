@@ -13,6 +13,8 @@ import {
   Users,
   Wallet,
   BookOpen,
+  Shield,
+  UserCog,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -20,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { useModules } from "@/modules/module-context";
 import type { ModuleId } from "@/modules/registry";
 import { useTenant } from "@/modules/tenant-context";
+import { useUser } from "@/modules/user-context";
 
 type NavItem = {
   to: string;
@@ -53,7 +56,11 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   },
   {
     label: "Administração",
-    items: [{ to: "/admin/modulos", label: "Módulos & Planos", icon: SlidersHorizontal }],
+    items: [
+      { to: "/admin/modulos", label: "Módulos & Planos", icon: SlidersHorizontal },
+      { to: "/admin/usuarios", label: "Usuários & Permissões", icon: Shield },
+      { to: "/admin/perfil", label: "Meu Perfil", icon: UserCog },
+    ],
   },
 ];
 
@@ -101,11 +108,30 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const { dark, toggle } = useTheme();
   const { isActive } = useModules();
+  const { activeRole, setActiveRole, adminProfile } = useUser();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   if (pathname === "/login") {
     return <div className="min-h-screen w-full bg-background">{children}</div>;
   }
+
+  // Permission gating by role
+  const isRoleAllowed = (role: string, path: string) => {
+    if (role === "admin") return true;
+    if (role === "operador") {
+      // Operador: has access to turmas (view), financeiro (view, emit slips), crm (sales). Cannot access admin modulos/usuarios/perfil.
+      return !["/admin/modulos", "/admin/usuarios", "/retencao"].includes(path);
+    }
+    if (role === "coordenador") {
+      // Coordenador: has access to all turmas, creating/deleting turmas, transferring students. Cannot access financeiro, crm, retencao, admin modulos.
+      return !["/financeiro", "/crm", "/retencao", "/admin/modulos"].includes(path);
+    }
+    if (role === "professor") {
+      // Professor: has access only to their turmas. Cannot access financeiro, crm, retencao, admin.
+      return ["/", "/portal/aluno", "/turmas", "/admin/perfil"].includes(path);
+    }
+    return true;
+  };
 
   return (
     <div className="flex min-h-screen w-full bg-background">
@@ -138,7 +164,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </p>
               )}
               {group.items.map((item) => {
-                const enabled = !item.module || isActive(item.module);
+                const allowedByRole = isRoleAllowed(activeRole, item.to);
+                const enabled = allowedByRole && (!item.module || isActive(item.module));
                 const active = pathname === item.to;
                 return (
                   <Link
@@ -150,12 +177,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                       active
                         ? "bg-accent text-accent-foreground"
                         : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-                      !enabled && "opacity-45",
+                      !enabled && "opacity-40 pointer-events-none",
                     )}
                   >
                     <item.icon className="size-4 shrink-0" />
                     {!collapsed && <span className="truncate">{item.label}</span>}
-                    {!collapsed && !enabled && <Lock className="ml-auto size-3" />}
+                    {!collapsed && !allowedByRole && <Lock className="ml-auto size-3" />}
+                    {!collapsed && allowedByRole && !enabled && <Lock className="ml-auto size-3" />}
                   </Link>
                 );
               })}
@@ -188,6 +216,22 @@ export function AppShell({ children }: { children: ReactNode }) {
               className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
           </div>
+          
+          {/* Simulated role switcher in header */}
+          <div className="flex items-center gap-2">
+            <span className="hidden text-xs text-muted-foreground sm:inline">Cargo:</span>
+            <select
+              value={activeRole}
+              onChange={(e) => setActiveRole(e.target.value as any)}
+              className="rounded-lg border border-hairline bg-surface/60 px-2 py-1 text-xs font-semibold text-foreground outline-none cursor-pointer focus:border-primary hover:bg-surface transition-all"
+            >
+              <option value="admin">Administrador</option>
+              <option value="operador">Operador</option>
+              <option value="professor">Professor</option>
+              <option value="coordenador">Coordenador</option>
+            </select>
+          </div>
+
           <span className="hidden rounded-lg border border-hairline px-3 py-1.5 text-xs text-muted-foreground lg:inline">
             Unidade · Pinheiros
           </span>
@@ -198,9 +242,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </button>
-          <span className="grid size-9 place-items-center rounded-full border border-hairline bg-surface-elevated text-xs font-medium text-foreground">
-            FM
-          </span>
+          
+          <Link
+            to="/admin/perfil"
+            title="Meu Perfil"
+            className="grid size-9 place-items-center rounded-full border border-hairline bg-surface-elevated text-xs font-semibold text-foreground hover:border-primary transition-all cursor-pointer"
+          >
+            {adminProfile.avatar}
+          </Link>
         </header>
         <main className="flex-1 px-5 py-8 sm:px-8">{children}</main>
       </div>
