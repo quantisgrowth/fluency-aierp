@@ -62,7 +62,7 @@ function PerfilPage() {
       <SectionHeader
         eyebrow="Administração"
         title="Meu Perfil"
-        description="Atualize seus dados cadastrais como Administrador Geral da Plataforma."
+        description="Atualize seus dados cadastrais como Gestor da Escola."
       />
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -85,7 +85,7 @@ function PerfilPage() {
               <h3 className="text-base font-semibold text-foreground">{adminProfile.name}</h3>
               <p className="text-xs text-muted-foreground mt-0.5">{adminProfile.email}</p>
               <span className="mt-2.5 inline-flex rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-[10px] font-bold text-primary uppercase tracking-wider">
-                Administrador Geral
+                Gestor da Escola
               </span>
             </div>
           </GlassCard>
