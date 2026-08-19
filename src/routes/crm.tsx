@@ -75,21 +75,33 @@ function CrmPage() {
   const [newLeadUf, setNewLeadUf] = useState("");
   const [newLeadAnotacoes, setNewLeadAnotacoes] = useState("");
 
-  // Load leads database and CRM stages from localStorage
+  // Load leads database and CRM stages from localStorage and sync across tabs
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(LEADS_STORAGE_KEY);
-      if (stored) {
-        setLeadsDb(JSON.parse(stored));
-      }
+    const loadData = () => {
+      try {
+        const stored = window.localStorage.getItem(LEADS_STORAGE_KEY);
+        if (stored) {
+          setLeadsDb(JSON.parse(stored));
+        }
 
-      const storedStages = window.localStorage.getItem("fluency-ai:crm:stages");
-      if (storedStages) {
-        setStages(JSON.parse(storedStages));
+        const storedStages = window.localStorage.getItem("fluency-ai:crm:stages");
+        if (storedStages) {
+          setStages(JSON.parse(storedStages));
+        }
+      } catch {
+        /* ignore */
       }
-    } catch {
-      /* ignore */
-    }
+    };
+
+    loadData();
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === LEADS_STORAGE_KEY || e.key === "fluency-ai:crm:stages") {
+        loadData();
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, [isNewDealOpen, isCreateLeadOpen]);
 
   const saveLeadsDb = (nextLeads: Lead[]) => {

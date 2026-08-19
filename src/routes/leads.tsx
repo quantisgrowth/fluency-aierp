@@ -171,16 +171,28 @@ function LeadsPage() {
   const [uf, setUf] = useState("");
   const [anotacoes, setAnotacoes] = useState("");
 
-  // Load from local storage
+  // Load from local storage and sync across tabs
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(LEADS_STORAGE_KEY);
-      if (stored) {
-        setLeads(JSON.parse(stored));
+    const loadLeads = () => {
+      try {
+        const stored = window.localStorage.getItem(LEADS_STORAGE_KEY);
+        if (stored) {
+          setLeads(JSON.parse(stored));
+        }
+      } catch {
+        /* ignore */
       }
-    } catch {
-      /* ignore */
-    }
+    };
+
+    loadLeads();
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === LEADS_STORAGE_KEY) {
+        loadLeads();
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const saveLeads = (nextLeads: Lead[]) => {

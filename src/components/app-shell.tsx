@@ -16,6 +16,7 @@ import {
   Shield,
   UserCog,
   LogOut,
+  ClipboardList,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -55,6 +56,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { to: "/financeiro", label: "Financeiro", icon: Wallet, module: "financeiro" },
       { to: "/crm", label: "CRM", icon: Kanban, module: "crm" },
       { to: "/retencao", label: "Retenção", icon: HeartPulse, module: "success" },
+      { to: "/captacao", label: "Captação & Testes", icon: ClipboardList, module: "captacao" },
     ],
   },
   {

@@ -3,10 +3,11 @@ import {
   Wallet,
   Kanban,
   HeartPulse,
+  ClipboardList,
   type LucideIcon,
 } from "lucide-react";
 
-export type ModuleId = "core" | "financeiro" | "crm" | "success";
+export type ModuleId = "core" | "financeiro" | "crm" | "success" | "captacao";
 
 export type ModuleDef = {
   id: ModuleId;
@@ -68,6 +69,18 @@ export const MODULES: ModuleDef[] = [
     icon: HeartPulse,
     locked: false,
     features: ["Risco de churn", "Diário de classe", "Portal do aluno"],
+  },
+  {
+    id: "captacao",
+    name: "Fluency Forms & Nivelamento",
+    tagline: "Add-on de conversão",
+    description:
+      "Criador de formulários estilo Tally, testes de nivelamento CEFR automatizados e captura automática de leads integrados ao CRM.",
+    tier: "Conversão",
+    price: 149,
+    icon: ClipboardList,
+    locked: false,
+    features: ["Formulários estilo Tally", "Testes de nível CEFR", "Conversão automática de Leads"],
   },
 ];
 
