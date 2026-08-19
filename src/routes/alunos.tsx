@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Users, ShieldAlert, CheckCircle2, AlertTriangle, Eye, Pencil, X, Calendar, GraduationCap, Flame, Coins, Trophy, CreditCard, MessageSquare } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
@@ -159,8 +159,80 @@ const INITIAL_DETAILS: Record<string, StudentDetail> = {
 };
 
 function AlunosPage() {
-  const [students, setStudents] = useState<Student[]>(initialStudents);
-  const [studentDetails, setStudentDetails] = useState<Record<string, StudentDetail>>(INITIAL_DETAILS);
+  const [students, setStudents] = useState<Student[]>(() => {
+    try {
+      const stored = window.localStorage.getItem("fluency-ai:students:list");
+      if (stored) return JSON.parse(stored);
+      
+      const extended = [
+        ...initialStudents,
+        { nome: "Felipe Medeiros", nivel: "B2", turma: "Conversation", inicio: "19/08/2026", status: "Ativo" }
+      ];
+      window.localStorage.setItem("fluency-ai:students:list", JSON.stringify(extended));
+      return extended;
+    } catch {
+      return initialStudents;
+    }
+  });
+
+  const [studentDetails, setStudentDetails] = useState<Record<string, StudentDetail>>(() => {
+    try {
+      const stored = window.localStorage.getItem("fluency-ai:students:details");
+      if (stored) return JSON.parse(stored);
+
+      const extended = {
+        ...INITIAL_DETAILS,
+        "Felipe Medeiros": {
+          presenca: 90,
+          tarefas: 85,
+          streak: 5,
+          coins: 380,
+          xp: 1450,
+          liga: "Ouro",
+          whats: "5511999991111",
+          historico: [
+            { data: "19/08/2026", texto: "Ingressou no portal do aluno e iniciou os desafios.", autor: "Sistema" }
+          ],
+          financeiro: [
+            { descricao: "Mensalidade Agosto", valor: 380, vencimento: "10/08/2026", situacao: "pago" }
+          ]
+        }
+      };
+      window.localStorage.setItem("fluency-ai:students:details", JSON.stringify(extended));
+      return extended;
+    } catch {
+      return INITIAL_DETAILS;
+    }
+  });
+
+  // Sync state changes to localStorage
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("fluency-ai:students:list", JSON.stringify(students));
+    } catch {}
+  }, [students]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("fluency-ai:students:details", JSON.stringify(studentDetails));
+    } catch {}
+  }, [studentDetails]);
+
+  // Sync state across open tabs in real-time
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const storedList = window.localStorage.getItem("fluency-ai:students:list");
+        if (storedList) setStudents(JSON.parse(storedList));
+        
+        const storedDetails = window.localStorage.getItem("fluency-ai:students:details");
+        if (storedDetails) setStudentDetails(JSON.parse(storedDetails));
+      } catch {}
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");

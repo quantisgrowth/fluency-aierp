@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { Search, Calendar, Users, Plus, Pencil, Trash2, ArrowLeftRight, X, Sparkles } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Calendar, Users, Plus, Pencil, Trash2, ArrowLeftRight, X, Sparkles, Clock, AlertTriangle, CalendarRange, CheckCircle2 } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import { useUser } from "@/modules/user-context";
@@ -24,15 +24,77 @@ type ClassItem = {
   alunos: number;
   vagas: number;
   horario: string;
+  diasSelecionados?: string[];
+  horaSelecionada?: string;
+};
+
+const CALENDAR_DAYS = [
+  { key: "Seg", label: "Segunda" },
+  { key: "Ter", label: "Terça" },
+  { key: "Qua", label: "Quarta" },
+  { key: "Qui", label: "Quinta" },
+  { key: "Sex", label: "Sexta" },
+  { key: "Sáb", label: "Sábado" }
+];
+
+const CALENDAR_TIMES = [
+  "07:30", "09:00", "10:30", "12:00", "13:30", "15:00", "16:30", "18:30", "19:00", "20:00"
+];
+
+const parseClassHorario = (c: any) => {
+  let diasSelecionados = c.diasSelecionados || [];
+  let horaSelecionada = c.horaSelecionada || "";
+  
+  if (diasSelecionados.length === 0 || !horaSelecionada) {
+    const parts = c.horario.split(" ");
+    if (parts.length === 2) {
+      const daysStr = parts[0];
+      horaSelecionada = parts[1];
+      
+      if (daysStr.includes("/")) {
+        diasSelecionados = daysStr.split("/");
+      } else {
+        diasSelecionados = [daysStr];
+      }
+    } else {
+      diasSelecionados = ["Seg"];
+      horaSelecionada = "19:00";
+    }
+  }
+  return {
+    ...c,
+    diasSelecionados,
+    horaSelecionada
+  };
 };
 
 function TurmasPage() {
   const { activeRole } = useUser();
-  const [classes, setClasses] = useState<ClassItem[]>(initialClasses);
-  const [students, setStudents] = useState(initialStudents);
+  const [classes, setClasses] = useState<ClassItem[]>(() => {
+    try {
+      const stored = window.localStorage.getItem("fluency-ai:classes:list");
+      if (stored) {
+        return JSON.parse(stored).map((c: any) => parseClassHorario(c));
+      }
+    } catch {}
+    
+    return initialClasses.map((c: any) => parseClassHorario(c));
+  });
+
+  const [students, setStudents] = useState(() => {
+    try {
+      const stored = window.localStorage.getItem("fluency-ai:students:list");
+      return stored ? JSON.parse(stored) : initialStudents;
+    } catch {
+      return initialStudents;
+    }
+  });
 
   const [search, setSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState<string>("todos");
+  
+  const [activePageTab, setActivePageTab] = useState<"lista" | "calendario">("lista");
+  const [calendarViewMode, setCalendarViewMode] = useState<"semanal" | "mensal">("semanal");
 
   // Modal states
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -48,7 +110,9 @@ function TurmasPage() {
   const [formNivel, setFormNivel] = useState("A1");
   const [formProfessor, setFormProfessor] = useState("Marcos Vidal");
   const [formVagas, setFormVagas] = useState(12);
-  const [formHorario, setFormHorario] = useState("Ter/Qui 19:00");
+  const [formHorario, setFormHorario] = useState("Seg/Qua 19:00");
+  const [formDias, setFormDias] = useState<string[]>(["Seg", "Qua"]);
+  const [formHora, setFormHora] = useState("19:00");
 
   // Transfer fields
   const [transferStudent, setTransferStudent] = useState("");
@@ -60,10 +124,34 @@ function TurmasPage() {
   const canManage = activeRole === "admin" || activeRole === "coordenador";
   const isProfessor = activeRole === "professor";
 
+  // Sync classes to localStorage
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("fluency-ai:classes:list", JSON.stringify(classes));
+    } catch {}
+  }, [classes]);
+
+  // Sync state changes across tabs
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const storedClasses = window.localStorage.getItem("fluency-ai:classes:list");
+        if (storedClasses) {
+          setClasses(JSON.parse(storedClasses).map((c: any) => parseClassHorario(c)));
+        }
+        const storedStudents = window.localStorage.getItem("fluency-ai:students:list");
+        if (storedStudents) {
+          setStudents(JSON.parse(storedStudents));
+        }
+      } catch {}
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
   // Filter classes based on role and search query
   const filteredClasses = classes.filter((c) => {
-    // If Professor, they only see their own classes (e.g. Marcos Vidal or Julia Kern)
-    // For simulation, let's mock that the logged in professor is "Julia Kern"
     const matchesRole = !isProfessor || c.professor === "Julia Kern";
     
     const matchesSearch = c.nome.toLowerCase().includes(search.toLowerCase()) || 
@@ -77,7 +165,9 @@ function TurmasPage() {
     setFormNivel("A1");
     setFormProfessor("Marcos Vidal");
     setFormVagas(12);
-    setFormHorario("Ter/Qui 19:00");
+    setFormHorario("Seg/Qua 19:00");
+    setFormDias(["Seg", "Qua"]);
+    setFormHora("19:00");
     setIsCreateOpen(true);
   };
 
@@ -85,13 +175,18 @@ function TurmasPage() {
     e.preventDefault();
     if (!formName) return;
 
+    const daysPart = formDias.join("/");
+    const combinedHorario = `${daysPart} ${formHora}`;
+
     const newClass: ClassItem = {
       nome: formName,
       nivel: formNivel,
       professor: formProfessor,
       alunos: 0,
       vagas: Number(formVagas),
-      horario: formHorario,
+      horario: combinedHorario,
+      diasSelecionados: formDias,
+      horaSelecionada: formHora,
     };
 
     setClasses([...classes, newClass]);
@@ -106,6 +201,8 @@ function TurmasPage() {
     setFormProfessor(c.professor);
     setFormVagas(c.vagas);
     setFormHorario(c.horario);
+    setFormDias(c.diasSelecionados || ["Seg", "Qua"]);
+    setFormHora(c.horaSelecionada || "19:00");
     setIsEditOpen(true);
   };
 
@@ -113,10 +210,22 @@ function TurmasPage() {
     e.preventDefault();
     if (!selectedClass || !formName) return;
 
+    const daysPart = formDias.join("/");
+    const combinedHorario = `${daysPart} ${formHora}`;
+
     setClasses(
       classes.map((c) =>
         c.nome === selectedClass.nome
-          ? { ...c, nome: formName, nivel: formNivel, professor: formProfessor, vagas: Number(formVagas), horario: formHorario }
+          ? { 
+              ...c, 
+              nome: formName, 
+              nivel: formNivel, 
+              professor: formProfessor, 
+              vagas: Number(formVagas), 
+              horario: combinedHorario,
+              diasSelecionados: formDias,
+              horaSelecionada: formHora
+            }
           : c
       )
     );
@@ -139,7 +248,6 @@ function TurmasPage() {
   const handleOpenTransfer = (c: ClassItem) => {
     setSelectedClass(c);
     setTransferStudent(students[0]?.nome || "");
-    // Default to the first other class
     const otherClass = classes.find((item) => item.nome !== c.nome);
     setTransferTargetClass(otherClass?.nome || "");
     setIsTransferOpen(true);
@@ -149,16 +257,13 @@ function TurmasPage() {
     e.preventDefault();
     if (!selectedClass || !transferStudent || !transferTargetClass) return;
 
-    const studentObj = students.find((s) => s.nome === transferStudent);
     const sourceClassName = selectedClass.nome;
 
-    // Check if target is same as source
     if (sourceClassName === transferTargetClass) {
       toast.error("A turma de destino não pode ser a mesma da origem.");
       return;
     }
 
-    // 1. Subtract 1 student from source class, add 1 to target class in state
     setClasses(
       classes.map((c) => {
         if (c.nome === sourceClassName) {
@@ -171,17 +276,88 @@ function TurmasPage() {
       })
     );
 
-    // 2. Update student's class name in students state
     setStudents(
       students.map((s) =>
         s.nome === transferStudent ? { ...s, turma: transferTargetClass } : s
       )
     );
 
+    try {
+      const storedDetails = window.localStorage.getItem("fluency-ai:students:details");
+      if (storedDetails) {
+        const parsed = JSON.parse(storedDetails);
+        if (parsed[transferStudent]) {
+          parsed[transferStudent].turma = transferTargetClass;
+          window.localStorage.setItem("fluency-ai:students:details", JSON.stringify(parsed));
+        }
+      }
+    } catch {}
+
     toast.success(`Aluno "${transferStudent}" transferido com sucesso!`, {
       description: `Origem: ${sourceClassName} ➜ Destino: ${transferTargetClass}`,
     });
     setIsTransferOpen(false);
+  };
+
+  // Occupancy metrics calculations
+  const totalStudentsInClasses = classes.reduce((sum, c) => sum + c.alunos, 0);
+  const totalVacancies = classes.reduce((sum, c) => sum + c.vagas, 0);
+  const vacancyOccupancyRate = totalVacancies > 0 ? Math.round((totalStudentsInClasses / totalVacancies) * 100) : 0;
+
+  // Time slot occupancy calculations
+  let occupiedSlotsCount = 0;
+  CALENDAR_DAYS.forEach((d) => {
+    CALENDAR_TIMES.forEach((t) => {
+      const classesInSlot = classes.filter((c) => {
+        const matchesDay = c.diasSelecionados?.includes(d.key);
+        const matchesTime = c.horaSelecionada === t;
+        return matchesDay && matchesTime;
+      });
+      if (classesInSlot.length > 0) {
+        occupiedSlotsCount++;
+      }
+    });
+  });
+  const totalPossibleSlots = CALENDAR_DAYS.length * CALENDAR_TIMES.length; // 6 * 10 = 60
+  const slotOccupancyRate = Math.round((occupiedSlotsCount / totalPossibleSlots) * 100);
+
+  const getClassesForSlot = (dayKey: string, time: string) => {
+    return filteredClasses.filter((c) => {
+      const matchesDay = c.diasSelecionados?.includes(dayKey);
+      const matchesTime = c.horaSelecionada === time;
+      return matchesDay && matchesTime;
+    });
+  };
+
+  const handleCellClick = (dayKey: string, time: string) => {
+    if (!canManage) return;
+    setFormName("");
+    setFormNivel("A1");
+    setFormProfessor("Marcos Vidal");
+    setFormVagas(12);
+    setFormDias([dayKey]);
+    setFormHora(time);
+    setIsCreateOpen(true);
+  };
+
+  const generateMonthlyDays = () => {
+    const days = [];
+    // 6 empty days for the offset of August 2026 starting on a Saturday
+    for (let i = 0; i < 6; i++) {
+      days.push(null);
+    }
+    for (let d = 1; d <= 31; d++) {
+      days.push(d);
+    }
+    return days;
+  };
+
+  const getClassesForDay = (dayNum: number) => {
+    const date = new Date(2026, 7, dayNum);
+    const dayIndex = date.getDay(); // 0 = Sun, 1 = Mon, 2 = Tue, 3 = Wed, 4 = Thu, 5 = Fri, 6 = Sat
+    const dayKeys = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    const dayKey = dayKeys[dayIndex];
+    return filteredClasses.filter((c) => c.diasSelecionados?.includes(dayKey));
   };
 
   return (
@@ -219,119 +395,397 @@ function TurmasPage() {
         </div>
       </div>
 
-      {/* Filter and Search controls */}
-      <GlassCard className="p-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 items-center gap-2 rounded-lg border border-hairline bg-surface/50 px-3 py-2 max-w-md">
-          <Search className="size-4 text-muted-foreground" />
-          <input
-            placeholder="Buscar por nome da turma ou professor..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
-          />
-        </div>
+      {/* Tab Switcher: Lista vs Agenda & Calendário */}
+      <div className="flex border-b border-hairline gap-8 pb-0.5">
+        <button
+          onClick={() => setActivePageTab("lista")}
+          className={`pb-4 text-xs font-bold tracking-wider uppercase border-b-2 transition-all cursor-pointer flex items-center gap-2 bg-transparent border-0 ${
+            activePageTab === "lista"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Users className="size-4" /> Lista de Turmas
+        </button>
+        <button
+          onClick={() => setActivePageTab("calendario")}
+          className={`pb-4 text-xs font-bold tracking-wider uppercase border-b-2 transition-all cursor-pointer flex items-center gap-2 bg-transparent border-0 ${
+            activePageTab === "calendario"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <CalendarRange className="size-4" /> Agenda & Calendário
+        </button>
+      </div>
 
-        <div className="flex flex-wrap gap-1">
-          {levels.map((lvl) => (
-            <button
-              key={lvl}
-              onClick={() => setLevelFilter(lvl)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold tracking-wide transition-all uppercase cursor-pointer ${
-                levelFilter === lvl
-                  ? "bg-primary text-primary-foreground shadow"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
-              }`}
-            >
-              {lvl === "todos" ? "Todos" : lvl}
-            </button>
-          ))}
-        </div>
-      </GlassCard>
+      {activePageTab === "lista" ? (
+        <>
+          {/* Filter and Search controls */}
+          <GlassCard className="p-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-1 items-center gap-2 rounded-lg border border-hairline bg-surface/50 px-3 py-2 max-w-md">
+              <Search className="size-4 text-muted-foreground" />
+              <input
+                placeholder="Buscar por nome da turma ou professor..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+              />
+            </div>
 
-      {/* Classes Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredClasses.length > 0 ? (
-          filteredClasses.map((c) => {
-            const percentage = (c.alunos / c.vagas) * 100;
-            const isFull = c.alunos >= c.vagas;
+            <div className="flex flex-wrap gap-1">
+              {levels.map((lvl) => (
+                <button
+                  key={lvl}
+                  onClick={() => setLevelFilter(lvl)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold tracking-wide transition-all uppercase cursor-pointer border-0 ${
+                    levelFilter === lvl
+                      ? "bg-primary text-primary-foreground shadow"
+                      : "text-muted-foreground bg-transparent hover:bg-accent hover:text-foreground"
+                  }`}
+                >
+                  {lvl === "todos" ? "Todos" : lvl}
+                </button>
+              ))}
+            </div>
+          </GlassCard>
 
-            return (
-              <GlassCard key={c.nome} className="p-6 flex flex-col justify-between hover:border-white/10 hover:shadow-lg transition-all duration-300 relative group/card">
-                
-                {/* Actions overlay for Coordenador/Admin */}
-                {canManage && (
-                  <div className="absolute top-4 right-4 flex gap-1.5 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => handleOpenTransfer(c)}
-                      title="Transferir Aluno"
-                      className="p-1.5 rounded bg-surface border border-hairline hover:bg-accent text-muted-foreground hover:text-foreground transition-all cursor-pointer"
-                    >
-                      <ArrowLeftRight className="size-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleOpenEdit(c)}
-                      title="Editar Turma"
-                      className="p-1.5 rounded bg-surface border border-hairline hover:bg-accent text-muted-foreground hover:text-foreground transition-all cursor-pointer"
-                    >
-                      <Pencil className="size-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleOpenDelete(c)}
-                      title="Excluir Turma"
-                      className="p-1.5 rounded bg-surface border border-hairline hover:bg-overdue/10 text-muted-foreground hover:text-overdue transition-all cursor-pointer"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
-                  </div>
-                )}
+          {/* Classes Grid */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredClasses.length > 0 ? (
+              filteredClasses.map((c) => {
+                const percentage = (c.alunos / c.vagas) * 100;
+                const isFull = c.alunos >= c.vagas;
 
-                <div className="space-y-4">
-                  {/* Top Level badge and name */}
-                  <div className="flex items-start justify-between">
-                    <span className="rounded-md border border-hairline bg-surface-elevated/80 px-2.5 py-1 text-xs font-bold text-primary tracking-wider uppercase">
-                      CEFR {c.nivel}
-                    </span>
-                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground pr-16 group-hover/card:pr-24 transition-all">
-                      <Calendar className="size-3.5" /> {c.horario}
-                    </span>
-                  </div>
+                return (
+                  <GlassCard key={c.nome} className="p-6 flex flex-col justify-between hover:border-white/10 hover:shadow-lg transition-all duration-300 relative group/card">
+                    
+                    {/* Actions overlay for Coordenador/Admin */}
+                    {canManage && (
+                      <div className="absolute top-4 right-4 flex gap-1.5 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleOpenTransfer(c)}
+                          title="Transferir Aluno"
+                          className="p-1.5 rounded bg-surface border border-hairline hover:bg-accent text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                        >
+                          <ArrowLeftRight className="size-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenEdit(c)}
+                          title="Editar Turma"
+                          className="p-1.5 rounded bg-surface border border-hairline hover:bg-accent text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                        >
+                          <Pencil className="size-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenDelete(c)}
+                          title="Excluir Turma"
+                          className="p-1.5 rounded bg-surface border border-hairline hover:bg-overdue/10 text-muted-foreground hover:text-overdue transition-all cursor-pointer"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
+                    )}
 
-                  {/* Title & Teacher */}
-                  <div>
-                    <h3 className="text-base font-semibold text-foreground">{c.nome}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">Professor: {c.professor}</p>
-                  </div>
+                    <div className="space-y-4">
+                      {/* Top Level badge and name */}
+                      <div className="flex items-start justify-between">
+                        <span className="rounded-md border border-hairline bg-surface-elevated/80 px-2.5 py-1 text-xs font-bold text-primary tracking-wider uppercase">
+                          CEFR {c.nivel}
+                        </span>
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground pr-16 group-hover/card:pr-24 transition-all">
+                          <Calendar className="size-3.5" /> {c.horario}
+                        </span>
+                      </div>
+
+                      {/* Title & Teacher */}
+                      <div>
+                        <h3 className="text-base font-semibold text-foreground">{c.nome}</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">Professor: {c.professor}</p>
+                      </div>
+                    </div>
+
+                    {/* Bottom Occupancy Progress */}
+                    <div className="mt-6 space-y-2">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1"><Users className="size-3.5" /> Alunos Matriculados</span>
+                        <span className="font-semibold text-foreground">{c.alunos} / {c.vagas}</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            isFull ? "bg-overdue" : "bg-primary"
+                          }`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      {isFull && (
+                        <p className="text-[10px] text-right text-overdue font-semibold animate-pulse">Turma Lotada</p>
+                      )}
+                    </div>
+                  </GlassCard>
+                );
+              })
+            ) : (
+              <div className="col-span-full py-12 text-center animate-in zoom-in duration-300">
+                <GlassCard className="p-8 max-w-md mx-auto text-muted-foreground">
+                  Nenhuma turma ativa encontrada para o nível ou filtro selecionado.
+                </GlassCard>
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          {/* Occupancy KPI Section */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <GlassCard className="p-6 flex items-center justify-between">
+              <div className="space-y-1.5">
+                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Ocupação de Horários</p>
+                <p className="text-2xl font-bold text-foreground">{occupiedSlotsCount} / {totalPossibleSlots} Horários</p>
+                <p className="text-xs text-muted-foreground">Taxa de preenchimento dos horários da grade: <span className="font-semibold text-primary">{slotOccupancyRate}%</span></p>
+              </div>
+              <div className="relative size-16">
+                {/* Circular indicator representation */}
+                <svg className="size-full -rotate-90" viewBox="0 0 36 36">
+                  <path
+                    className="text-white/5"
+                    strokeWidth="3.5"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  <path
+                    className="text-primary transition-all duration-500"
+                    strokeWidth="3.5"
+                    strokeDasharray={`${slotOccupancyRate}, 100`}
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-foreground">
+                  {slotOccupancyRate}%
                 </div>
+              </div>
+            </GlassCard>
 
-                {/* Bottom Occupancy Progress */}
-                <div className="mt-6 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Users className="size-3.5" /> Alunos Matriculados</span>
-                    <span className="font-semibold text-foreground">{c.alunos} / {c.vagas}</span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        isFull ? "bg-overdue" : "bg-primary"
-                      }`}
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                  {isFull && (
-                    <p className="text-[10px] text-right text-overdue font-semibold animate-pulse">Turma Lotada</p>
-                  )}
+            <GlassCard className="p-6 flex items-center justify-between">
+              <div className="space-y-1.5">
+                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Preenchimento de Vagas</p>
+                <p className="text-2xl font-bold text-foreground">{totalStudentsInClasses} / {totalVacancies} Alunos</p>
+                <p className="text-xs text-muted-foreground">Ocupação real de vagas físicas: <span className="font-semibold text-primary">{vacancyOccupancyRate}%</span></p>
+              </div>
+              <div className="relative size-16">
+                <svg className="size-full -rotate-90" viewBox="0 0 36 36">
+                  <path
+                    className="text-white/5"
+                    strokeWidth="3.5"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  <path
+                    className="text-primary transition-all duration-500"
+                    strokeWidth="3.5"
+                    strokeDasharray={`${vacancyOccupancyRate}, 100`}
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-foreground">
+                  {vacancyOccupancyRate}%
                 </div>
-              </GlassCard>
-            );
-          })
-        ) : (
-          <div className="col-span-full py-12 text-center animate-in zoom-in duration-300">
-            <GlassCard className="p-8 max-w-md mx-auto text-muted-foreground">
-              Nenhuma turma ativa encontrada para o nível ou filtro selecionado.
+              </div>
             </GlassCard>
           </div>
-        )}
-      </div>
+
+          {/* Calendar Header View Mode Toggles */}
+          <GlassCard className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="size-4.5 text-primary" />
+              <span className="text-xs font-bold text-foreground">Agenda de Alocações</span>
+            </div>
+            
+            <div className="flex border border-hairline rounded-lg overflow-hidden bg-surface/40 p-0.5">
+              <button
+                onClick={() => setCalendarViewMode("semanal")}
+                className={`px-3 py-1.5 text-[10px] font-bold uppercase transition-all cursor-pointer border-0 rounded-md ${
+                  calendarViewMode === "semanal"
+                    ? "bg-primary text-primary-foreground shadow"
+                    : "text-muted-foreground bg-transparent hover:text-foreground"
+                }`}
+              >
+                Visão Semanal
+              </button>
+              <button
+                onClick={() => setCalendarViewMode("mensal")}
+                className={`px-3 py-1.5 text-[10px] font-bold uppercase transition-all cursor-pointer border-0 rounded-md ${
+                  calendarViewMode === "mensal"
+                    ? "bg-primary text-primary-foreground shadow"
+                    : "text-muted-foreground bg-transparent hover:text-foreground"
+                }`}
+              >
+                Visão Mensal
+              </button>
+            </div>
+          </GlassCard>
+
+          {calendarViewMode === "semanal" ? (
+            /* Weekly View */
+            <div className="overflow-x-auto rounded-xl border border-hairline bg-surface/20 backdrop-blur-md">
+              <table className="w-full border-collapse text-left min-w-[900px]">
+                <thead>
+                  <tr className="border-b border-hairline bg-surface/50">
+                    <th className="p-3 text-xs font-semibold text-muted-foreground w-24">Horário</th>
+                    {CALENDAR_DAYS.map((d) => (
+                      <th key={d.key} className="p-3 text-xs font-semibold text-muted-foreground text-center w-40">{d.label}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-hairline">
+                  {CALENDAR_TIMES.map((time) => (
+                    <tr key={time} className="hover:bg-white/[0.01] transition-colors">
+                      <td className="p-3 text-xs font-semibold text-muted-foreground flex items-center gap-1.5 h-20">
+                        <Clock className="size-3.5" /> {time}
+                      </td>
+                      {CALENDAR_DAYS.map((day) => {
+                        const slotClasses = getClassesForSlot(day.key, time);
+                        const hasClasses = slotClasses.length > 0;
+                        const hasConflict = slotClasses.length > 1;
+
+                        return (
+                          <td
+                            key={day.key}
+                            onClick={() => !hasClasses && handleCellClick(day.key, time)}
+                            className={`p-2 border-l border-hairline h-20 align-middle relative transition-all ${
+                              !hasClasses && canManage ? "cursor-pointer hover:bg-primary/5" : ""
+                            }`}
+                          >
+                            {hasClasses ? (
+                              <div className="space-y-1">
+                                {slotClasses.map((c) => {
+                                  const isFull = c.alunos >= c.vagas;
+                                  let levelColor = "bg-emerald-500/10 border-emerald-500/20 text-emerald-400";
+                                  if (c.nivel.startsWith("B")) {
+                                    levelColor = "bg-blue-500/10 border-blue-500/20 text-blue-400";
+                                  } else if (c.nivel.startsWith("C")) {
+                                    levelColor = "bg-purple-500/10 border-purple-500/20 text-purple-400";
+                                  }
+
+                                  return (
+                                    <div
+                                      key={c.nome}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenEdit(c);
+                                      }}
+                                      className={`rounded-lg border p-2 text-[10px] leading-snug cursor-pointer transition-all hover:scale-[1.02] shadow-sm flex flex-col justify-between ${levelColor}`}
+                                    >
+                                      <div className="flex justify-between items-start font-bold">
+                                        <span className="truncate">{c.nome}</span>
+                                        <span className="uppercase text-[8px] font-extrabold px-1 rounded bg-white/10 shrink-0">CEFR {c.nivel}</span>
+                                      </div>
+                                      <div className="flex justify-between items-center mt-1 text-[9px] opacity-90">
+                                        <span>Prof. {c.professor.split(" ")[0]}</span>
+                                        <span className={isFull ? "text-rose-400 font-bold" : "opacity-80"}>
+                                          {c.alunos}/{c.vagas}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                                {hasConflict && (
+                                  <div className="absolute bottom-1 right-1 flex items-center gap-1 rounded bg-rose-500 text-white px-1 py-0.5 text-[8px] font-extrabold shadow animate-bounce">
+                                    <AlertTriangle className="size-2.5" /> Conflito!
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              canManage && (
+                                <span className="absolute inset-0 grid place-items-center opacity-0 hover:opacity-100 transition-opacity text-[10px] font-bold text-primary">
+                                  + Agendar
+                                </span>
+                              )
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            /* Monthly View */
+            <div className="rounded-xl border border-hairline bg-surface/20 backdrop-blur-md p-4 space-y-4">
+              <div className="text-center font-bold text-sm text-foreground uppercase tracking-wider pb-2 border-b border-hairline">
+                Agosto 2026
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-muted-foreground pb-2">
+                <div>Dom</div>
+                <div>Seg</div>
+                <div>Ter</div>
+                <div>Qua</div>
+                <div>Qui</div>
+                <div>Sex</div>
+                <div>Sáb</div>
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {generateMonthlyDays().map((dayNum, idx) => {
+                  if (dayNum === null) {
+                    return (
+                      <div key={`empty-${idx}`} className="h-28 rounded-lg bg-surface/5 border border-transparent opacity-30" />
+                    );
+                  }
+
+                  const dayClasses = getClassesForDay(dayNum);
+                  const isToday = dayNum === 19; // Aug 19, 2026 is today in mock
+
+                  return (
+                    <div
+                      key={dayNum}
+                      className={`h-28 rounded-lg border p-2 flex flex-col justify-between transition-all bg-surface/30 hover:bg-surface-elevated/40 ${
+                        isToday ? "border-primary bg-primary/5 shadow-inner" : "border-hairline"
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className={`text-xs font-extrabold ${isToday ? "text-primary" : "text-foreground"}`}>
+                          {dayNum}
+                        </span>
+                        {isToday && (
+                          <span className="rounded bg-primary/20 text-primary text-[8px] font-extrabold px-1 py-0.5">Hoje</span>
+                        )}
+                      </div>
+                      <div className="flex-1 overflow-y-auto space-y-1 mt-1 scrollbar-none">
+                        {dayClasses.map((c) => {
+                          let badgeColor = "bg-emerald-500/20 text-emerald-400 border-emerald-500/10";
+                          if (c.nivel.startsWith("B")) badgeColor = "bg-blue-500/20 text-blue-400 border-blue-500/10";
+                          if (c.nivel.startsWith("C")) badgeColor = "bg-purple-500/20 text-purple-400 border-purple-500/10";
+
+                          return (
+                            <div
+                              key={c.nome}
+                              onClick={() => handleOpenEdit(c)}
+                              className={`rounded px-1.5 py-0.5 border text-[8px] leading-tight truncate font-medium cursor-pointer transition-all hover:scale-[1.01] ${badgeColor}`}
+                              title={`${c.nome} (${c.horario})`}
+                            >
+                              {c.horaSelecionada} {c.nome}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* --- INLINE GLASSMORPHIC MODALS --- */}
 
@@ -341,7 +795,7 @@ function TurmasPage() {
           <GlassCard className="w-full max-w-md p-6 space-y-4 shadow-2xl relative">
             <button
               onClick={() => setIsCreateOpen(false)}
-              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer"
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0"
             >
               <X className="size-4" />
             </button>
@@ -405,20 +859,53 @@ function TurmasPage() {
                 </select>
               </div>
 
+              {/* Day selection checkmarks */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Horário / Dias</label>
-                <input
-                  value={formHorario}
-                  onChange={(e) => setFormHorario(e.target.value)}
-                  placeholder="Ex: Seg/Qua 18:30"
-                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary"
-                  required
-                />
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dias da Semana</label>
+                <div className="flex flex-wrap gap-2">
+                  {CALENDAR_DAYS.map((d) => {
+                    const isSelected = formDias.includes(d.key);
+                    return (
+                      <button
+                        key={d.key}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setFormDias(formDias.filter((day) => day !== d.key));
+                          } else {
+                            setFormDias([...formDias, d.key]);
+                          }
+                        }}
+                        className={`h-9 px-3 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                          isSelected
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-hairline bg-surface/50 text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {d.key}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Time selection slot */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Horário de Início</label>
+                <select
+                  value={formHora}
+                  onChange={(e) => setFormHora(e.target.value)}
+                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary cursor-pointer"
+                >
+                  {CALENDAR_TIMES.map((time) => (
+                    <option key={time} value={time}>{time}</option>
+                  ))}
+                </select>
               </div>
 
               <button
                 type="submit"
-                className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center"
+                className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center border-0"
               >
                 Confirmar Criação
               </button>
@@ -433,13 +920,13 @@ function TurmasPage() {
           <GlassCard className="w-full max-w-md p-6 space-y-4 shadow-2xl relative">
             <button
               onClick={() => setIsEditOpen(false)}
-              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer"
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0"
             >
               <X className="size-4" />
             </button>
             <div>
               <h3 className="text-base font-bold text-foreground">Editar Configurações da Turma</h3>
-              <p className="text-xs text-muted-foreground">Altere o professor, vagas ou horário.</p>
+              <p className="text-xs text-muted-foreground">Altere o professor, vagas, dias ou horário.</p>
             </div>
             
             <form onSubmit={handleEdit} className="space-y-4">
@@ -475,7 +962,7 @@ function TurmasPage() {
                     type="number"
                     value={formVagas}
                     onChange={(e) => setFormVagas(Number(e.target.value))}
-                    min={selectedClass.alunos} // Prevent reducing vacancies below active student count
+                    min={selectedClass.alunos}
                     className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary"
                     required
                   />
@@ -496,19 +983,53 @@ function TurmasPage() {
                 </select>
               </div>
 
+              {/* Day selection checkmarks */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Horário / Dias</label>
-                <input
-                  value={formHorario}
-                  onChange={(e) => setFormHorario(e.target.value)}
-                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary"
-                  required
-                />
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dias da Semana</label>
+                <div className="flex flex-wrap gap-2">
+                  {CALENDAR_DAYS.map((d) => {
+                    const isSelected = formDias.includes(d.key);
+                    return (
+                      <button
+                        key={d.key}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setFormDias(formDias.filter((day) => day !== d.key));
+                          } else {
+                            setFormDias([...formDias, d.key]);
+                          }
+                        }}
+                        className={`h-9 px-3 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                          isSelected
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-hairline bg-surface/50 text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {d.key}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Time selection slot */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Horário de Início</label>
+                <select
+                  value={formHora}
+                  onChange={(e) => setFormHora(e.target.value)}
+                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary cursor-pointer"
+                >
+                  {CALENDAR_TIMES.map((time) => (
+                    <option key={time} value={time}>{time}</option>
+                  ))}
+                </select>
               </div>
 
               <button
                 type="submit"
-                className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center"
+                className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center border-0"
               >
                 Salvar Alterações
               </button>
@@ -523,7 +1044,7 @@ function TurmasPage() {
           <GlassCard className="w-full max-w-sm p-6 space-y-6 shadow-2xl relative text-center">
             <button
               onClick={() => setIsDeleteOpen(false)}
-              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer"
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0"
             >
               <X className="size-4" />
             </button>
@@ -547,13 +1068,13 @@ function TurmasPage() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setIsDeleteOpen(false)}
-                className="rounded-lg border border-hairline py-2 text-xs font-semibold text-foreground hover:bg-accent transition-all cursor-pointer"
+                className="rounded-lg border border-hairline py-2 text-xs font-semibold text-foreground hover:bg-accent transition-all cursor-pointer bg-transparent"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleDelete}
-                className="rounded-lg bg-overdue py-2 text-xs font-semibold text-destructive-foreground hover:bg-overdue/90 shadow transition-all cursor-pointer"
+                className="rounded-lg bg-overdue py-2 text-xs font-semibold text-destructive-foreground hover:bg-overdue/90 shadow transition-all cursor-pointer border-0"
               >
                 Confirmar Exclusão
               </button>
@@ -568,7 +1089,7 @@ function TurmasPage() {
           <GlassCard className="w-full max-w-md p-6 space-y-4 shadow-2xl relative">
             <button
               onClick={() => setIsTransferOpen(false)}
-              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer"
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0"
             >
               <X className="size-4" />
             </button>
@@ -616,7 +1137,7 @@ function TurmasPage() {
 
               <button
                 type="submit"
-                className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center"
+                className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center border-0"
               >
                 Confirmar Transferência
               </button>

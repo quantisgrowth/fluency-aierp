@@ -62,9 +62,96 @@ function PortalAlunoPage() {
   const { tenant } = useTenant();
   
   // Game balances
-  const [xp, setXp] = useState(1450);
-  const [coins, setCoins] = useState(380);
-  const [streak, setStreak] = useState(5);
+  const [xp, setXp] = useState(() => {
+    try {
+      const stored = window.localStorage.getItem("fluency-ai:students:details");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed["Felipe Medeiros"]) return parsed["Felipe Medeiros"].xp;
+      }
+    } catch {}
+    return 1450;
+  });
+
+  const [coins, setCoins] = useState(() => {
+    try {
+      const stored = window.localStorage.getItem("fluency-ai:students:details");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed["Felipe Medeiros"]) return parsed["Felipe Medeiros"].coins;
+      }
+    } catch {}
+    return 380;
+  });
+
+  const [streak, setStreak] = useState(() => {
+    try {
+      const stored = window.localStorage.getItem("fluency-ai:students:details");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed["Felipe Medeiros"]) return parsed["Felipe Medeiros"].streak;
+      }
+    } catch {}
+    return 5;
+  });
+
+  // Sync state changes back to shared localStorage details
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("fluency-ai:students:details");
+      const parsed = stored ? JSON.parse(stored) : {};
+      
+      if (!parsed["Felipe Medeiros"]) {
+        parsed["Felipe Medeiros"] = {
+          presenca: 90,
+          tarefas: 85,
+          streak: 5,
+          coins: 380,
+          xp: 1450,
+          liga: "Ouro",
+          whats: "5511999991111",
+          historico: [
+            { data: "19/08/2026", texto: "Ingressou no portal do aluno e iniciou os desafios.", autor: "Sistema" }
+          ],
+          financeiro: [
+            { descricao: "Mensalidade Agosto", valor: 380, vencimento: "10/08/2026", situacao: "pago" }
+          ]
+        };
+      }
+      
+      if (parsed["Felipe Medeiros"].xp !== xp || 
+          parsed["Felipe Medeiros"].coins !== coins || 
+          parsed["Felipe Medeiros"].streak !== streak) {
+        
+        parsed["Felipe Medeiros"].xp = xp;
+        parsed["Felipe Medeiros"].coins = coins;
+        parsed["Felipe Medeiros"].streak = streak;
+        
+        window.localStorage.setItem("fluency-ai:students:details", JSON.stringify(parsed));
+        window.dispatchEvent(new Event("storage"));
+      }
+    } catch {}
+  }, [xp, coins, streak]);
+
+  // Sync state across open tabs in real-time
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const storedDetails = window.localStorage.getItem("fluency-ai:students:details");
+        if (storedDetails) {
+          const parsed = JSON.parse(storedDetails);
+          if (parsed["Felipe Medeiros"]) {
+            setXp(parsed["Felipe Medeiros"].xp);
+            setCoins(parsed["Felipe Medeiros"].coins);
+            setStreak(parsed["Felipe Medeiros"].streak);
+          }
+        }
+      } catch {}
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
   
   // Mobile app tab navigation
   const [mobileTab, setMobileTab] = useState<"missions" | "practice" | "shop">("missions");
