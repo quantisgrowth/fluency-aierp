@@ -5,14 +5,24 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { toast } from "sonner";
 
 export type UserRole = "admin" | "operador" | "professor" | "coordenador";
+
+export type UserPermissions = {
+  crm: boolean;
+  financeiro: boolean;
+  pedagogico: boolean;
+  success: boolean;
+};
 
 export type SchoolUser = {
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  permissions: UserPermissions;
+  company: string;
 };
 
 export type AdminProfile = {
@@ -24,13 +34,17 @@ export type AdminProfile = {
 
 type UserContextValue = {
   users: SchoolUser[];
+  companies: string[];
   adminProfile: AdminProfile;
   activeRole: UserRole;
-  addUser: (name: string, email: string, role: UserRole) => void;
-  updateUser: (id: string, name: string, email: string, role: UserRole) => void;
+  activeCompany: string;
+  addUser: (name: string, email: string, role: UserRole, permissions: UserPermissions, company: string) => void;
+  updateUser: (id: string, name: string, email: string, role: UserRole, permissions: UserPermissions, company: string) => void;
   deleteUser: (id: string) => void;
   updateProfile: (profile: Partial<AdminProfile>) => void;
   setActiveRole: (role: UserRole) => void;
+  setActiveCompany: (company: string) => void;
+  resetPassword: (id: string) => void;
 };
 
 const UserContext = createContext<UserContextValue | null>(null);
@@ -38,14 +52,59 @@ const UserContext = createContext<UserContextValue | null>(null);
 const STORAGE_USERS_KEY = "lumen-erp:users";
 const STORAGE_PROFILE_KEY = "lumen-erp:profile";
 const STORAGE_ROLE_KEY = "lumen-erp:active-role";
+const STORAGE_COMPANY_KEY = "lumen-erp:active-company";
+
+export const COMPANIES = ["Unidade Pinheiros", "Unidade Jardins", "Unidade Paulista"];
 
 const DEFAULT_USERS: SchoolUser[] = [
-  { id: "1", name: "Julia Kern", email: "julia.kern@lumen.edu", role: "professor" },
-  { id: "2", name: "Marcos Vidal", email: "marcos.vidal@lumen.edu", role: "professor" },
-  { id: "3", name: "Ana Beatriz", email: "ana.beatriz@lumen.edu", role: "professor" },
-  { id: "4", name: "Peter Hall", email: "peter.hall@lumen.edu", role: "professor" },
-  { id: "5", name: "Rodrigo Silva", email: "rodrigo.silva@lumen.edu", role: "operador" },
-  { id: "6", name: "Clara Albuquerque", email: "clara.albuquerque@lumen.edu", role: "coordenador" },
+  {
+    id: "1",
+    name: "Julia Kern",
+    email: "julia.kern@lumen.edu",
+    role: "professor",
+    permissions: { crm: false, financeiro: false, pedagogico: true, success: false },
+    company: "Unidade Pinheiros",
+  },
+  {
+    id: "2",
+    name: "Marcos Vidal",
+    email: "marcos.vidal@lumen.edu",
+    role: "professor",
+    permissions: { crm: false, financeiro: false, pedagogico: true, success: false },
+    company: "Unidade Pinheiros",
+  },
+  {
+    id: "3",
+    name: "Ana Beatriz",
+    email: "ana.beatriz@lumen.edu",
+    role: "professor",
+    permissions: { crm: false, financeiro: false, pedagogico: true, success: false },
+    company: "Unidade Jardins",
+  },
+  {
+    id: "4",
+    name: "Peter Hall",
+    email: "peter.hall@lumen.edu",
+    role: "professor",
+    permissions: { crm: false, financeiro: false, pedagogico: true, success: false },
+    company: "Unidade Paulista",
+  },
+  {
+    id: "5",
+    name: "Rodrigo Silva",
+    email: "rodrigo.silva@lumen.edu",
+    role: "operador",
+    permissions: { crm: true, financeiro: true, pedagogico: true, success: false },
+    company: "Unidade Pinheiros",
+  },
+  {
+    id: "6",
+    name: "Clara Albuquerque",
+    email: "clara.albuquerque@lumen.edu",
+    role: "coordenador",
+    permissions: { crm: false, financeiro: false, pedagogico: true, success: true },
+    company: "Unidade Pinheiros",
+  },
 ];
 
 const DEFAULT_PROFILE: AdminProfile = {
@@ -59,18 +118,30 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<SchoolUser[]>(DEFAULT_USERS);
   const [adminProfile, setAdminProfile] = useState<AdminProfile>(DEFAULT_PROFILE);
   const [activeRole, setActiveRoleState] = useState<UserRole>("admin");
+  const [activeCompany, setActiveCompanyState] = useState<string>("Unidade Pinheiros");
 
   // Load from local storage
   useEffect(() => {
     try {
       const storedUsers = window.localStorage.getItem(STORAGE_USERS_KEY);
-      if (storedUsers) setUsers(JSON.parse(storedUsers));
+      if (storedUsers) {
+        setUsers(JSON.parse(storedUsers));
+      }
 
       const storedProfile = window.localStorage.getItem(STORAGE_PROFILE_KEY);
-      if (storedProfile) setAdminProfile(JSON.parse(storedProfile));
+      if (storedProfile) {
+        setAdminProfile(JSON.parse(storedProfile));
+      }
 
       const storedRole = window.localStorage.getItem(STORAGE_ROLE_KEY);
-      if (storedRole) setActiveRoleState(storedRole as UserRole);
+      if (storedRole) {
+        setActiveRoleState(storedRole as UserRole);
+      }
+
+      const storedCompany = window.localStorage.getItem(STORAGE_COMPANY_KEY);
+      if (storedCompany) {
+        setActiveCompanyState(storedCompany);
+      }
     } catch {
       /* ignore */
     }
@@ -85,19 +156,36 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addUser = (name: string, email: string, role: UserRole) => {
+  const addUser = (
+    name: string,
+    email: string,
+    role: UserRole,
+    permissions: UserPermissions,
+    company: string
+  ) => {
     const newUser: SchoolUser = {
       id: Date.now().toString(),
       name,
       email,
       role,
+      permissions,
+      company,
     };
     saveUsers([...users, newUser]);
   };
 
-  const updateUser = (id: string, name: string, email: string, role: UserRole) => {
+  const updateUser = (
+    id: string,
+    name: string,
+    email: string,
+    role: UserRole,
+    permissions: UserPermissions,
+    company: string
+  ) => {
     saveUsers(
-      users.map((u) => (u.id === id ? { ...u, name, email, role } : u))
+      users.map((u) =>
+        u.id === id ? { ...u, name, email, role, permissions, company } : u
+      )
     );
   };
 
@@ -126,17 +214,38 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const setActiveCompany = (company: string) => {
+    setActiveCompanyState(company);
+    try {
+      window.localStorage.setItem(STORAGE_COMPANY_KEY, company);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const resetPassword = (id: string) => {
+    const user = users.find((u) => u.id === id);
+    if (!user) return;
+    toast.success(`E-mail de redefinição de senha enviado para ${user.email}!`, {
+      description: "O colaborador receberá um link temporário para criar uma nova senha.",
+    });
+  };
+
   return (
     <UserContext.Provider
       value={{
         users,
+        companies: COMPANIES,
         adminProfile,
         activeRole,
+        activeCompany,
         addUser,
         updateUser,
         deleteUser,
         updateProfile,
         setActiveRole,
+        setActiveCompany,
+        resetPassword,
       }}
     >
       {children}

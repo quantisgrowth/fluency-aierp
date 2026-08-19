@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useState, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Shield, UserPlus, Trash2, Mail, ShieldAlert, Check } from "lucide-react";
+import { Shield, UserPlus, Trash2, Mail, ShieldAlert, Key, Pencil, X, Building, CheckSquare, Square } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
-import { useUser, type UserRole } from "@/modules/user-context";
+import { useUser, type UserRole, type UserPermissions, type SchoolUser } from "@/modules/user-context";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/usuarios")({
@@ -23,18 +23,29 @@ const userSchema = z.object({
   name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres"),
   email: z.string().email("E-mail inválido"),
   role: z.enum(["admin", "operador", "professor", "coordenador"] as const),
+  company: z.string().min(1, "A unidade é obrigatória"),
+  permissions: z.object({
+    crm: z.boolean(),
+    financeiro: z.boolean(),
+    pedagogico: z.boolean(),
+    success: z.boolean(),
+  }),
 });
 
 type UserFormValues = z.infer<typeof userSchema>;
 
 function UsuariosPage() {
-  const { users, addUser, deleteUser } = useUser();
-  const [showAddForm, setShowAddForm] = useState(false);
+  const { users, companies, addUser, updateUser, deleteUser, resetPassword } = useUser();
+  const [showForm, setShowForm] = useState(false);
+  const [editingUser, setEditingUser] = useState<SchoolUser | null>(null);
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
+    control,
     formState: { errors },
   } = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
@@ -42,14 +53,72 @@ function UsuariosPage() {
       name: "",
       email: "",
       role: "professor",
+      company: "Unidade Pinheiros",
+      permissions: {
+        crm: false,
+        financeiro: false,
+        pedagogico: true,
+        success: false,
+      },
     },
   });
 
+  const selectedRole = watch("role");
+
+  // Auto-fill default permissions when role changes
+  useEffect(() => {
+    if (editingUser) return; // Don't overwrite when editing
+    
+    if (selectedRole === "admin") {
+      setValue("permissions", { crm: true, financeiro: true, pedagogico: true, success: true });
+    } else if (selectedRole === "operador") {
+      setValue("permissions", { crm: true, financeiro: true, pedagogico: true, success: false });
+    } else if (selectedRole === "coordenador") {
+      setValue("permissions", { crm: false, financeiro: false, pedagogico: true, success: true });
+    } else if (selectedRole === "professor") {
+      setValue("permissions", { crm: false, financeiro: false, pedagogico: true, success: false });
+    }
+  }, [selectedRole, setValue, editingUser]);
+
+  const handleOpenCreate = () => {
+    setEditingUser(null);
+    reset({
+      name: "",
+      email: "",
+      role: "professor",
+      company: "Unidade Pinheiros",
+      permissions: {
+        crm: false,
+        financeiro: false,
+        pedagogico: true,
+        success: false,
+      },
+    });
+    setShowForm(true);
+  };
+
+  const handleOpenEdit = (user: SchoolUser) => {
+    setEditingUser(user);
+    reset({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      company: user.company,
+      permissions: { ...user.permissions },
+    });
+    setShowForm(true);
+  };
+
   const onSubmit = (data: UserFormValues) => {
-    addUser(data.name, data.email, data.role);
-    toast.success(`Usuário ${data.name} criado com sucesso!`);
-    reset();
-    setShowAddForm(false);
+    if (editingUser) {
+      updateUser(editingUser.id, data.name, data.email, data.role, data.permissions, data.company);
+      toast.success(`Usuário ${data.name} atualizado com sucesso!`);
+    } else {
+      addUser(data.name, data.email, data.role, data.permissions, data.company);
+      toast.success(`Usuário ${data.name} criado com sucesso!`);
+    }
+    setShowForm(false);
+    setEditingUser(null);
   };
 
   const roleLabels: Record<UserRole, string> = {
@@ -78,85 +147,193 @@ function UsuariosPage() {
       <SectionHeader
         eyebrow="Administração"
         title="Usuários & Permissões"
-        description="Gerencie os membros da equipe da escola e configure o controle de acesso baseado em cargos."
+        description="Gerencie os membros da equipe da escola, associe-os a unidades e configure o controle de acesso por flags pedagógicas e comerciais."
         action={
           <button
-            onClick={() => setShowAddForm(!showAddForm)}
+            onClick={showForm ? () => setShowForm(false) : handleOpenCreate}
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-md hover:bg-primary/95 active:scale-[0.98] transition-all cursor-pointer"
           >
-            <UserPlus className="size-4" /> {showAddForm ? "Cancelar" : "Novo Usuário"}
+            <UserPlus className="size-4" /> {showForm ? "Cancelar" : "Novo Usuário"}
           </button>
         }
       />
 
       <div className="grid gap-6 lg:grid-cols-3">
         
-        {/* Form to add user */}
-        {showAddForm && (
+        {/* Form Drawer Modal to Add/Edit User */}
+        {showForm && (
           <div className="lg:col-span-3">
-            <GlassCard className="p-6 max-w-xl mx-auto space-y-4">
+            <GlassCard className="p-6 max-w-2xl mx-auto space-y-5 relative">
+              <button
+                onClick={() => setShowForm(false)}
+                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <X className="size-4.5" />
+              </button>
+              
               <div>
-                <h3 className="text-sm font-semibold text-foreground">Adicionar Novo Membro</h3>
-                <p className="text-xs text-muted-foreground">Cadastre um e-mail institucional e atribua um cargo de acesso.</p>
+                <h3 className="text-sm font-semibold text-foreground">
+                  {editingUser ? "Editar Colaborador" : "Adicionar Novo Membro"}
+                </h3>
+                <p className="text-xs text-muted-foreground">Configure as credenciais, unidade associada e as flags de permissão de acesso.</p>
               </div>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label htmlFor="name" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Nome Completo
-                  </label>
-                  <input
-                    id="name"
-                    placeholder="Ex: Amanda Lima"
-                    className={`h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary ${
-                      errors.name ? "border-rose-500" : ""
-                    }`}
-                    {...register("name")}
-                  />
-                  {errors.name && (
-                    <p className="text-[11px] font-medium text-rose-500">{errors.name.message}</p>
-                  )}
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                
+                {/* User Details */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label htmlFor="name" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Nome Completo
+                    </label>
+                    <input
+                      id="name"
+                      placeholder="Ex: Taiane Andrade"
+                      className={`h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary ${
+                        errors.name ? "border-rose-500" : ""
+                      }`}
+                      {...register("name")}
+                    />
+                    {errors.name && (
+                      <p className="text-[11px] font-medium text-rose-500">{errors.name.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="email" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      E-mail Institucional
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      placeholder="taiane@lumen.edu"
+                      className={`h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary ${
+                        errors.email ? "border-rose-500" : ""
+                      }`}
+                      {...register("email")}
+                    />
+                    {errors.email && (
+                      <p className="text-[11px] font-medium text-rose-500">{errors.email.message}</p>
+                    )}
+                  </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label htmlFor="email" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    E-mail Institucional
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    placeholder="amanda@lumen.edu"
-                    className={`h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary ${
-                      errors.email ? "border-rose-500" : ""
-                    }`}
-                    {...register("email")}
-                  />
-                  {errors.email && (
-                    <p className="text-[11px] font-medium text-rose-500">{errors.email.message}</p>
-                  )}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label htmlFor="role" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Cargo / Nível Base
+                    </label>
+                    <select
+                      id="role"
+                      className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary cursor-pointer"
+                      {...register("role")}
+                    >
+                      <option value="professor">Professor</option>
+                      <option value="operador">Operador</option>
+                      <option value="coordenador">Coordenador</option>
+                      <option value="admin">Administrador Geral</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="company" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                      <Building className="size-3.5" /> Vincular Unidade (Empresa)
+                    </label>
+                    <select
+                      id="company"
+                      className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary cursor-pointer"
+                      {...register("company")}
+                    >
+                      {companies.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label htmlFor="role" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Cargo / Nível de Acesso
+                {/* Granular Permissions Checklist */}
+                <div className="space-y-3">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+                    Flags de Permissões Granulares (Acesso aos Módulos)
                   </label>
-                  <select
-                    id="role"
-                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary cursor-pointer"
-                    {...register("role")}
-                  >
-                    <option value="professor">Professor</option>
-                    <option value="operador">Operador</option>
-                    <option value="coordenador">Coordenador</option>
-                    <option value="admin">Administrador Geral</option>
-                  </select>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 p-4 rounded-xl border border-hairline bg-surface-elevated/20">
+                    
+                    {/* CRM flag */}
+                    <Controller
+                      name="permissions.crm"
+                      control={control}
+                      render={({ field }) => (
+                        <label className="flex items-center gap-2.5 cursor-pointer text-xs text-foreground font-semibold">
+                          <input
+                            type="checkbox"
+                            checked={field.value}
+                            onChange={(e) => field.onChange(e.target.checked)}
+                            className="size-4.5 rounded border-hairline text-primary focus:ring-primary cursor-pointer"
+                          />
+                          <span>CRM / Captação</span>
+                        </label>
+                      )}
+                    />
+
+                    {/* Financeiro flag */}
+                    <Controller
+                      name="permissions.financeiro"
+                      control={control}
+                      render={({ field }) => (
+                        <label className="flex items-center gap-2.5 cursor-pointer text-xs text-foreground font-semibold">
+                          <input
+                            type="checkbox"
+                            checked={field.value}
+                            onChange={(e) => field.onChange(e.target.checked)}
+                            className="size-4.5 rounded border-hairline text-primary focus:ring-primary cursor-pointer"
+                          />
+                          <span>Motor Financeiro</span>
+                        </label>
+                      )}
+                    />
+
+                    {/* Pedagógico flag */}
+                    <Controller
+                      name="permissions.pedagogico"
+                      control={control}
+                      render={({ field }) => (
+                        <label className="flex items-center gap-2.5 cursor-pointer text-xs text-foreground font-semibold">
+                          <input
+                            type="checkbox"
+                            checked={field.value}
+                            onChange={(e) => field.onChange(e.target.checked)}
+                            className="size-4.5 rounded border-hairline text-primary focus:ring-primary cursor-pointer"
+                          />
+                          <span>Core Pedagógico</span>
+                        </label>
+                      )}
+                    />
+
+                    {/* Retenção/Success flag */}
+                    <Controller
+                      name="permissions.success"
+                      control={control}
+                      render={({ field }) => (
+                        <label className="flex items-center gap-2.5 cursor-pointer text-xs text-foreground font-semibold">
+                          <input
+                            type="checkbox"
+                            checked={field.value}
+                            onChange={(e) => field.onChange(e.target.checked)}
+                            className="size-4.5 rounded border-hairline text-primary focus:ring-primary cursor-pointer"
+                          />
+                          <span>Retenção & Portais</span>
+                        </label>
+                      )}
+                    />
+
+                  </div>
                 </div>
 
                 <button
                   type="submit"
                   className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center"
                 >
-                  Cadastrar Usuário
+                  {editingUser ? "Salvar Alterações" : "Cadastrar Usuário"}
                 </button>
               </form>
             </GlassCard>
@@ -172,6 +349,7 @@ function UsuariosPage() {
                   <tr className="border-b border-hairline bg-surface-elevated/40 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     <th className="px-6 py-4">Membro da Equipe</th>
                     <th className="px-6 py-4">Acesso / Cargo</th>
+                    <th className="px-6 py-4">Unidade</th>
                     <th className="px-6 py-4">E-mail</th>
                     <th className="px-6 py-4 text-right">Ações</th>
                   </tr>
@@ -185,13 +363,29 @@ function UsuariosPage() {
                           {roleLabels[u.role]}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-muted-foreground">{u.email}</td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-muted-foreground text-xs">{u.company}</td>
+                      <td className="px-6 py-4 text-muted-foreground text-xs">{u.email}</td>
+                      <td className="px-6 py-4 text-right flex gap-1.5 justify-end">
+                        <button
+                          onClick={() => handleOpenEdit(u)}
+                          title="Editar Usuário"
+                          className="p-1.5 rounded-lg border border-hairline hover:bg-accent text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                        >
+                          <Pencil className="size-4" />
+                        </button>
+                        <button
+                          onClick={() => resetPassword(u.id)}
+                          title="Redefinir Senha por E-mail"
+                          className="p-1.5 rounded-lg border border-hairline hover:bg-accent text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                        >
+                          <Key className="size-4" />
+                        </button>
                         <button
                           onClick={() => {
                             deleteUser(u.id);
                             toast.success(`Usuário ${u.name} removido.`);
                           }}
+                          title="Excluir Usuário"
                           className="p-1.5 rounded-lg border border-hairline hover:bg-overdue/10 text-muted-foreground hover:text-overdue transition-colors cursor-pointer"
                         >
                           <Trash2 className="size-4" />

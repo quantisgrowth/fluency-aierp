@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, UserPlus, MoveRight } from "lucide-react";
+import { Plus, UserPlus, MoveRight, Pencil, X } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import { ModuleGate } from "@/components/module-gate";
@@ -17,11 +17,30 @@ export const Route = createFileRoute("/crm")({
   component: CrmPage,
 });
 
+type LeadCard = {
+  nome: string;
+  origem: string;
+  valor: number;
+};
+
+type Stage = {
+  id: string;
+  titulo: string;
+  cards: LeadCard[];
+};
+
 function CrmPage() {
-  const [stages, setStages] = useState(initialStages);
+  const [stages, setStages] = useState<Stage[]>(initialStages);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [selectedStageId, setSelectedStageId] = useState("");
+  const [selectedLead, setSelectedLead] = useState<LeadCard | null>(null);
+
+  // Edit Lead Form Fields
+  const [formName, setFormName] = useState("");
+  const [formOrigem, setFormOrigem] = useState("");
+  const [formValor, setFormValor] = useState(0);
 
   const simulateMoveCard = (stageId: string, cardName: string) => {
-    // Find the next stage index
     const currentStageIdx = stages.findIndex((s) => s.id === stageId);
     if (currentStageIdx === -1 || currentStageIdx === stages.length - 1) {
       toast.info(`${cardName} já está no estágio final!`);
@@ -30,7 +49,6 @@ function CrmPage() {
 
     const nextStage = stages[currentStageIdx + 1];
     
-    // Copy stages state
     const nextStages = stages.map((s) => {
       if (s.id === stageId) {
         return {
@@ -57,7 +75,6 @@ function CrmPage() {
     const sources = ["Google Ads", "Instagram", "Indicação"];
     const randomName = names[Math.floor(Math.random() * names.length)];
     
-    // Check if name already exists in any column to prevent duplicates in UI
     const exists = stages.some(s => s.cards.some(c => c.nome === randomName));
     const finalName = exists ? `${randomName} (${Math.floor(Math.random() * 100)})` : randomName;
     
@@ -78,13 +95,46 @@ function CrmPage() {
     toast.success(`Novo Lead criado: ${finalName}!`);
   };
 
+  const handleOpenEditLead = (stageId: string, lead: LeadCard) => {
+    setSelectedStageId(stageId);
+    setSelectedLead(lead);
+    setFormName(lead.nome);
+    setFormOrigem(lead.origem);
+    setFormValor(lead.valor);
+    setIsEditOpen(true);
+  };
+
+  const handleEditLeadSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedLead || !formName) return;
+
+    const nextStages = stages.map((s) => {
+      if (s.id === selectedStageId) {
+        return {
+          ...s,
+          cards: s.cards.map((c) =>
+            c.nome === selectedLead.nome
+              ? { ...c, nome: formName, origem: formOrigem, valor: Number(formValor) }
+              : c
+          ),
+        };
+      }
+      return s;
+    });
+
+    setStages(nextStages);
+    toast.success(`Lead "${formName}" atualizado com sucesso!`);
+    setIsEditOpen(false);
+    setSelectedLead(null);
+  };
+
   return (
     <ModuleGate module="crm">
       <div className="mx-auto max-w-[1400px] space-y-8 animate-in fade-in duration-300">
         <SectionHeader
           eyebrow="Operação"
           title="CRM Comercial & Funil"
-          description="Acompanhe oportunidades de matrícula em um funil Kanban interativo e otimize a conversão de leads."
+          description="Acompanhe oportunidades de matrícula em um funil Kanban interativo, gerencie e edite os dados dos leads."
           action={
             <button
               onClick={simulateAddLead}
@@ -129,8 +179,19 @@ function CrmPage() {
                         {/* Glow effect on hover */}
                         <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/40 opacity-0 group-hover:opacity-100 transition-opacity" />
                         
+                        {/* Edit Action trigger overlay */}
+                        <div className="absolute top-3.5 right-3.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleOpenEditLead(stage.id, card)}
+                            title="Editar Lead"
+                            className="p-1 rounded bg-surface border border-hairline hover:bg-accent text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                          >
+                            <Pencil className="size-3" />
+                          </button>
+                        </div>
+
                         <div className="space-y-3">
-                          <div>
+                          <div className="pr-6">
                             <p className="text-sm font-semibold text-foreground">{card.nome}</p>
                             <p className="text-[10px] text-muted-foreground mt-0.5">Origem: {card.origem}</p>
                           </div>
@@ -160,6 +221,65 @@ function CrmPage() {
           })}
         </div>
       </div>
+
+      {/* --- INLINE GLASSMORPHIC MODAL FOR LEAD EDIT --- */}
+      {isEditOpen && selectedLead && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <GlassCard className="w-full max-w-sm p-6 space-y-4 shadow-2xl relative text-foreground">
+            <button
+              onClick={() => setIsEditOpen(false)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              <X className="size-4" />
+            </button>
+            <div>
+              <h3 className="text-base font-bold text-foreground">Editar Lead</h3>
+              <p className="text-xs text-muted-foreground">Modifique o nome, origem ou valor projetado da oportunidade.</p>
+            </div>
+
+            <form onSubmit={handleEditLeadSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nome da Oportunidade</label>
+                <input
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Origem do Lead</label>
+                <input
+                  value={formOrigem}
+                  onChange={(e) => setFormOrigem(e.target.value)}
+                  placeholder="Ex: Google Ads, WhatsApp"
+                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Valor do Curso (Anual/Semestral)</label>
+                <input
+                  type="number"
+                  value={formValor}
+                  onChange={(e) => setFormValor(Number(e.target.value))}
+                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center"
+              >
+                Salvar Alterações
+              </button>
+            </form>
+          </GlassCard>
+        </div>
+      )}
     </ModuleGate>
   );
 }

@@ -15,6 +15,7 @@ import {
   BookOpen,
   Shield,
   UserCog,
+  LogOut,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -108,26 +109,44 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const { dark, toggle } = useTheme();
   const { isActive } = useModules();
-  const { activeRole, setActiveRole, adminProfile } = useUser();
+  const {
+    activeRole,
+    setActiveRole,
+    adminProfile,
+    activeCompany,
+    setActiveCompany,
+    companies,
+    users,
+  } = useUser();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   if (pathname === "/login") {
     return <div className="min-h-screen w-full bg-background">{children}</div>;
   }
 
-  // Permission gating by role
+  // Permission gating by role and custom flags
   const isRoleAllowed = (role: string, path: string) => {
     if (role === "admin") return true;
+
+    // Find the user profile simulating this role in the current unit to check their custom flags
+    const simulatedUser = users.find((u) => u.role === role && u.company === activeCompany);
+
+    if (simulatedUser) {
+      if (path === "/financeiro") return simulatedUser.permissions.financeiro;
+      if (path === "/crm") return simulatedUser.permissions.crm;
+      if (path === "/retencao") return simulatedUser.permissions.success;
+      if (path === "/alunos" || path === "/turmas") return simulatedUser.permissions.pedagogico;
+      if (path === "/admin/usuarios" || path === "/admin/modulos") return false; // Non-admins cannot access admin panels
+    }
+
+    // Fallbacks if no user matches in this unit
     if (role === "operador") {
-      // Operador: has access to turmas (view), financeiro (view, emit slips), crm (sales). Cannot access admin modulos/usuarios/perfil.
       return !["/admin/modulos", "/admin/usuarios", "/retencao"].includes(path);
     }
     if (role === "coordenador") {
-      // Coordenador: has access to all turmas, creating/deleting turmas, transferring students. Cannot access financeiro, crm, retencao, admin modulos.
       return !["/financeiro", "/crm", "/retencao", "/admin/modulos"].includes(path);
     }
     if (role === "professor") {
-      // Professor: has access only to their turmas. Cannot access financeiro, crm, retencao, admin.
       return ["/", "/portal/aluno", "/turmas", "/admin/perfil"].includes(path);
     }
     return true;
@@ -205,6 +224,26 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
           </div>
         )}
+
+        {/* Logout section at the bottom of sidebar */}
+        <div className="p-3 border-t border-hairline">
+          <button
+            onClick={() => {
+              toast.success("Desconectado com sucesso!");
+              window.localStorage.removeItem("lumen-erp:active-role");
+              window.localStorage.removeItem("lumen-erp:active-company");
+              window.location.href = "/login";
+            }}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors cursor-pointer",
+              collapsed && "justify-center"
+            )}
+            title="Sair do sistema"
+          >
+            <LogOut className="size-4 shrink-0" />
+            {!collapsed && <span>Sair</span>}
+          </button>
+        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -232,9 +271,22 @@ export function AppShell({ children }: { children: ReactNode }) {
             </select>
           </div>
 
-          <span className="hidden rounded-lg border border-hairline px-3 py-1.5 text-xs text-muted-foreground lg:inline">
-            Unidade · Pinheiros
-          </span>
+          {/* Simulated unit selector in header */}
+          <div className="flex items-center gap-2">
+            <span className="hidden text-xs text-muted-foreground sm:inline">Unidade:</span>
+            <select
+              value={activeCompany}
+              onChange={(e) => setActiveCompany(e.target.value)}
+              className="rounded-lg border border-hairline bg-surface/60 px-2 py-1 text-xs font-semibold text-foreground outline-none cursor-pointer focus:border-primary hover:bg-surface transition-all"
+            >
+              {companies.map((c) => (
+                <option key={c} value={c}>
+                  {c.replace("Unidade ", "")}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <button
             aria-label="Alternar tema"
             onClick={toggle}
