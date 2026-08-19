@@ -192,6 +192,99 @@ function PerfilPage() {
               </button>
             </form>
           </GlassCard>
+
+          {/* SECURITY / CHANGE PASSWORD CARD */}
+          <GlassCard className="p-6 space-y-6 mt-6">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Lock className="size-4 text-primary" /> Segurança & Senha
+              </h3>
+              <p className="text-xs text-muted-foreground">Altere sua senha de acesso à plataforma de gestão.</p>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const currentPassword = (e.currentTarget.elements.namedItem("currentPassword") as HTMLInputElement).value;
+                const newPassword = (e.currentTarget.elements.namedItem("newPassword") as HTMLInputElement).value;
+                const confirmPassword = (e.currentTarget.elements.namedItem("confirmPassword") as HTMLInputElement).value;
+
+                if (!currentPassword || !newPassword || !confirmPassword) {
+                  toast.error("Por favor, preencha todos os campos de senha.");
+                  return;
+                }
+
+                if (newPassword.length < 6) {
+                  toast.error("A nova senha deve ter pelo menos 6 caracteres.");
+                  return;
+                }
+
+                if (newPassword !== confirmPassword) {
+                  toast.error("A confirmação de senha não coincide com a nova senha.");
+                  return;
+                }
+
+                toast.success("Senha atualizada com sucesso!", {
+                  description: "Utilize sua nova senha no seu próximo login.",
+                });
+
+                // Clear input values
+                (e.currentTarget.elements.namedItem("currentPassword") as HTMLInputElement).value = "";
+                (e.currentTarget.elements.namedItem("newPassword") as HTMLInputElement).value = "";
+                (e.currentTarget.elements.namedItem("confirmPassword") as HTMLInputElement).value = "";
+              }}
+              className="space-y-4"
+            >
+              <div className="space-y-1.5">
+                <label htmlFor="currentPassword" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Senha Atual
+                </label>
+                <input
+                  id="currentPassword"
+                  name="currentPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <label htmlFor="newPassword" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Nova Senha
+                  </label>
+                  <input
+                    id="newPassword"
+                    name="newPassword"
+                    type="password"
+                    placeholder="Mínimo 6 caracteres"
+                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="confirmPassword" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Confirmar Nova Senha
+                  </label>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    placeholder="Confirme sua senha"
+                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center flex items-center justify-center gap-2"
+              >
+                <Lock className="size-4" /> Alterar Senha de Gestor
+              </button>
+            </form>
+          </GlassCard>
+
         </div>
       </div>
     </div>
