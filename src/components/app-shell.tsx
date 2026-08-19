@@ -50,6 +50,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Operação",
     items: [
+      { to: "/leads", label: "Base de Leads", icon: Users, module: "crm" },
       { to: "/financeiro", label: "Financeiro", icon: Wallet, module: "financeiro" },
       { to: "/crm", label: "CRM", icon: Kanban, module: "crm" },
       { to: "/retencao", label: "Retenção", icon: HeartPulse, module: "success" },
@@ -121,7 +122,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
 
-  if (pathname === "/login") {
+  const isCustomPortal =
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/super-admin") ||
+    pathname.startsWith("/portal/aluno");
+
+  if (isCustomPortal) {
     return <div className="min-h-screen w-full bg-background">{children}</div>;
   }
 
@@ -231,9 +237,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button
             onClick={() => {
               toast.success("Desconectado com sucesso!");
-              window.localStorage.removeItem("fluency-ai:active-role");
-              window.localStorage.removeItem("fluency-ai:active-company");
-              navigate({ to: "/login" });
+              try {
+                window.localStorage.removeItem("fluency-ai:active-role");
+                window.localStorage.removeItem("fluency-ai:active-company");
+              } catch (e) {
+                console.error(e);
+              }
+              window.location.href = "/login";
             }}
             className={cn(
               "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors cursor-pointer",
