@@ -47,6 +47,7 @@ function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModule, setSelectedModule] = useState<ModuleId>("core");
   const [isDark, setIsDark] = useState(true);
+  const [loginProfile, setLoginProfile] = useState<"aluno" | "gestor" | "super">("gestor");
 
   useEffect(() => {
     const isCurrentlyDark = document.documentElement.classList.contains("dark");
@@ -78,15 +79,31 @@ function LoginPage() {
     setTimeout(() => {
       setIsLoading(false);
       toast.success("Login realizado com sucesso!", {
-        description: "Bem-vindo de volta ao Fluency AI.",
+        description: `Bem-vindo de volta ao Fluency AI como ${
+          loginProfile === "aluno" ? "Aluno" : loginProfile === "super" ? "Administrador da Plataforma" : "Gestor da Escola"
+        }.`,
       });
-      navigate({ to: "/" });
+      if (loginProfile === "aluno") {
+        navigate({ to: "/portal/aluno" });
+      } else if (loginProfile === "super") {
+        navigate({ to: "/super-admin" });
+      } else {
+        navigate({ to: "/" });
+      }
     }, 1000);
   };
 
-  const fillDemoCredentials = () => {
-    setValue("email", "gestor@fluency.ai");
-    setValue("password", "fluency_admin_secret");
+  const autofillDemo = () => {
+    if (loginProfile === "aluno") {
+      setValue("email", "aluno@fluency.ai");
+      setValue("password", "aluno_secret");
+    } else if (loginProfile === "super") {
+      setValue("email", "super@fluency.ai");
+      setValue("password", "super_secret");
+    } else {
+      setValue("email", "gestor@fluency.ai");
+      setValue("password", "fluency_admin_secret");
+    }
     toast.info("Credenciais de teste preenchidas.");
   };
 
@@ -338,13 +355,38 @@ function LoginPage() {
 
         {/* Center card form */}
         <div className="mx-auto w-full max-w-[420px] py-12">
-          <div className="mb-8 space-y-2">
+          <div className="mb-6 space-y-2">
             <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
               Acesse sua conta
             </h2>
             <p className="text-sm text-muted-foreground">
-              Insira seus dados abaixo para acessar a plataforma Fluency AI.
+              Escolha seu portal de acesso e faça login no Fluency AI.
             </p>
+          </div>
+
+          {/* Segment Selector for Portals */}
+          <div className="mb-6 grid grid-cols-3 gap-1 rounded-xl border border-hairline bg-surface/50 p-1">
+            {(["aluno", "gestor", "super"] as const).map((p) => {
+              const label = {
+                aluno: "Aluno",
+                gestor: "Gestor",
+                super: "Master",
+              };
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setLoginProfile(p)}
+                  className={`rounded-lg py-2 text-xs font-semibold transition-all cursor-pointer ${
+                    loginProfile === p
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
+                  }`}
+                >
+                  {label[p]}
+                </button>
+              );
+            })}
           </div>
 
           {/* Demonstration Credentials Box */}
