@@ -398,12 +398,11 @@ function LoginPage() {
             </div>
 
             {/* Segment Selector for Portals */}
-            <div className="grid grid-cols-3 gap-1 rounded-xl border border-white/5 bg-white/5 p-1 shadow-inner">
-              {(["aluno", "gestor", "super"] as const).map((p) => {
+            <div className="grid grid-cols-2 gap-1 rounded-xl border border-white/5 bg-white/5 p-1 shadow-inner">
+              {(["aluno", "gestor"] as const).map((p) => {
                 const label = {
                   aluno: "Aluno",
                   gestor: "Gestor",
-                  super: "Master",
                 };
                 return (
                   <button

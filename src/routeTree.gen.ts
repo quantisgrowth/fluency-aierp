@@ -15,6 +15,7 @@ import { Route as CrmRouteImport } from './routes/crm'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as LeadsRouteImport } from './routes/leads'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ManagerRouteImport } from './routes/manager'
 import { Route as RetencaoRouteImport } from './routes/retencao'
 import { Route as SuperAdminRouteImport } from './routes/super-admin'
 import { Route as TurmasRouteImport } from './routes/turmas'
@@ -51,6 +52,11 @@ const LeadsRoute = LeadsRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManagerRoute = ManagerRouteImport.update({
+  id: '/manager',
+  path: '/manager',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RetencaoRoute = RetencaoRouteImport.update({
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/financeiro': typeof FinanceiroRoute
   '/leads': typeof LeadsRoute
   '/login': typeof LoginRoute
+  '/manager': typeof ManagerRoute
   '/retencao': typeof RetencaoRoute
   '/super-admin': typeof SuperAdminRoute
   '/turmas': typeof TurmasRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/financeiro': typeof FinanceiroRoute
   '/leads': typeof LeadsRoute
   '/login': typeof LoginRoute
+  '/manager': typeof ManagerRoute
   '/retencao': typeof RetencaoRoute
   '/super-admin': typeof SuperAdminRoute
   '/turmas': typeof TurmasRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/financeiro': typeof FinanceiroRoute
   '/leads': typeof LeadsRoute
   '/login': typeof LoginRoute
+  '/manager': typeof ManagerRoute
   '/retencao': typeof RetencaoRoute
   '/super-admin': typeof SuperAdminRoute
   '/turmas': typeof TurmasRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/financeiro'
     | '/leads'
     | '/login'
+    | '/manager'
     | '/retencao'
     | '/super-admin'
     | '/turmas'
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/financeiro'
     | '/leads'
     | '/login'
+    | '/manager'
     | '/retencao'
     | '/super-admin'
     | '/turmas'
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/financeiro'
     | '/leads'
     | '/login'
+    | '/manager'
     | '/retencao'
     | '/super-admin'
     | '/turmas'
@@ -190,6 +202,7 @@ export interface RootRouteChildren {
   FinanceiroRoute: typeof FinanceiroRoute
   LeadsRoute: typeof LeadsRoute
   LoginRoute: typeof LoginRoute
+  ManagerRoute: typeof ManagerRoute
   RetencaoRoute: typeof RetencaoRoute
   SuperAdminRoute: typeof SuperAdminRoute
   TurmasRoute: typeof TurmasRoute
@@ -241,6 +254,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manager': {
+      id: '/manager'
+      path: '/manager'
+      fullPath: '/manager'
+      preLoaderRoute: typeof ManagerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/retencao': {
@@ -302,6 +322,7 @@ const rootRouteChildren: RootRouteChildren = {
   FinanceiroRoute: FinanceiroRoute,
   LeadsRoute: LeadsRoute,
   LoginRoute: LoginRoute,
+  ManagerRoute: ManagerRoute,
   RetencaoRoute: RetencaoRoute,
   SuperAdminRoute: SuperAdminRoute,
   TurmasRoute: TurmasRoute,
