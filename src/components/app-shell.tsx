@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   ChevronLeft,
   GraduationCap,
@@ -119,6 +119,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     users,
   } = useUser();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
 
   if (pathname === "/login") {
     return <div className="min-h-screen w-full bg-background">{children}</div>;
@@ -230,9 +231,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button
             onClick={() => {
               toast.success("Desconectado com sucesso!");
-              window.localStorage.removeItem("lumen-erp:active-role");
-              window.localStorage.removeItem("lumen-erp:active-company");
-              window.location.href = "/login";
+              window.localStorage.removeItem("fluency-ai:active-role");
+              window.localStorage.removeItem("fluency-ai:active-company");
+              navigate({ to: "/login" });
             }}
             className={cn(
               "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors cursor-pointer",

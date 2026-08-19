@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SlidersHorizontal, Palette, Check, Sparkles, X, CreditCard, Copy, Lock } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
@@ -26,6 +26,7 @@ function AdminModulosPage() {
   const { tenant, setTenantName, setPrimaryColor, applyPreset } = useTenant();
   const [activeTab, setActiveTab] = useState<"modules" | "branding">("modules");
   const [customColor, setCustomColor] = useState(tenant.primaryColor);
+  const [schoolName, setSchoolName] = useState(tenant.name);
 
   // Self-Service Checkout states
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -37,10 +38,14 @@ function AdminModulosPage() {
   const [cardNumber, setCardNumber] = useState("");
   const [cardName, setCardName] = useState("");
 
+  // Sync local states when tenant changes
+  useEffect(() => {
+    setSchoolName(tenant.name);
+    setCustomColor(tenant.primaryColor);
+  }, [tenant]);
+
   const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setCustomColor(val);
-    setPrimaryColor(val);
+    setCustomColor(e.target.value);
   };
 
   const handlePresetSelect = (preset: TenantPreset) => {
@@ -290,8 +295,8 @@ function AdminModulosPage() {
                   </label>
                   <input
                     id="schoolName"
-                    value={tenant.name}
-                    onChange={(e) => setTenantName(e.target.value)}
+                    value={schoolName}
+                    onChange={(e) => setSchoolName(e.target.value)}
                     className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary"
                   />
                 </div>
@@ -310,14 +315,26 @@ function AdminModulosPage() {
                     />
                     <input
                       value={customColor}
-                      onChange={(e) => {
-                        setCustomColor(e.target.value);
-                        setPrimaryColor(e.target.value);
-                      }}
+                      onChange={(e) => setCustomColor(e.target.value)}
                       className="h-10 flex-1 rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary"
                     />
                   </div>
                 </div>
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  onClick={() => {
+                    setTenantName(schoolName);
+                    setPrimaryColor(customColor);
+                    toast.success("Configuração de marca salva com sucesso!", {
+                      description: "A identidade visual do Private Label foi atualizada no sistema.",
+                    });
+                  }}
+                  className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/95 transition-all cursor-pointer"
+                >
+                  Salvar Identidade Visual
+                </button>
               </div>
             </GlassCard>
           </div>
@@ -336,7 +353,7 @@ function AdminModulosPage() {
                     <Sparkles className="size-3.5 text-primary" />
                   </span>
                   <div>
-                    <p className="text-xs font-bold text-foreground">{tenant.name}</p>
+                    <p className="text-xs font-bold text-foreground">{schoolName || tenant.name}</p>
                     <p className="text-[9px] uppercase tracking-wider text-muted-foreground">{tenant.tagline}</p>
                   </div>
                 </div>
