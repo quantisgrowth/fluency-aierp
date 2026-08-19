@@ -81,13 +81,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lumen ERP — Gestão para escolas de idiomas" },
+      { title: "Fluency AI — Gestão para escolas de idiomas" },
       {
         name: "description",
         content:
           "ERP modular para escolas de idiomas: turmas por proficiência, financeiro recorrente, CRM e retenção.",
       },
-      { property: "og:title", content: "Lumen ERP — Gestão para escolas de idiomas" },
+      { property: "og:title", content: "Fluency AI — Gestão para escolas de idiomas" },
       {
         property: "og:description",
         content:

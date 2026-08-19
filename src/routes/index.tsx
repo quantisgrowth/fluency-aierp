@@ -33,13 +33,13 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard do Gestor — Lumen ERP" },
+      { title: "Dashboard do Gestor — Fluency AI" },
       {
         name: "description",
         content:
           "Faturamento, alunos ativos, conversão do funil e inadimplência da sua escola de idiomas em um só painel.",
       },
-      { property: "og:title", content: "Dashboard do Gestor — Lumen ERP" },
+      { property: "og:title", content: "Dashboard do Gestor — Fluency AI" },
       {
         property: "og:description",
         content: "Indicadores de receita, matrículas e retenção para escolas de idiomas.",

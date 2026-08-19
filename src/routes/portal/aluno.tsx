@@ -7,8 +7,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/portal/aluno")({
   head: () => ({
     meta: [
-      { title: "Portal do Aluno — Lumen ERP" },
-      { name: "description", content: "Portal gamificado do aluno no Lumen ERP." },
+      { title: "Portal do Aluno — Fluency AI" },
+      { name: "description", content: "Portal gamificado do aluno no Fluency AI." },
     ],
   }),
   component: PortalAlunoPage,
@@ -68,7 +68,7 @@ function PortalAlunoPage() {
 
   const handleReferral = () => {
     toast.success("Link de Indicação Copiado!", {
-      description: "Envie no WhatsApp dos seus amigos para ganhar 500 Lumen Coins quando eles agendarem!",
+      description: "Envie no WhatsApp dos seus amigos para ganhar 500 Fluency Coins quando eles agendarem!",
     });
   };
 
@@ -218,7 +218,7 @@ function PortalAlunoPage() {
                 <Share2 className="size-3.5 text-primary" /> Convide Amigos
               </p>
               <p className="text-[10px] text-neutral-400 leading-relaxed">
-                Indique sua escola e ganhe 500 Lumen Coins para gastar na loja!
+                Indique sua escola e ganhe 500 Fluency Coins para gastar na loja!
               </p>
             </div>
             <button

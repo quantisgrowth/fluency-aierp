@@ -12,7 +12,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/admin/usuarios")({
   head: () => ({
     meta: [
-      { title: "Usuários & Permissões — Lumen ERP" },
+      { title: "Usuários & Permissões — Fluency AI" },
       { name: "description", content: "Gerencie permissões e usuários da escola." },
     ],
   }),

@@ -10,7 +10,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/crm")({
   head: () => ({
     meta: [
-      { title: "CRM Comercial — Lumen ERP" },
+      { title: "CRM Comercial — Fluency AI" },
       { name: "description", content: "Funil Kanban de captação de leads." },
     ],
   }),

@@ -20,7 +20,7 @@ import { useUser } from "@/modules/user-context";
 export const Route = createFileRoute("/financeiro")({
   head: () => ({
     meta: [
-      { title: "Motor Financeiro — Lumen ERP" },
+      { title: "Motor Financeiro — Fluency AI" },
       { name: "description", content: "Previsão de caixa, boletos e inadimplência." },
     ],
   }),

@@ -12,7 +12,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/admin/modulos")({
   head: () => ({
     meta: [
-      { title: "Módulos & Planos — Lumen ERP" },
+      { title: "Módulos & Planos — Fluency AI" },
       { name: "description", content: "Administração de módulos de planos e White-Label." },
     ],
   }),
@@ -33,7 +33,7 @@ function AdminModulosPage() {
 
   const handlePresetSelect = (preset: TenantPreset) => {
     applyPreset(preset);
-    toast.success(`Marca alternada para ${preset === "lumen" ? "Lumen ERP" : preset === "apex" ? "Apex English" : "British Academy"}!`, {
+    toast.success(`Marca alternada para ${preset === "lumen" ? "Fluency AI" : preset === "apex" ? "Apex English" : "British Academy"}!`, {
       description: "Cores e textos foram aplicados dinamicamente no sistema.",
     });
   };
@@ -197,7 +197,7 @@ function AdminModulosPage() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
-                {/* Lumen preset */}
+                {/* Fluency preset */}
                 <button
                   onClick={() => handlePresetSelect("lumen")}
                   className={`rounded-xl border p-4 text-left transition-all cursor-pointer relative overflow-hidden ${
@@ -205,7 +205,7 @@ function AdminModulosPage() {
                   }`}
                 >
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-semibold text-foreground">Lumen ERP</span>
+                    <span className="text-xs font-semibold text-foreground">Fluency AI</span>
                     <span className="size-3.5 rounded-full bg-[oklch(0.55_0.09_245)]" />
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-2">Original roxo/SpaceX minimalista.</p>

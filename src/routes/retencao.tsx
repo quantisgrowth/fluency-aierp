@@ -9,7 +9,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/retencao")({
   head: () => ({
     meta: [
-      { title: "Success & Retenção — Lumen ERP" },
+      { title: "Success & Retenção — Fluency AI" },
       { name: "description", content: "Alertas de churn e diários de classe." },
     ],
   }),

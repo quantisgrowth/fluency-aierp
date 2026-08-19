@@ -49,10 +49,10 @@ type UserContextValue = {
 
 const UserContext = createContext<UserContextValue | null>(null);
 
-const STORAGE_USERS_KEY = "lumen-erp:users";
-const STORAGE_PROFILE_KEY = "lumen-erp:profile";
-const STORAGE_ROLE_KEY = "lumen-erp:active-role";
-const STORAGE_COMPANY_KEY = "lumen-erp:active-company";
+const STORAGE_USERS_KEY = "fluency-ai:users";
+const STORAGE_PROFILE_KEY = "fluency-ai:profile";
+const STORAGE_ROLE_KEY = "fluency-ai:active-role";
+const STORAGE_COMPANY_KEY = "fluency-ai:active-company";
 
 export const COMPANIES = ["Unidade Pinheiros", "Unidade Jardins", "Unidade Paulista"];
 
@@ -60,7 +60,7 @@ const DEFAULT_USERS: SchoolUser[] = [
   {
     id: "1",
     name: "Julia Kern",
-    email: "julia.kern@lumen.edu",
+    email: "julia.kern@fluency.ai",
     role: "professor",
     permissions: { crm: false, financeiro: false, pedagogico: true, success: false },
     company: "Unidade Pinheiros",
@@ -68,7 +68,7 @@ const DEFAULT_USERS: SchoolUser[] = [
   {
     id: "2",
     name: "Marcos Vidal",
-    email: "marcos.vidal@lumen.edu",
+    email: "marcos.vidal@fluency.ai",
     role: "professor",
     permissions: { crm: false, financeiro: false, pedagogico: true, success: false },
     company: "Unidade Pinheiros",
@@ -76,7 +76,7 @@ const DEFAULT_USERS: SchoolUser[] = [
   {
     id: "3",
     name: "Ana Beatriz",
-    email: "ana.beatriz@lumen.edu",
+    email: "ana.beatriz@fluency.ai",
     role: "professor",
     permissions: { crm: false, financeiro: false, pedagogico: true, success: false },
     company: "Unidade Jardins",
@@ -84,7 +84,7 @@ const DEFAULT_USERS: SchoolUser[] = [
   {
     id: "4",
     name: "Peter Hall",
-    email: "peter.hall@lumen.edu",
+    email: "peter.hall@fluency.ai",
     role: "professor",
     permissions: { crm: false, financeiro: false, pedagogico: true, success: false },
     company: "Unidade Paulista",
@@ -92,7 +92,7 @@ const DEFAULT_USERS: SchoolUser[] = [
   {
     id: "5",
     name: "Rodrigo Silva",
-    email: "rodrigo.silva@lumen.edu",
+    email: "rodrigo.silva@fluency.ai",
     role: "operador",
     permissions: { crm: true, financeiro: true, pedagogico: true, success: false },
     company: "Unidade Pinheiros",
@@ -100,7 +100,7 @@ const DEFAULT_USERS: SchoolUser[] = [
   {
     id: "6",
     name: "Clara Albuquerque",
-    email: "clara.albuquerque@lumen.edu",
+    email: "clara.albuquerque@fluency.ai",
     role: "coordenador",
     permissions: { crm: false, financeiro: false, pedagogico: true, success: true },
     company: "Unidade Pinheiros",
@@ -109,7 +109,7 @@ const DEFAULT_USERS: SchoolUser[] = [
 
 const DEFAULT_PROFILE: AdminProfile = {
   name: "Felipe Medeiros",
-  email: "gestor@lumen.edu",
+  email: "gestor@fluency.ai",
   phone: "(11) 98765-4321",
   avatar: "FM",
 };

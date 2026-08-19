@@ -26,7 +26,7 @@ const TenantContext = createContext<TenantContextValue | null>(null);
 
 const PRESETS: Record<TenantPreset, Tenant> = {
   lumen: {
-    name: "Lumen ERP",
+    name: "Fluency AI",
     tagline: "Language Schools",
     preset: "lumen",
     primaryColor: "oklch(0.55 0.09 245)",
@@ -45,7 +45,7 @@ const PRESETS: Record<TenantPreset, Tenant> = {
   },
 };
 
-const STORAGE_KEY = "lumen-erp:tenant";
+const STORAGE_KEY = "fluency-ai:tenant";
 
 export function TenantProvider({ children }: { children: ReactNode }) {
   const [tenant, setTenant] = useState<Tenant>(PRESETS.lumen);

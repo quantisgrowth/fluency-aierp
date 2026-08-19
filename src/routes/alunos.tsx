@@ -10,7 +10,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/alunos")({
   head: () => ({
     meta: [
-      { title: "Alunos — Lumen ERP" },
+      { title: "Alunos — Fluency AI" },
       { name: "description", content: "Cadastro, histórico e engajamento dos alunos da escola." },
     ],
   }),
@@ -690,7 +690,7 @@ function AlunosPage() {
                         <Coins className="size-6 fill-yellow-400" />
                       </span>
                       <div>
-                        <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Lumen Coins</p>
+                        <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Fluency Coins</p>
                         <p className="text-2xl font-bold text-foreground">{selectedDetails.coins} LC</p>
                       </div>
                     </GlassCard>

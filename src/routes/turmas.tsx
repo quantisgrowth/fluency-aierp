@@ -10,7 +10,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/turmas")({
   head: () => ({
     meta: [
-      { title: "Turmas — Lumen ERP" },
+      { title: "Turmas — Fluency AI" },
       { name: "description", content: "Turmas por proficiência e horários." },
     ],
   }),

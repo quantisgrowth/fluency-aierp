@@ -9,7 +9,7 @@ import {
 } from "react";
 import { MODULES, type ModuleId } from "./registry";
 
-const STORAGE_KEY = "lumen-erp:modules";
+const STORAGE_KEY = "fluency-ai:modules";
 const DEFAULT_ACTIVE: ModuleId[] = ["core", "financeiro", "crm", "success"];
 
 type ModuleContextValue = {

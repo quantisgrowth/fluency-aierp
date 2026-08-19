@@ -32,8 +32,8 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Login — Lumen ERP" },
-      { name: "description", content: "Acesse o painel do Lumen ERP." },
+      { title: "Login — Fluency AI" },
+      { name: "description", content: "Acesse o painel do Fluency AI." },
     ],
   }),
   component: LoginPage,
@@ -57,7 +57,7 @@ function LoginPage() {
     const nextDark = !isDark;
     setIsDark(nextDark);
     document.documentElement.classList.toggle("dark", nextDark);
-    window.localStorage.setItem("lumen-erp:theme", nextDark ? "dark" : "light");
+    window.localStorage.setItem("fluency-ai:theme", nextDark ? "dark" : "light");
   };
 
   const {
@@ -78,15 +78,15 @@ function LoginPage() {
     setTimeout(() => {
       setIsLoading(false);
       toast.success("Login realizado com sucesso!", {
-        description: "Bem-vindo de volta ao Lumen ERP.",
+        description: "Bem-vindo de volta ao Fluency AI.",
       });
       navigate({ to: "/" });
-    }, 1200);
+    }, 1000);
   };
 
-  const autofillDemo = () => {
-    setValue("email", "gestor@lumen.edu");
-    setValue("password", "lumen_admin_secret");
+  const fillDemoCredentials = () => {
+    setValue("email", "gestor@fluency.ai");
+    setValue("password", "fluency_admin_secret");
     toast.info("Credenciais de teste preenchidas.");
   };
 
@@ -141,7 +141,7 @@ function LoginPage() {
             <GraduationCap className="size-5 text-primary" />
           </span>
           <div>
-            <h1 className="text-base font-bold tracking-tight text-white">Lumen ERP</h1>
+            <h1 className="text-base font-bold tracking-tight text-white">Fluency AI</h1>
             <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400">Language Schools</p>
           </div>
         </div>
@@ -310,7 +310,7 @@ function LoginPage() {
         {/* Footer Statistics Badge */}
         <div className="relative z-10 flex items-center justify-between border-t border-white/5 pt-6 text-xs text-neutral-400">
           <span>Mais de 10.000 atas de proficiência geradas</span>
-          <span>© {new Date().getFullYear()} Lumen ERP</span>
+          <span>© {new Date().getFullYear()} Fluency AI</span>
         </div>
       </div>
 
@@ -323,7 +323,7 @@ function LoginPage() {
             <span className="grid size-8 place-items-center rounded-lg border border-hairline bg-surface-elevated">
               <GraduationCap className="size-4 text-primary" />
             </span>
-            <span className="text-xs font-semibold text-foreground">Lumen ERP</span>
+            <span className="text-xs font-semibold text-foreground">Fluency AI</span>
           </div>
           <div className="ml-auto flex gap-3">
             <button
@@ -343,7 +343,7 @@ function LoginPage() {
               Acesse sua conta
             </h2>
             <p className="text-sm text-muted-foreground">
-              Insira seus dados abaixo para acessar a plataforma Lumen.
+              Insira seus dados abaixo para acessar a plataforma Fluency AI.
             </p>
           </div>
 
