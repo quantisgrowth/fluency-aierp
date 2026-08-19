@@ -232,7 +232,7 @@ function AlunosPage() {
     // If name changed, copy details mapping to the new name key
     if (formNome !== selectedStudent.nome && studentDetails[selectedStudent.nome]) {
       const detailsCopy = { ...studentDetails };
-      detailsCopy[formNome] = detailsCopy[selectedStudent.nome];
+      detailsCopy[formNome] = detailsCopy[selectedStudent.nome]!;
       delete detailsCopy[selectedStudent.nome];
       setStudentDetails(detailsCopy);
     }
