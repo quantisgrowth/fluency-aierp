@@ -106,7 +106,7 @@ function PortalAlunoPage() {
           { id: "1", title: "Praticar pronúncia da Unit 7", xp: 100, coins: 20, frequency: "Diária", completed: false },
           { id: "2", title: "Enviar lição de casa de ontem", xp: 200, coins: 40, frequency: "Diária", completed: false },
           { id: "3", title: "Marcar presença na aula de hoje", xp: 150, coins: 30, frequency: "Diária", completed: false },
-        ];
+        ] as Task[];
         setTasks(defaults);
         window.localStorage.setItem(CHALLENGES_KEY, JSON.stringify(defaults));
       }
@@ -163,13 +163,13 @@ function PortalAlunoPage() {
   // Flashcards answer trigger
   const handleAnswerSubmit = (option: string) => {
     setSelectedAnswer(option);
-    const correct = vocabWords[flashcardStep].correct === option;
+    const correct = vocabWords[flashcardStep]!.correct === option;
     if (correct) {
       setCorrectCount((prev) => prev + 1);
       toast.success("Resposta correta! +10 XP");
       setXp((prev) => prev + 10);
     } else {
-      toast.error("Resposta incorreta! A resposta correta era: " + vocabWords[flashcardStep].correct);
+      toast.error("Resposta incorreta! A resposta correta era: " + vocabWords[flashcardStep]!.correct);
     }
 
     setTimeout(() => {
@@ -431,14 +431,14 @@ function PortalAlunoPage() {
 
                   {/* English Word box */}
                   <div className="h-32 rounded-xl bg-neutral-900 border border-white/5 grid place-items-center">
-                    <p className="text-2xl font-bold tracking-tight text-white">{vocabWords[flashcardStep].word}</p>
+                    <p className="text-2xl font-bold tracking-tight text-white">{vocabWords[flashcardStep]!.word}</p>
                   </div>
 
                   {/* Answers option buttons */}
                   <div className="grid gap-2.5">
-                    {vocabWords[flashcardStep].options.map((opt) => {
+                    {vocabWords[flashcardStep]!.options.map((opt) => {
                       const isSelected = selectedAnswer === opt;
-                      const isCorrect = vocabWords[flashcardStep].correct === opt;
+                      const isCorrect = vocabWords[flashcardStep]!.correct === opt;
                       return (
                         <button
                           key={opt}
