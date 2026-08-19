@@ -75,12 +75,17 @@ function CrmPage() {
   const [newLeadUf, setNewLeadUf] = useState("");
   const [newLeadAnotacoes, setNewLeadAnotacoes] = useState("");
 
-  // Load leads database from localStorage
+  // Load leads database and CRM stages from localStorage
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(LEADS_STORAGE_KEY);
       if (stored) {
         setLeadsDb(JSON.parse(stored));
+      }
+
+      const storedStages = window.localStorage.getItem("fluency-ai:crm:stages");
+      if (storedStages) {
+        setStages(JSON.parse(storedStages));
       }
     } catch {
       /* ignore */
@@ -91,6 +96,15 @@ function CrmPage() {
     setLeadsDb(nextLeads);
     try {
       window.localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(nextLeads));
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const saveStages = (nextStages: Stage[]) => {
+    setStages(nextStages);
+    try {
+      window.localStorage.setItem("fluency-ai:crm:stages", JSON.stringify(nextStages));
     } catch {
       /* ignore */
     }
@@ -168,7 +182,7 @@ function CrmPage() {
       return s;
     });
 
-    setStages(nextStages);
+    saveStages(nextStages);
     setIsNewDealOpen(false);
     toast.success(`Negócio criado: ${dealName}!`);
   };
@@ -271,7 +285,7 @@ function CrmPage() {
       return s;
     });
 
-    setStages(nextStages);
+    saveStages(nextStages);
     toast.success(`${cardName} avançou para ${nextStage.titulo}!`);
   };
 
@@ -302,7 +316,7 @@ function CrmPage() {
       return s;
     });
 
-    setStages(nextStages);
+    saveStages(nextStages);
     toast.success(`Lead "${formName}" atualizado com sucesso!`);
     setIsEditOpen(false);
     setSelectedLead(null);

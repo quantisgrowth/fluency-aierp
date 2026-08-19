@@ -35,6 +35,7 @@ function PerfilPage() {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -45,6 +46,16 @@ function PerfilPage() {
       avatar: adminProfile.avatar,
     },
   });
+
+  // Reset form values once adminProfile is loaded from localStorage
+  useEffect(() => {
+    reset({
+      name: adminProfile.name,
+      email: adminProfile.email,
+      phone: adminProfile.phone,
+      avatar: adminProfile.avatar,
+    });
+  }, [adminProfile, reset]);
 
   const onSubmit = (data: ProfileFormValues) => {
     setIsSaving(true);

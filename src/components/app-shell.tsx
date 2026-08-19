@@ -218,20 +218,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        {!collapsed && (
-          <div className="m-3 rounded-xl border border-hairline bg-surface-elevated/60 p-3">
-            <p className="text-xs font-medium text-foreground">Plano modular</p>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              Ative ou desative módulos a qualquer momento no simulador de planos.
-            </p>
-            <Link
-              to="/admin/modulos"
-              className="mt-3 inline-flex text-[11px] font-medium text-primary hover:underline"
-            >
-              Gerenciar módulos →
-            </Link>
-          </div>
-        )}
+
 
         {/* Logout section at the bottom of sidebar */}
         <div className="p-3 border-t border-hairline">
