@@ -157,7 +157,7 @@ function LeadsPage() {
   const [site, setSite] = useState("");
   const [documento, setDocumento] = useState("");
   const [empresa, setEmpresa] = useState("");
-  const [origem, setOrigem] = useState(ORIGEM_IDEAS[0]);
+  const [origem, setOrigem] = useState(ORIGEM_IDEAS[0]!);
   const [dataNascimento, setDataNascimento] = useState("");
   const [responsavel, setResponsavel] = useState("");
   const [fezTesteNivel, setFezTesteNivel] = useState(false);
@@ -201,7 +201,7 @@ function LeadsPage() {
     setSite("");
     setDocumento("");
     setEmpresa("");
-    setOrigem(ORIGEM_IDEAS[0]);
+    setOrigem(ORIGEM_IDEAS[0]!);
     setDataNascimento("");
     setResponsavel("");
     setFezTesteNivel(false);

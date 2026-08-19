@@ -45,7 +45,7 @@ function CrmPage() {
   // New Deal / Add Card Modal States
   const [isNewDealOpen, setIsNewDealOpen] = useState(false);
   const [dealName, setDealName] = useState("");
-  const [dealOrigem, setDealOrigem] = useState(ORIGEM_IDEAS[0]);
+  const [dealOrigem, setDealOrigem] = useState(ORIGEM_IDEAS[0]!);
   const [dealValor, setDealValor] = useState(3000);
   const [selectedLeadId, setSelectedLeadId] = useState("");
 
@@ -61,7 +61,7 @@ function CrmPage() {
   const [newLeadSite, setNewLeadSite] = useState("");
   const [newLeadDoc, setNewLeadDoc] = useState("");
   const [newLeadEmpresa, setNewLeadEmpresa] = useState("");
-  const [newLeadOrigem, setNewLeadOrigem] = useState(ORIGEM_IDEAS[0]);
+  const [newLeadOrigem, setNewLeadOrigem] = useState(ORIGEM_IDEAS[0]!);
   const [newLeadNasc, setNewLeadNasc] = useState("");
   const [newLeadResp, setNewLeadResp] = useState("");
   const [newLeadFezTeste, setNewLeadFezTeste] = useState(false);
@@ -112,7 +112,7 @@ function CrmPage() {
 
   const handleOpenNewDeal = () => {
     setDealName("");
-    setDealOrigem(ORIGEM_IDEAS[0]);
+    setDealOrigem(ORIGEM_IDEAS[0]!);
     setDealValor(3000);
     setSelectedLeadId("");
     setIsNewDealOpen(true);
@@ -122,7 +122,7 @@ function CrmPage() {
     setSelectedLeadId(leadId);
     if (!leadId) {
       setDealName("");
-      setDealOrigem(ORIGEM_IDEAS[0]);
+      setDealOrigem(ORIGEM_IDEAS[0]!);
       return;
     }
     const found = leadsDb.find(l => l.id === leadId);
@@ -196,7 +196,7 @@ function CrmPage() {
     setNewLeadSite("");
     setNewLeadDoc("");
     setNewLeadEmpresa("");
-    setNewLeadOrigem(ORIGEM_IDEAS[0]);
+    setNewLeadOrigem(ORIGEM_IDEAS[0]!);
     setNewLeadNasc("");
     setNewLeadResp("");
     setNewLeadFezTeste(false);
@@ -266,7 +266,7 @@ function CrmPage() {
       return;
     }
 
-    const nextStage = stages[currentStageIdx + 1];
+    const nextStage = stages[currentStageIdx + 1]!;
     
     const nextStages = stages.map((s) => {
       if (s.id === stageId) {
@@ -276,7 +276,7 @@ function CrmPage() {
         };
       }
       if (s.id === nextStage.id) {
-        const cardToMove = stages[currentStageIdx].cards.find((c) => c.nome === cardName);
+        const cardToMove = stages[currentStageIdx]!.cards.find((c) => c.nome === cardName);
         return {
           ...s,
           cards: cardToMove ? [...s.cards, cardToMove] : s.cards,
