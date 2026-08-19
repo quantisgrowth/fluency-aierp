@@ -233,7 +233,7 @@ function SuperAdminPage() {
   const handleToggleStatus = (schoolId: string) => {
     const nextSchools = schools.map((s) => {
       if (s.id === schoolId) {
-        const nextStatus = s.status === "Ativo" ? "Inativo" : "Ativo";
+        const nextStatus = (s.status === "Ativo" ? "Inativo" : "Ativo") as SchoolTenant["status"];
         toast.success(`Situação da escola ${s.name} alterada para ${nextStatus}!`);
         return { ...s, status: nextStatus };
       }
