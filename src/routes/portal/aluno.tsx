@@ -182,42 +182,58 @@ function PortalAlunoPage() {
     { position: 5, name: "Gabi Dias", xp: 1100, active: false },
   ]);
 
-  // Sync state on component load
+  // Sync state on component load and watch changes across tabs
   useEffect(() => {
-    try {
-      const rawC = window.localStorage.getItem(CHALLENGES_KEY);
-      if (rawC) {
-        setTasks(JSON.parse(rawC));
-      } else {
-        const defaults = [
-          { id: "1", title: "Praticar pronúncia da Unit 7", xp: 100, coins: 20, frequency: "Diária", completed: false },
-          { id: "2", title: "Enviar lição de casa de ontem", xp: 200, coins: 40, frequency: "Diária", completed: false },
-          { id: "3", title: "Marcar presença na aula de hoje", xp: 150, coins: 30, frequency: "Diária", completed: false },
-        ] as Task[];
-        setTasks(defaults);
-        window.localStorage.setItem(CHALLENGES_KEY, JSON.stringify(defaults));
-      }
+    const loadGamification = () => {
+      try {
+        const rawC = window.localStorage.getItem(CHALLENGES_KEY);
+        if (rawC) {
+          setTasks(JSON.parse(rawC));
+        } else {
+          const defaults = [
+            { id: "1", title: "Praticar pronúncia da Unit 7", xp: 100, coins: 20, frequency: "Diária", completed: false },
+            { id: "2", title: "Enviar lição de casa de ontem", xp: 200, coins: 40, frequency: "Diária", completed: false },
+            { id: "3", title: "Marcar presença na aula de hoje", xp: 150, coins: 30, frequency: "Diária", completed: false },
+          ] as Task[];
+          setTasks(defaults);
+          window.localStorage.setItem(CHALLENGES_KEY, JSON.stringify(defaults));
+        }
 
-      const rawR = window.localStorage.getItem(REWARDS_KEY);
-      if (rawR) {
-        setRewards(JSON.parse(rawR));
-      } else {
-        const defaults = [
-          { id: "1", name: "Lápis Fluency AI", cost: 100, stock: 50 },
-          { id: "2", name: "Garrafa Térmica Fluency", cost: 800, stock: 15 },
-          { id: "3", name: "1 Aula de Conversação VIP", cost: 500, stock: 99 },
-        ];
-        setRewards(defaults);
-        window.localStorage.setItem(REWARDS_KEY, JSON.stringify(defaults));
-      }
+        const rawR = window.localStorage.getItem(REWARDS_KEY);
+        if (rawR) {
+          setRewards(JSON.parse(rawR));
+        } else {
+          const defaults = [
+            { id: "1", name: "Lápis Fluency AI", cost: 100, stock: 50 },
+            { id: "2", name: "Garrafa Térmica Fluency", cost: 800, stock: 15 },
+            { id: "3", name: "1 Aula de Conversação VIP", cost: 500, stock: 99 },
+          ];
+          setRewards(defaults);
+          window.localStorage.setItem(REWARDS_KEY, JSON.stringify(defaults));
+        }
 
-      const rawRed = window.localStorage.getItem(REDEMPTIONS_KEY);
-      if (rawRed) {
-        setRedemptions(JSON.parse(rawRed));
+        const rawRed = window.localStorage.getItem(REDEMPTIONS_KEY);
+        if (rawRed) {
+          setRedemptions(JSON.parse(rawRed));
+        }
+      } catch {
+        /* ignore */
       }
-    } catch {
-      /* ignore */
-    }
+    };
+
+    loadGamification();
+
+    const handleStorage = (e: StorageEvent) => {
+      if (
+        e.key === CHALLENGES_KEY ||
+        e.key === REWARDS_KEY ||
+        e.key === REDEMPTIONS_KEY
+      ) {
+        loadGamification();
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const handleTaskComplete = (id: string) => {

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { Wallet, AlertTriangle, PlayCircle, Send, CheckCircle2, XCircle } from "lucide-react";
 import {
   Area,
@@ -27,8 +28,45 @@ export const Route = createFileRoute("/financeiro")({
   component: FinanceiroPage,
 });
 
+const DELINQUENCY_KEY = "fluency-ai:finance:delinquency";
+
 function FinanceiroPage() {
   const { activeRole } = useUser();
+  const [delinquencyList, setDelinquencyList] = useState<typeof delinquency>(delinquency);
+
+  useEffect(() => {
+    const loadDelinquency = () => {
+      try {
+        const stored = window.localStorage.getItem(DELINQUENCY_KEY);
+        if (stored) {
+          setDelinquencyList(JSON.parse(stored));
+        } else {
+          window.localStorage.setItem(DELINQUENCY_KEY, JSON.stringify(delinquency));
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+
+    loadDelinquency();
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === DELINQUENCY_KEY) {
+        loadDelinquency();
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  const saveDelinquency = (next: typeof delinquency) => {
+    setDelinquencyList(next);
+    try {
+      window.localStorage.setItem(DELINQUENCY_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+  };
 
   const triggerDunningSim = (aluno: string) => {
     toast.success(`Simulação ativada para ${aluno}`, {
@@ -43,6 +81,8 @@ function FinanceiroPage() {
       });
       return;
     }
+    const next = delinquencyList.filter((d) => d.aluno !== aluno);
+    saveDelinquency(next);
     toast.success(`Cobrança de ${aluno} cancelada com sucesso!`);
   };
 
@@ -158,7 +198,7 @@ function FinanceiroPage() {
             </div>
 
             <ul className="mt-6 divide-y divide-hairline">
-              {delinquency.map((d) => (
+              {delinquencyList.map((d) => (
                 <li key={d.aluno} className="flex items-center justify-between py-3.5">
                   <div>
                     <p className="text-sm font-medium text-foreground">{d.aluno}</p>

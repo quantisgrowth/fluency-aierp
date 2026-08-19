@@ -97,19 +97,36 @@ function RetencaoPage() {
   const [rewardStock, setRewardStock] = useState(10);
 
   // Load from local storage
+  // Load from local storage and sync across tabs
   useEffect(() => {
-    try {
-      const rawC = window.localStorage.getItem(CHALLENGES_KEY);
-      if (rawC) setChallenges(JSON.parse(rawC));
-      
-      const rawR = window.localStorage.getItem(REWARDS_KEY);
-      if (rawR) setRewards(JSON.parse(rawR));
+    const loadGamificationData = () => {
+      try {
+        const rawC = window.localStorage.getItem(CHALLENGES_KEY);
+        if (rawC) setChallenges(JSON.parse(rawC));
+        
+        const rawR = window.localStorage.getItem(REWARDS_KEY);
+        if (rawR) setRewards(JSON.parse(rawR));
 
-      const rawRed = window.localStorage.getItem(REDEMPTIONS_KEY);
-      if (rawRed) setRedemptions(JSON.parse(rawRed));
-    } catch {
-      /* ignore */
-    }
+        const rawRed = window.localStorage.getItem(REDEMPTIONS_KEY);
+        if (rawRed) setRedemptions(JSON.parse(rawRed));
+      } catch {
+        /* ignore */
+      }
+    };
+
+    loadGamificationData();
+
+    const handleStorage = (e: StorageEvent) => {
+      if (
+        e.key === CHALLENGES_KEY ||
+        e.key === REWARDS_KEY ||
+        e.key === REDEMPTIONS_KEY
+      ) {
+        loadGamificationData();
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const saveChallenges = (next: Challenge[]) => {
