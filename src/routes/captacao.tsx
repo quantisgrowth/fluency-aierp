@@ -231,7 +231,16 @@ function CaptacaoPage() {
 
       const storedSubmissions = window.localStorage.getItem("fluency-ai:captacao:submissions");
       if (storedSubmissions) {
-        setSubmissions(JSON.parse(storedSubmissions));
+        const parsed = JSON.parse(storedSubmissions);
+        const normalized = parsed.map((s: any) => {
+          const defaultMatch = DEFAULT_SUBMISSIONS.find(ds => ds.id === s.id);
+          if (defaultMatch && !s.respostas) {
+            return { ...s, respostas: defaultMatch.respostas };
+          }
+          return s;
+        });
+        setSubmissions(normalized);
+        window.localStorage.setItem("fluency-ai:captacao:submissions", JSON.stringify(normalized));
       } else {
         window.localStorage.setItem("fluency-ai:captacao:submissions", JSON.stringify(DEFAULT_SUBMISSIONS));
       }

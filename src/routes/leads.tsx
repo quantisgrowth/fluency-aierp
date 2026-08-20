@@ -136,11 +136,39 @@ const DEFAULT_LEADS: Lead[] = [
 
 export const LEADS_STORAGE_KEY = "fluency-ai:leads-db";
 
+type Question = {
+  id: string;
+  enunciado: string;
+  nivel: string;
+  opcaoA: string;
+  opcaoB: string;
+  opcaoC: string;
+  opcaoD: string;
+  correta: "A" | "B" | "C" | "D";
+};
+
+type Submission = {
+  id: string;
+  nome: string;
+  email: string;
+  telefone: string;
+  score: number;
+  total: number;
+  level: string;
+  date: string;
+  respostas?: Record<string, string>;
+};
+
 function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>(DEFAULT_LEADS);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterOrigem, setFilterOrigem] = useState("");
   const [filterTeste, setFilterTeste] = useState<"todos" | "sim" | "nao">("todos");
+
+  // Submissions and Questions for Test Review
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [selectedLead, setSelectedLead] = useState<Submission | null>(null);
 
   // Modal creation states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -186,9 +214,34 @@ function LeadsPage() {
 
     loadLeads();
 
+    // Load submissions and questions for CEFR test review
+    try {
+      const storedSubs = window.localStorage.getItem("fluency-ai:captacao:submissions");
+      if (storedSubs) {
+        setSubmissions(JSON.parse(storedSubs));
+      }
+      
+      const storedQuestions = window.localStorage.getItem("fluency-ai:captacao:questions");
+      if (storedQuestions) {
+        setQuestions(JSON.parse(storedQuestions));
+      }
+    } catch {
+      /* ignore */
+    }
+
     const handleStorage = (e: StorageEvent) => {
       if (e.key === LEADS_STORAGE_KEY) {
         loadLeads();
+      }
+      if (e.key === "fluency-ai:captacao:submissions") {
+        try {
+          if (e.newValue) setSubmissions(JSON.parse(e.newValue));
+        } catch {}
+      }
+      if (e.key === "fluency-ai:captacao:questions") {
+        try {
+          if (e.newValue) setQuestions(JSON.parse(e.newValue));
+        } catch {}
       }
     };
     window.addEventListener("storage", handleStorage);
@@ -496,6 +549,22 @@ function LeadsPage() {
                     <strong className={selectedDetails.fezTesteNivel ? "text-paid" : "text-muted-foreground"}>
                       {selectedDetails.fezTesteNivel ? "Sim (Classificado)" : "Não"}
                     </strong>
+                    {selectedDetails.fezTesteNivel && (() => {
+                      const matchingSub = submissions.find(
+                        (s) =>
+                          s.email.toLowerCase() === selectedDetails.email.toLowerCase() ||
+                          s.nome.toLowerCase() === selectedDetails.nome.toLowerCase()
+                      );
+                      if (!matchingSub) return null;
+                      return (
+                        <button
+                          onClick={() => setSelectedLead(matchingSub)}
+                          className="ml-2 inline-flex items-center gap-1 rounded bg-primary/20 hover:bg-primary/30 px-2 py-0.5 text-[10px] font-bold text-primary cursor-pointer transition-all border-0 align-middle"
+                        >
+                          Visualizar Respostas
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -825,7 +894,105 @@ function LeadsPage() {
           </GlassCard>
         </div>
       )}
+      {/* --- LEAD DETAIL / ANSWERS REVIEW MODAL --- */}
+      {selectedLead && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <GlassCard className="w-full max-w-2xl p-6 space-y-6 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            <button
+              onClick={() => setSelectedLead(null)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0"
+            >
+              <XCircle className="size-4" />
+            </button>
 
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-hairline pb-4">
+              <div>
+                <span className="rounded bg-primary/10 text-primary text-[8px] font-extrabold px-1.5 py-0.5 uppercase">Resultado Nivelamento</span>
+                <h3 className="text-lg font-bold text-foreground mt-1">{selectedLead.nome}</h3>
+                <p className="text-xs text-muted-foreground">Preenchido em {new Date(selectedLead.date).toLocaleString("pt-BR")}</p>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-extrabold text-foreground">{selectedLead.level}</span>
+                <p className="text-xs text-muted-foreground">Pontuação: <span className="font-bold text-primary">{selectedLead.score} / {selectedLead.total} acertos</span></p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs border-b border-hairline pb-4">
+              <div className="space-y-2">
+                <h4 className="font-bold text-foreground">Dados de Contato</h4>
+                <div className="space-y-1.5 text-muted-foreground">
+                  <p className="flex items-center gap-1.5"><Mail className="size-3.5 text-primary shrink-0" /> <strong>E-mail:</strong> {selectedLead.email}</p>
+                  <p className="flex items-center gap-1.5"><Phone className="size-3.5 text-primary shrink-0" /> <strong>Telefone:</strong> {selectedLead.telefone}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="font-bold text-foreground text-xs uppercase tracking-wider border-b border-hairline pb-2">Gabarito de Respostas</h4>
+              <div className="space-y-4">
+                {questions.map((q, idx) => {
+                  const leadAnswer = selectedLead.respostas?.[q.id];
+                  const isCorrect = leadAnswer === q.correta;
+
+                  return (
+                    <div key={q.id} className="rounded-lg border border-hairline bg-white/[0.01] p-4 space-y-2.5">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-bold text-muted-foreground">Questão #{idx + 1} ({q.nivel})</span>
+                        {leadAnswer ? (
+                          isCorrect ? (
+                            <span className="rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5">Correto</span>
+                          ) : (
+                            <span className="rounded bg-rose-500/10 text-rose-400 text-[10px] font-bold px-2 py-0.5">Incorreto</span>
+                          )
+                        ) : (
+                          <span className="rounded bg-zinc-500/10 text-zinc-400 text-[10px] font-bold px-2 py-0.5">Não Respondido</span>
+                        )}
+                      </div>
+
+                      <p className="text-xs font-semibold text-foreground leading-relaxed">{q.enunciado}</p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        {[
+                          { key: "A", val: q.opcaoA },
+                          { key: "B", val: q.opcaoB },
+                          { key: "C", val: q.opcaoC },
+                          { key: "D", val: q.opcaoD },
+                        ].map((opt) => {
+                          const isChosen = leadAnswer === opt.key;
+                          const isAnswerCorrect = q.correta === opt.key;
+
+                          let optClass = "border-hairline text-muted-foreground bg-transparent";
+                          if (isChosen) {
+                            optClass = isCorrect 
+                              ? "border-emerald-500 bg-emerald-500/10 text-foreground font-semibold"
+                              : "border-rose-500 bg-rose-500/10 text-foreground font-semibold";
+                          } else if (isAnswerCorrect && !isCorrect && leadAnswer !== undefined) {
+                            optClass = "border-emerald-500/50 bg-emerald-500/5 text-emerald-400 font-semibold";
+                          }
+
+                          return (
+                            <div key={opt.key} className={`border rounded p-2 flex items-center justify-between ${optClass}`}>
+                              <span>({opt.key}) {opt.val}</span>
+                              {isChosen && (
+                                isCorrect 
+                                  ? <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" />
+                                  : <XCircle className="size-3.5 text-rose-400 shrink-0" />
+                              )}
+                              {!isChosen && isAnswerCorrect && !isCorrect && leadAnswer !== undefined && (
+                                <span className="text-[9px] text-emerald-400 uppercase font-bold">Gabarito</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </GlassCard>
+        </div>
+      )}
     </div>
   );
 }

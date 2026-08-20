@@ -28,6 +28,43 @@ type ClassItem = {
   horaSelecionada?: string;
 };
 
+type Lesson = {
+  id: string;
+  aula: number;
+  tema: string;
+  descricao: string;
+  status: "Concluída" | "Em Andamento" | "Pendente";
+};
+
+const DEFAULT_CRONOGRAMAS: Record<string, Lesson[]> = {
+  "Kids Playgroup": [
+    { id: "kp-1", aula: 1, tema: "Welcome & Color Songs", descricao: "Apresentacao e introducao de cores primarias com musica.", status: "Concluída" },
+    { id: "kp-2", aula: 2, tema: "Vocabulary: Farm Animals", descricao: "Aprendizado dos nomes de animais de fazenda em ingles.", status: "Concluída" },
+    { id: "kp-3", aula: 3, tema: "Singing & Action Verbs", descricao: "Musica interativa e acoes (jump, run, clap).", status: "Em Andamento" },
+    { id: "kp-4", aula: 4, tema: "Vocabulary: Fruit & Foods", descricao: "Introducao de nomes de frutas comuns e vocabulario de comida.", status: "Pendente" },
+    { id: "kp-5", aula: 5, tema: "Review & Games", descricao: "Atividades ludicas de revisao de cores e animais.", status: "Pendente" },
+  ],
+  "Regular Noite": [
+    { id: "rn-1", aula: 1, tema: "Simple Past vs Past Continuous", descricao: "Revisao e exercicios de gramatica com tempos verbais passados.", status: "Concluída" },
+    { id: "rn-2", aula: 2, tema: "Travel Vocabulary & Bookings", descricao: "Como fazer reservas e vocabulario util para viagens.", status: "Concluída" },
+    { id: "rn-3", aula: 3, tema: "Conversational Drills", descricao: "Simulacoes praticas de dialogo em aeroportos e hoteis.", status: "Em Andamento" },
+    { id: "rn-4", aula: 4, tema: "Reading & Pronunciation", descricao: "Leitura de textos e foco em pronuncia e entonacao.", status: "Pendente" },
+  ],
+  "Business English": [
+    { id: "be-1", aula: 1, tema: "Greetings & Self Introduction", descricao: "Como se apresentar profissionalmente em ingles.", status: "Concluída" },
+    { id: "be-2", aula: 2, tema: "Writing Professional Emails", descricao: "Estruturas, formalidades e expressoes de e-mail comercial.", status: "Concluída" },
+    { id: "be-3", aula: 3, tema: "Meeting Phrasal Verbs", descricao: "Principais phrasal verbs usados em reunioes.", status: "Em Andamento" },
+    { id: "be-4", aula: 4, tema: "Negotiation Tactics", descricao: "Vocabulario de negociacao e expressao de opinioes.", status: "Pendente" },
+  ],
+  "Conversation": [
+    { id: "c-1", aula: 1, tema: "Welcome & Diagnostic Speaking", descricao: "Apresentacao e avaliacao inicial de fluencia oral.", status: "Concluída" },
+    { id: "c-2", aula: 2, tema: "Debating the Future of Work - AI Impact", descricao: "Debate estruturado sobre o impacto da Inteligencia Artificial no mercado.", status: "Concluída" },
+    { id: "c-3", aula: 3, tema: "Expressing Agreement & Disagreement", descricao: "Expressoes e conectores para concordar e discordar educadamente.", status: "Em Andamento" },
+    { id: "c-4", aula: 4, tema: "Idiomatic Expressions for Negotiation", descricao: "Expressoes idiomaticas nativas usadas em acordos.", status: "Pendente" },
+    { id: "c-5", aula: 5, tema: "Final Presentation - Persuasive Pitch", descricao: "Apresentacoes finais e feedbacks individuais detalhados.", status: "Pendente" },
+  ]
+};
+
 const CALENDAR_DAYS = [
   { key: "Seg", label: "Segunda" },
   { key: "Ter", label: "Terça" },
@@ -93,8 +130,174 @@ function TurmasPage() {
   const [search, setSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState<string>("todos");
   
-  const [activePageTab, setActivePageTab] = useState<"lista" | "calendario">("lista");
+  const [activePageTab, setActivePageTab] = useState<"lista" | "calendario" | "cronograma">("lista");
   const [calendarViewMode, setCalendarViewMode] = useState<"semanal" | "mensal">("semanal");
+
+  // Cronograma / Trilha states
+  const [selectedCronogramaClass, setSelectedCronogramaClass] = useState<string>("Conversation");
+  const [cronogramas, setCronogramas] = useState<Record<string, Lesson[]>>(() => {
+    try {
+      const stored = window.localStorage.getItem("fluency-ai:classes:cronogramas");
+      return stored ? JSON.parse(stored) : DEFAULT_CRONOGRAMAS;
+    } catch {
+      return DEFAULT_CRONOGRAMAS;
+    }
+  });
+
+  // Sync cronogramas
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("fluency-ai:classes:cronogramas", JSON.stringify(cronogramas));
+    } catch {}
+  }, [cronogramas]);
+
+  // Download Model CSV
+  const handleDownloadModelCSV = () => {
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF"
+      + "Aula;Tema;Descricao\n"
+      + "1;Welcome & Introduction;Primeira aula de nivelamento e apresentacao\n"
+      + "2;Present Continuous Drills;Exercicios praticos de conversacao sobre atividades do dia a dia\n"
+      + "3;Business Vocabulary;Vocabulario de reunioes e apresentacao de projetos\n"
+      + "4;Mock Dialogues;Pratica guiada com simulacao de chamadas e mensagens\n"
+      + "5;Review & Evaluation;Feedback pedagogico de conversacao\n";
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "modelo_cronograma_fluency.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Modelo CSV baixado com sucesso!");
+  };
+
+  // Import CSV
+  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const lines = text.split("\n");
+        const parsedLessons: Lesson[] = [];
+
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i]?.trim();
+          if (!line) continue;
+
+          const cols = line.includes(";") ? line.split(";") : line.split(",");
+          const aulaNum = Number(cols[0]?.trim()) || i;
+          const temaStr = cols[1]?.trim() || "Aula sem tema";
+          const descStr = cols[2]?.trim() || "";
+
+          parsedLessons.push({
+            id: `lesson-csv-${Date.now()}-${i}`,
+            aula: aulaNum,
+            tema: temaStr,
+            descricao: descStr,
+            status: i === 1 ? "Em Andamento" : "Pendente"
+          });
+        }
+
+        if (parsedLessons.length === 0) {
+          toast.error("Nenhuma linha válida encontrada no CSV.");
+          return;
+        }
+
+        setCronogramas((prev) => ({
+          ...prev,
+          [selectedCronogramaClass]: parsedLessons
+        }));
+        toast.success(`Importadas ${parsedLessons.length} aulas na trilha da turma ${selectedCronogramaClass}!`);
+      } catch (err) {
+        console.error(err);
+        toast.error("Falha ao ler o arquivo CSV. Verifique a formatação.");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  // Add Lesson
+  const handleAddLesson = () => {
+    const lessons = cronogramas[selectedCronogramaClass] || [];
+    const nextAulaNum = lessons.length > 0 ? Math.max(...lessons.map(l => l.aula)) + 1 : 1;
+    
+    const newLesson: Lesson = {
+      id: `lesson-${Date.now()}`,
+      aula: nextAulaNum,
+      tema: `Nova Aula Pedagógica #${nextAulaNum}`,
+      descricao: "Clique nos controles ao lado para editar o tema e a descrição desta aula.",
+      status: nextAulaNum === 1 ? "Em Andamento" : "Pendente"
+    };
+
+    setCronogramas((prev) => ({
+      ...prev,
+      [selectedCronogramaClass]: [...lessons, newLesson]
+    }));
+    toast.success("Nova aula adicionada no cronograma!");
+  };
+
+  // Toggle Lesson Status
+  const handleToggleLessonStatus = (lessonId: string) => {
+    const lessons = cronogramas[selectedCronogramaClass] || [];
+    const updated = lessons.map((l) => {
+      if (l.id === lessonId) {
+        let nextStatus: "Concluída" | "Em Andamento" | "Pendente" = "Pendente";
+        if (l.status === "Pendente") nextStatus = "Em Andamento";
+        else if (l.status === "Em Andamento") nextStatus = "Concluída";
+        else if (l.status === "Concluída") nextStatus = "Pendente";
+        return { ...l, status: nextStatus };
+      }
+      return l;
+    });
+
+    setCronogramas((prev) => ({
+      ...prev,
+      [selectedCronogramaClass]: updated
+    }));
+    toast.success("Status da aula atualizado!");
+  };
+
+  // Edit Lesson Prompt
+  const handleEditLessonPrompt = (lesson: Lesson) => {
+    const newTema = prompt("Insira o tema da aula:", lesson.tema);
+    if (newTema === null) return;
+    
+    const newDesc = prompt("Insira a descrição da aula:", lesson.descricao);
+    if (newDesc === null) return;
+
+    const lessons = cronogramas[selectedCronogramaClass] || [];
+    const updated = lessons.map((l) => {
+      if (l.id === lesson.id) {
+        return { ...l, tema: newTema || l.tema, descricao: newDesc };
+      }
+      return l;
+    });
+
+    setCronogramas((prev) => ({
+      ...prev,
+      [selectedCronogramaClass]: updated
+    }));
+    toast.success("Aula atualizada com sucesso!");
+  };
+
+  // Delete Lesson
+  const handleDeleteLesson = (lessonId: string) => {
+    const lessons = cronogramas[selectedCronogramaClass] || [];
+    const filtered = lessons.filter(l => l.id !== lessonId);
+    const rescaled = filtered.map((l, idx) => ({
+      ...l,
+      aula: idx + 1
+    }));
+
+    setCronogramas((prev) => ({
+      ...prev,
+      [selectedCronogramaClass]: rescaled
+    }));
+    toast.success("Aula removida da trilha.");
+  };
 
   // Modal states
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -395,7 +598,7 @@ function TurmasPage() {
         </div>
       </div>
 
-      {/* Tab Switcher: Lista vs Agenda & Calendário */}
+      {/* Tab Switcher: Lista vs Agenda & Calendário vs Cronograma */}
       <div className="flex border-b border-hairline gap-8 pb-0.5">
         <button
           onClick={() => setActivePageTab("lista")}
@@ -417,9 +620,19 @@ function TurmasPage() {
         >
           <CalendarRange className="size-4" /> Agenda & Calendário
         </button>
+        <button
+          onClick={() => setActivePageTab("cronograma")}
+          className={`pb-4 text-xs font-bold tracking-wider uppercase border-b-2 transition-all cursor-pointer flex items-center gap-2 bg-transparent border-0 ${
+            activePageTab === "cronograma"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Clock className="size-4" /> Trilha de Aprendizado / Cronograma
+        </button>
       </div>
 
-      {activePageTab === "lista" ? (
+      {activePageTab === "lista" && (
         <>
           {/* Filter and Search controls */}
           <GlassCard className="p-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -535,7 +748,9 @@ function TurmasPage() {
             )}
           </div>
         </>
-      ) : (
+      )}
+
+      {activePageTab === "calendario" && (
         <div className="space-y-6 animate-in fade-in duration-300">
           {/* Occupancy KPI Section */}
           <div className="grid gap-4 sm:grid-cols-2">
@@ -784,6 +999,249 @@ function TurmasPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* --- CRONOGRAMA / LEARNING TRAIL PANEL --- */}
+      {activePageTab === "cronograma" && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="grid gap-6 lg:grid-cols-12 items-start">
+            
+            {/* Left Column: Seletor de Turma & Importador */}
+            <div className="lg:col-span-4 space-y-6">
+              <GlassCard className="p-6 space-y-4">
+                <div>
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Configurar Turma</h4>
+                  <p className="text-[10px] text-muted-foreground">Selecione a turma para carregar e gerenciar a trilha de aulas.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Turma Selecionada</label>
+                  <select
+                    value={selectedCronogramaClass}
+                    onChange={(e) => setSelectedCronogramaClass(e.target.value)}
+                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary cursor-pointer"
+                  >
+                    {classes.map((c) => (
+                      <option key={c.nome} value={c.nome}>
+                        {c.nome} (CEFR {c.nivel})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="border-t border-hairline pt-4 space-y-3">
+                  <div>
+                    <h5 className="text-xs font-bold text-foreground">Importar Trilha de Aprendizado</h5>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Suba um arquivo CSV editado pelos professores para estruturar o cronograma automaticamente.</p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleDownloadModelCSV}
+                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-hairline bg-surface/50 py-2 text-[10px] font-bold text-foreground hover:bg-accent cursor-pointer transition-all border-hairline"
+                    >
+                      Baixar Modelo CSV
+                    </button>
+                    <label className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary py-2 text-[10px] font-bold text-primary-foreground shadow hover:bg-primary/95 cursor-pointer transition-all border-0">
+                      Importar CSV
+                      <input
+                        type="file"
+                        accept=".csv"
+                        onChange={handleImportCSV}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+              </GlassCard>
+
+              {/* Progress Summary Card */}
+              <GlassCard className="p-6 space-y-4">
+                <div>
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Progresso do Módulo</h4>
+                  <p className="text-[10px] text-muted-foreground">Progresso consolidado das aulas ministradas na trilha pedagógica.</p>
+                </div>
+
+                {(() => {
+                  const lessons = cronogramas[selectedCronogramaClass] || [];
+                  const total = lessons.length;
+                  const completed = lessons.filter(l => l.status === "Concluída").length;
+                  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground">Aulas ministradas:</span>
+                        <span className="font-bold text-foreground">{completed} de {total} ({pct}%)</span>
+                      </div>
+                      <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-400 transition-all duration-300"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
+              </GlassCard>
+            </div>
+
+            {/* Middle Column: Timeline of Lessons */}
+            <div className="lg:col-span-5 space-y-6">
+              <GlassCard className="p-6 space-y-4">
+                <div className="flex justify-between items-center border-b border-hairline pb-4">
+                  <div>
+                    <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Cronograma da Trilha</h4>
+                    <p className="text-[10px] text-muted-foreground">Grade sequencial de aulas do módulo.</p>
+                  </div>
+                  {canManage && (
+                    <button
+                      onClick={handleAddLesson}
+                      className="inline-flex items-center gap-1 rounded bg-primary/10 hover:bg-primary/20 px-2 py-1 text-[10px] font-bold text-primary cursor-pointer transition-all border-0"
+                    >
+                      + Nova Aula
+                    </button>
+                  )}
+                </div>
+
+                {(() => {
+                  const lessons = cronogramas[selectedCronogramaClass] || [];
+                  if (lessons.length === 0) {
+                    return (
+                      <p className="text-xs text-muted-foreground text-center py-6">Nenhuma aula cadastrada nesta trilha. Clique em '+ Nova Aula' ou importe um CSV.</p>
+                    );
+                  }
+
+                  return (
+                    <div className="relative pl-6 space-y-6 border-l border-hairline ml-2.5">
+                      {lessons.map((les, index) => {
+                        let statusColor = "bg-zinc-600 border-zinc-500 text-zinc-400";
+                        let ringColor = "ring-zinc-900";
+                        if (les.status === "Concluída") {
+                          statusColor = "bg-emerald-500 border-emerald-400 text-emerald-400";
+                          ringColor = "ring-emerald-950/20";
+                        } else if (les.status === "Em Andamento") {
+                          statusColor = "bg-blue-500 border-blue-400 text-blue-400 animate-pulse";
+                          ringColor = "ring-blue-950/20";
+                        }
+
+                        return (
+                          <div key={les.id} className="relative group animate-in slide-in-from-bottom-2 duration-200">
+                            {/* Dot indicator */}
+                            <span className={`absolute -left-[31px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full border bg-zinc-900 ring-4 ${ringColor} ${statusColor}`}>
+                              {les.status === "Concluída" ? (
+                                <CheckCircle2 className="size-2.5 text-zinc-900 fill-emerald-400" />
+                              ) : les.status === "Em Andamento" ? (
+                                <span className="size-1.5 rounded-full bg-blue-400" />
+                              ) : (
+                                <span className="size-1.5 rounded-full bg-zinc-600" />
+                              )}
+                            </span>
+
+                            <div className="flex justify-between items-start gap-4">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] font-bold text-muted-foreground uppercase">Aula #{les.aula}</span>
+                                  <span className={`rounded-full text-[8px] font-bold px-1.5 py-0.2 uppercase ${
+                                    les.status === "Concluída" ? "bg-emerald-500/10 text-emerald-400" :
+                                    les.status === "Em Andamento" ? "bg-blue-500/10 text-blue-400" :
+                                    "bg-zinc-500/10 text-zinc-400"
+                                  }`}>
+                                    {les.status}
+                                  </span>
+                                </div>
+                                <h5 className="text-xs font-bold text-foreground">{les.tema}</h5>
+                                {les.descricao && (
+                                  <p className="text-[10px] text-muted-foreground leading-relaxed">{les.descricao}</p>
+                                )}
+                              </div>
+
+                              {canManage && (
+                                <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={() => handleToggleLessonStatus(les.id)}
+                                    className="p-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground cursor-pointer border-0 bg-transparent"
+                                    title="Mudar Status"
+                                  >
+                                    <Clock className="size-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleEditLessonPrompt(les)}
+                                    className="p-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground cursor-pointer border-0 bg-transparent"
+                                    title="Editar Aula"
+                                  >
+                                    <Pencil className="size-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteLesson(les.id)}
+                                    className="p-1 rounded hover:bg-white/5 text-rose-400 hover:text-rose-300 cursor-pointer border-0 bg-transparent"
+                                    title="Remover Aula"
+                                  >
+                                    <Trash2 className="size-3" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </GlassCard>
+            </div>
+
+            {/* Right Column: Alunos Progress Tracking */}
+            <div className="lg:col-span-3 space-y-6">
+              <GlassCard className="p-6 space-y-4">
+                <div>
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Acompanhar Alunos</h4>
+                  <p className="text-[10px] text-muted-foreground">Posicionamento individual de cada aluno na trilha.</p>
+                </div>
+
+                <div className="divide-y divide-hairline">
+                  {(() => {
+                    const currentClassName = selectedCronogramaClass.toLowerCase();
+                    const filteredStudents = students.filter((s) => {
+                      const studentTurma = s.turma.toLowerCase();
+                      return studentTurma.includes(currentClassName) || currentClassName.includes(studentTurma);
+                    });
+
+                    const displayList = filteredStudents.length > 0 ? filteredStudents : students.slice(0, 3); // Fallback to list
+
+                    return displayList.map((stu) => {
+                      const lessons = cronogramas[selectedCronogramaClass] || [];
+                      const activeLessonIndex = lessons.findIndex(l => l.status === "Em Andamento");
+                      const activeLessonNum = activeLessonIndex !== -1 ? lessons[activeLessonIndex]!.aula : 1;
+
+                      let studentLessonNum = activeLessonNum;
+                      if (stu.nome === "Caio Bertolli" && activeLessonNum > 1) {
+                        studentLessonNum = activeLessonNum - 1;
+                      } else if (stu.nome === "Helena Prado" && activeLessonNum < lessons.length) {
+                        studentLessonNum = activeLessonNum + 1;
+                      }
+
+                      return (
+                        <div key={stu.nome} className="py-3 flex items-center justify-between gap-3 first:pt-0 last:pb-0">
+                          <div className="space-y-0.5">
+                            <p className="text-xs font-bold text-foreground">{stu.nome}</p>
+                            <span className="text-[9px] text-muted-foreground block">Módulo Nível {stu.nivel}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="rounded bg-primary/10 text-primary text-[9px] font-bold px-2 py-0.5 block">
+                              Aula #{studentLessonNum}
+                            </span>
+                            <span className="text-[8px] text-emerald-400 font-medium block mt-1">Conforme Trilha</span>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </GlassCard>
+            </div>
+          </div>
         </div>
       )}
 
