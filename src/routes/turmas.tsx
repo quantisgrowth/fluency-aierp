@@ -450,6 +450,26 @@ function TurmasPage() {
     } catch {}
   }, [classes]);
 
+  // Synchronize class student count with students list dynamically
+  useEffect(() => {
+    let changed = false;
+    const updated = classes.map(c => {
+      const classNomeLower = c.nome.toLowerCase();
+      const count = students.filter((s: any) => {
+        const studentTurma = s.turma.toLowerCase();
+        return studentTurma === classNomeLower || studentTurma.includes(classNomeLower) || classNomeLower.includes(studentTurma);
+      }).length;
+      if (c.alunos !== count) {
+        changed = true;
+        return { ...c, alunos: count };
+      }
+      return c;
+    });
+    if (changed) {
+      setClasses(updated);
+    }
+  }, [students, classes]);
+
   // Sync state changes across tabs
   useEffect(() => {
     const handleStorageChange = () => {
@@ -659,7 +679,17 @@ function TurmasPage() {
     calendarTimes.forEach((t) => {
       const classesInSlot = classes.filter((c) => {
         const matchesDay = c.diasSelecionados?.includes(d.key);
-        const matchesTime = c.horaSelecionada === t;
+        
+        const toMinutes = (timeStr: string) => {
+          if (!timeStr) return 0;
+          const [h, m] = timeStr.split(":").map(Number);
+          return (h || 0) * 60 + (m || 0);
+        };
+        const tMin = toMinutes(t);
+        const startMin = toMinutes(c.horaSelecionada || "19:00");
+        const endMin = toMinutes(c.horaFimSelecionada || "20:30");
+        const matchesTime = tMin >= startMin && tMin < endMin;
+        
         return matchesDay && matchesTime;
       });
       if (classesInSlot.length > 0) {
@@ -673,7 +703,17 @@ function TurmasPage() {
   const getClassesForSlot = (dayKey: string, time: string) => {
     return filteredClasses.filter((c) => {
       const matchesDay = c.diasSelecionados?.includes(dayKey);
-      const matchesTime = c.horaSelecionada === time;
+      
+      const toMinutes = (timeStr: string) => {
+        if (!timeStr) return 0;
+        const [h, m] = timeStr.split(":").map(Number);
+        return (h || 0) * 60 + (m || 0);
+      };
+      const tMin = toMinutes(time);
+      const startMin = toMinutes(c.horaSelecionada || "19:00");
+      const endMin = toMinutes(c.horaFimSelecionada || "20:30");
+      const matchesTime = tMin >= startMin && tMin < endMin;
+      
       return matchesDay && matchesTime;
     });
   };
@@ -883,60 +923,6 @@ function TurmasPage() {
                       )}
                     </div>
 
-                    {/* Direct Students badges list & allocation button */}
-                    {(() => {
-                      const classNomeLower = c.nome.toLowerCase();
-                      const enrolledStudents = students.filter(s => {
-                        const studentTurma = s.turma.toLowerCase();
-                        return studentTurma === classNomeLower || studentTurma.includes(classNomeLower) || classNomeLower.includes(studentTurma);
-                      });
-
-                      return (
-                        <div className="mt-4 pt-4 border-t border-hairline/60 space-y-2">
-                          <div className="flex justify-between items-center text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
-                            <span>Alunos ({enrolledStudents.length})</span>
-                            {canManage && !isFull && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedClass(c);
-                                  setAllocateStudentName("");
-                                  setIsAllocateStudentOpen(true);
-                                }}
-                                className="text-primary hover:underline font-bold bg-transparent border-0 cursor-pointer text-[10px]"
-                              >
-                                + Alocar Aluno
-                              </button>
-                            )}
-                          </div>
-                          
-                          {enrolledStudents.length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
-                              {enrolledStudents.map(student => (
-                                <span
-                                  key={student.nome}
-                                  className="inline-flex items-center gap-1 rounded bg-white/[0.04] border border-hairline px-2 py-0.5 text-[10px] text-foreground font-medium"
-                                >
-                                  {student.nome}
-                                  {canManage && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoveStudentFromClass(student.nome, c.nome)}
-                                      className="text-rose-400 hover:text-rose-300 font-bold bg-transparent border-0 cursor-pointer text-[10px] p-0 ml-0.5 leading-none"
-                                      title="Remover da turma"
-                                    >
-                                      ×
-                                    </button>
-                                  )}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-[10px] text-muted-foreground italic">Nenhum aluno alocado.</p>
-                          )}
-                        </div>
-                      );
-                    })()}
                   </GlassCard>
                 );
               })
@@ -2019,6 +2005,97 @@ function TurmasPage() {
                 </select>
               </div>
 
+              {/* Roster / Students management inside edit modal */}
+              <div className="border-t border-hairline/60 pt-4 space-y-3">
+                {(() => {
+                  const classNomeLower = selectedClass.nome.toLowerCase();
+                  const enrolledStudents = students.filter(s => {
+                    const studentTurma = s.turma.toLowerCase();
+                    return studentTurma === classNomeLower || studentTurma.includes(classNomeLower) || classNomeLower.includes(studentTurma);
+                  });
+
+                  const availableStudents = students.filter(s => {
+                    const studentTurma = s.turma.toLowerCase();
+                    return studentTurma !== classNomeLower && !studentTurma.includes(classNomeLower) && !classNomeLower.includes(studentTurma);
+                  });
+
+                  const isFull = enrolledStudents.length >= formVagas;
+
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        <span>Gerenciar Alunos ({enrolledStudents.length} / {formVagas})</span>
+                      </div>
+
+                      {/* Enrolled students badges */}
+                      {enrolledStudents.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5 p-2 rounded-lg border border-hairline bg-surface/30 max-h-24 overflow-y-auto">
+                          {enrolledStudents.map(student => (
+                            <span
+                              key={student.nome}
+                              className="inline-flex items-center gap-1.5 rounded-md bg-white/[0.04] border border-hairline px-2.5 py-0.5 text-xs text-foreground font-medium"
+                            >
+                              {student.nome}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveStudentFromClass(student.nome, selectedClass.nome)}
+                                className="text-rose-400 hover:text-rose-300 font-bold bg-transparent border-0 cursor-pointer text-xs p-0 leading-none"
+                                title="Desvincular Aluno"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic bg-surface/30 border border-hairline p-2 rounded-lg">Nenhum aluno matriculado nesta turma.</p>
+                      )}
+
+                      {/* Quick allocate select inline */}
+                      {!isFull && availableStudents.length > 0 && (
+                        <div className="flex gap-2 items-center pt-1.5">
+                          <select
+                            value={allocateStudentName}
+                            onChange={(e) => setAllocateStudentName(e.target.value)}
+                            className="h-9 flex-1 rounded-lg border border-hairline bg-surface/50 px-2 text-xs text-foreground outline-none focus:border-primary cursor-pointer"
+                          >
+                            <option value="">-- Alocar Novo Aluno --</option>
+                            {availableStudents.map(s => (
+                              <option key={s.nome} value={s.nome}>{s.nome} ({s.nivel})</option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!allocateStudentName) return;
+                              setClasses(classes.map(item => item.nome === selectedClass.nome ? { ...item, alunos: item.alunos + 1 } : item));
+                              setStudents(students.map(s => s.nome === allocateStudentName ? { ...s, turma: selectedClass.nome } : s));
+                              
+                              try {
+                                const storedDetails = window.localStorage.getItem("fluency-ai:students:details");
+                                if (storedDetails) {
+                                  const parsed = JSON.parse(storedDetails);
+                                  if (parsed[allocateStudentName]) {
+                                    parsed[allocateStudentName].turma = selectedClass.nome;
+                                    window.localStorage.setItem("fluency-ai:students:details", JSON.stringify(parsed));
+                                  }
+                                }
+                              } catch {}
+
+                              toast.success(`Aluno "${allocateStudentName}" alocado com sucesso!`);
+                              setAllocateStudentName("");
+                            }}
+                            className="h-9 px-3 rounded-lg bg-primary/10 hover:bg-primary/20 text-xs font-bold text-primary cursor-pointer border-0 transition-colors"
+                          >
+                            Alocar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+
               <button
                 type="submit"
                 className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center border-0"
@@ -2220,80 +2297,6 @@ function TurmasPage() {
         </div>
       )}
 
-      {/* Modal: Alocar Aluno na Turma */}
-      {isAllocateStudentOpen && selectedClass && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <GlassCard className="w-full max-w-sm p-6 space-y-4 shadow-2xl relative animate-in zoom-in-95 duration-200">
-            <button
-              onClick={() => setIsAllocateStudentOpen(false)}
-              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0"
-            >
-              <X className="size-4" />
-            </button>
-            
-            <div>
-              <h3 className="text-base font-bold text-foreground">Alocar Aluno na Turma</h3>
-              <p className="text-xs text-muted-foreground">Matricule um aluno na turma <strong>{selectedClass.nome}</strong>.</p>
-            </div>
-
-            {(() => {
-              const currentClassName = selectedClass.nome.toLowerCase();
-              const alreadyEnrolled = students.filter(s => {
-                const studentTurma = s.turma.toLowerCase();
-                return studentTurma === currentClassName || studentTurma.includes(currentClassName) || currentClassName.includes(studentTurma);
-              }).map(s => s.nome);
-
-              const availableStudents = students.filter(s => !alreadyEnrolled.includes(s.nome));
-
-              return (
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Selecione o Aluno</label>
-                    <select
-                      value={allocateStudentName}
-                      onChange={(e) => setAllocateStudentName(e.target.value)}
-                      className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary cursor-pointer"
-                    >
-                      <option value="">-- Escolher Aluno --</option>
-                      {availableStudents.map(s => (
-                        <option key={s.nome} value={s.nome}>{s.nome} ({s.nivel})</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      if (!allocateStudentName) {
-                        toast.error("Por favor, selecione um aluno.");
-                        return;
-                      }
-                      setClasses(classes.map(c => c.nome === selectedClass.nome ? { ...c, alunos: c.alunos + 1 } : c));
-                      setStudents(students.map(s => s.nome === allocateStudentName ? { ...s, turma: selectedClass.nome } : s));
-                      
-                      try {
-                        const storedDetails = window.localStorage.getItem("fluency-ai:students:details");
-                        if (storedDetails) {
-                          const parsed = JSON.parse(storedDetails);
-                          if (parsed[allocateStudentName]) {
-                            parsed[allocateStudentName].turma = selectedClass.nome;
-                            window.localStorage.setItem("fluency-ai:students:details", JSON.stringify(parsed));
-                          }
-                        }
-                      } catch {}
-
-                      toast.success(`Aluno "${allocateStudentName}" alocado na turma "${selectedClass.nome}" com sucesso!`);
-                      setIsAllocateStudentOpen(false);
-                    }}
-                    className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center border-0"
-                  >
-                    Alocar Aluno
-                  </button>
-                </div>
-              );
-            })()}
-          </GlassCard>
-        </div>
-      )}
     </div>
   );
 }
