@@ -29,6 +29,18 @@ import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import { ModuleGate } from "@/components/module-gate";
 import { toast } from "sonner";
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip as ChartTooltip,
+  Legend
+} from "recharts";
 
 export const Route = createFileRoute("/captacao")({
   head: () => ({
@@ -60,6 +72,7 @@ type Submission = {
   total: number;
   level: string;
   date: string;
+  respostas?: Record<string, string>;
 };
 
 const DEFAULT_QUESTIONS: Question[] = [
@@ -124,7 +137,14 @@ const DEFAULT_SUBMISSIONS: Submission[] = [
     score: 4,
     total: 5,
     level: "B2 - Upper Intermediate",
-    date: "2026-08-19T10:15:00.000Z"
+    date: "2026-08-19T10:15:00.000Z",
+    respostas: {
+      "q-1": "B",
+      "q-2": "C",
+      "q-3": "B",
+      "q-4": "A",
+      "q-5": "B"
+    }
   },
   {
     id: "sub-2",
@@ -134,7 +154,14 @@ const DEFAULT_SUBMISSIONS: Submission[] = [
     score: 2,
     total: 5,
     level: "A2 - Elementary",
-    date: "2026-08-18T14:30:00.000Z"
+    date: "2026-08-18T14:30:00.000Z",
+    respostas: {
+      "q-1": "B",
+      "q-2": "C",
+      "q-3": "A",
+      "q-4": "B",
+      "q-5": "B"
+    }
   },
   {
     id: "sub-3",
@@ -144,7 +171,14 @@ const DEFAULT_SUBMISSIONS: Submission[] = [
     score: 5,
     total: 5,
     level: "C1 - Advanced",
-    date: "2026-08-17T09:00:00.000Z"
+    date: "2026-08-17T09:00:00.000Z",
+    respostas: {
+      "q-1": "B",
+      "q-2": "C",
+      "q-3": "B",
+      "q-4": "A",
+      "q-5": "A"
+    }
   }
 ];
 
@@ -155,6 +189,13 @@ function CaptacaoPage() {
   const [questions, setQuestions] = useState<Question[]>(DEFAULT_QUESTIONS);
   const [submissions, setSubmissions] = useState<Submission[]>(DEFAULT_SUBMISSIONS);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Form Active & Premium states
+  const [isNivelamentoActive, setIsNivelamentoActive] = useState(true);
+  const [isMatriculaActive, setIsMatriculaActive] = useState(false);
+  const [isMatriculaUnlocked, setIsMatriculaUnlocked] = useState(false);
+  const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Submission | null>(null);
 
   // Editor modal/creation states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -194,6 +235,16 @@ function CaptacaoPage() {
       } else {
         window.localStorage.setItem("fluency-ai:captacao:submissions", JSON.stringify(DEFAULT_SUBMISSIONS));
       }
+
+      // Load active status and premium status
+      const activeNivel = window.localStorage.getItem("fluency-ai:captacao:formStatus:nivelamento");
+      setIsNivelamentoActive(activeNivel !== null ? JSON.parse(activeNivel) : true);
+
+      const activeMatricula = window.localStorage.getItem("fluency-ai:captacao:formStatus:matricula");
+      setIsMatriculaActive(activeMatricula !== null ? JSON.parse(activeMatricula) : false);
+
+      const unlockedMatricula = window.localStorage.getItem("fluency-ai:captacao:premium-unlocked");
+      setIsMatriculaUnlocked(unlockedMatricula !== null ? JSON.parse(unlockedMatricula) : false);
     } catch {
       /* ignore */
     }
@@ -216,6 +267,64 @@ function CaptacaoPage() {
     } catch {
       /* ignore */
     }
+  };
+
+  // Toggle handlers
+  const toggleNivelamento = () => {
+    const next = !isNivelamentoActive;
+    setIsNivelamentoActive(next);
+    try {
+      window.localStorage.setItem("fluency-ai:captacao:formStatus:nivelamento", JSON.stringify(next));
+      toast.success(next ? "Teste de Nivelamento ativado!" : "Teste de Nivelamento desativado!");
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const toggleMatricula = () => {
+    const next = !isMatriculaActive;
+    setIsMatriculaActive(next);
+    try {
+      window.localStorage.setItem("fluency-ai:captacao:formStatus:matricula", JSON.stringify(next));
+      toast.success(next ? "Formulário de Pré-Matrícula ativado!" : "Formulário de Pré-Matrícula desativado!");
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const unlockMatriculaModule = () => {
+    setIsMatriculaUnlocked(true);
+    setIsMatriculaActive(true);
+    setIsUnlockModalOpen(false);
+    try {
+      window.localStorage.setItem("fluency-ai:captacao:premium-unlocked", JSON.stringify(true));
+      window.localStorage.setItem("fluency-ai:captacao:formStatus:matricula", JSON.stringify(true));
+      toast.success("Módulo Premium Pré-Matrícula Online ativado com sucesso!");
+    } catch {
+      /* ignore */
+    }
+  };
+
+  // Reusable custom toggle switch component
+  const ToggleSwitch = ({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) => {
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onChange();
+        }}
+        disabled={disabled}
+        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+          checked ? "bg-emerald-500" : "bg-zinc-700"
+        } ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
+      >
+        <span
+          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ease-in-out ${
+            checked ? "translate-x-4" : "translate-x-0"
+          }`}
+        />
+      </button>
+    );
   };
 
   // Question handlers
@@ -403,16 +512,73 @@ function CaptacaoPage() {
     setSimStep(7); // Show results
   };
 
-  const copyEmbedCode = () => {
-    const embedStr = `<iframe src="https://escola.fluency.ai/public/teste-nivel" width="100%" height="600px" style="border:none; border-radius:12px; background:transparent;"></iframe>`;
+  const copyEmbedCode = (type: "nivelamento" | "pre-matricula") => {
+    const path = type === "nivelamento" ? "/public/teste-nivel" : "/public/pre-matricula";
+    const fullUrl = `${window.location.origin}${path}`;
+    const embedStr = `<iframe src="${fullUrl}" width="100%" height="600px" style="border:none; border-radius:12px; background:transparent;"></iframe>`;
     navigator.clipboard.writeText(embedStr);
-    toast.success("Código de incorporação copiado para o clipboard!");
+    toast.success("Código de incorporação copiado!");
   };
 
-  const copyPublicLink = () => {
-    navigator.clipboard.writeText("https://escola.fluency.ai/public/teste-nivel");
-    toast.success("Link público copiado!");
+  const copyPublicLink = (type: "nivelamento" | "pre-matricula") => {
+    const path = type === "nivelamento" ? "/public/teste-nivel" : "/public/pre-matricula";
+    const fullUrl = `${window.location.origin}${path}`;
+    navigator.clipboard.writeText(fullUrl);
+    toast.success("Link público copiado com sucesso!");
   };
+
+  const handleExportCSV = () => {
+    if (submissions.length === 0) {
+      toast.error("Nenhuma resposta disponível para exportar.");
+      return;
+    }
+    const headers = ["ID", "Nome", "Email", "Telefone", "Acertos", "Total", "Nivel Estimado", "Data"];
+    const rows = submissions.map(s => [
+      s.id,
+      s.nome,
+      s.email,
+      s.telefone,
+      s.score,
+      s.total,
+      s.level,
+      new Date(s.date).toISOString()
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+      + [headers.join(";"), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(";"))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `leads_nivelamento_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("CSV exportado com sucesso!");
+  };
+
+  // Dynamically calculate CEFR distribution for charts
+  const cefrDistribution = submissions.reduce((acc: Record<string, number>, curr) => {
+    const mainLevel = curr.level.split(" ")[0]; // Get "A1", "A2", etc.
+    acc[mainLevel] = (acc[mainLevel] || 0) + 1;
+    return acc;
+  }, {});
+
+  const pieChartData = [
+    { name: "A1", value: cefrDistribution["A1"] || 0, color: "#f87171" },
+    { name: "A2", value: cefrDistribution["A2"] || 0, color: "#fb923c" },
+    { name: "B1", value: cefrDistribution["B1"] || 0, color: "#60a5fa" },
+    { name: "B2", value: cefrDistribution["B2"] || 0, color: "#34d399" },
+    { name: "C1/C2", value: (cefrDistribution["C1"] || 0) + (cefrDistribution["C2"] || 0), color: "#a78bfa" },
+  ].filter(item => item.value > 0);
+
+  // Dynamically calculate timeline data (group by date)
+  // Mock data for display, combined with submissions count
+  const timelineData = [
+    { date: "15/08", leads: 1 },
+    { date: "16/08", leads: 2 },
+    { date: "17/08", leads: 4 },
+    { date: "18/08", leads: 3 },
+    { date: "19/08", leads: submissions.length },
+  ];
 
   const filteredSubmissions = submissions.filter((s) =>
     s.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -499,28 +665,120 @@ function CaptacaoPage() {
               </GlassCard>
             </div>
 
+            {/* Charts section */}
+            <div className="grid gap-6 md:grid-cols-2">
+              <GlassCard className="p-6 space-y-4">
+                <div>
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Distribuição de Nível CEFR</h4>
+                  <p className="text-[10px] text-muted-foreground">Distribuição estimada dos leads captados por nível CEFR.</p>
+                </div>
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieChartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {pieChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <ChartTooltip
+                        contentStyle={{ background: "#09090b", borderColor: "#27272a", borderRadius: "8px" }}
+                        itemStyle={{ fontSize: "12px", color: "#f4f4f5" }}
+                      />
+                      <Legend 
+                        verticalAlign="bottom" 
+                        height={36} 
+                        iconType="circle"
+                        formatter={(value) => <span className="text-[10px] font-semibold text-muted-foreground uppercase">{value}</span>}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </GlassCard>
+
+              <GlassCard className="p-6 space-y-4">
+                <div>
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Histórico de Captação de Leads</h4>
+                  <p className="text-[10px] text-muted-foreground">Volume diário de novos leads captados através dos formulários.</p>
+                </div>
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={timelineData}>
+                      <defs>
+                        <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="var(--color-primary, #6366f1)" stopOpacity={0.4}/>
+                          <stop offset="95%" stopColor="var(--color-primary, #6366f1)" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <XAxis 
+                        dataKey="date" 
+                        stroke="#71717a" 
+                        fontSize={10} 
+                        tickLine={false} 
+                        axisLine={false} 
+                      />
+                      <YAxis 
+                        stroke="#71717a" 
+                        fontSize={10} 
+                        tickLine={false} 
+                        axisLine={false} 
+                        allowDecimals={false}
+                      />
+                      <ChartTooltip
+                        contentStyle={{ background: "#09090b", borderColor: "#27272a", borderRadius: "8px" }}
+                        itemStyle={{ fontSize: "12px", color: "#f4f4f5" }}
+                        labelStyle={{ fontSize: "10px", color: "#a1a1aa" }}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="leads" 
+                        stroke="var(--color-primary, #6366f1)" 
+                        strokeWidth={2}
+                        fillOpacity={1} 
+                        fill="url(#colorLeads)" 
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </GlassCard>
+            </div>
+
             {/* List of active forms */}
             <div className="grid gap-6">
-              <GlassCard className="p-6 space-y-4 hover:border-white/10 transition-all">
+              <GlassCard className={`p-6 space-y-4 hover:border-white/10 transition-all ${!isNivelamentoActive ? "opacity-75" : ""}`}>
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <span className="rounded bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 uppercase">Nivelamento</span>
-                      <span className="rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5 uppercase">Ativo</span>
+                      <span className={`rounded text-[10px] font-bold px-2 py-0.5 uppercase ${
+                        isNivelamentoActive 
+                          ? "bg-emerald-500/10 text-emerald-400" 
+                          : "bg-rose-500/10 text-rose-400"
+                      }`}>
+                        {isNivelamentoActive ? "Ativo" : "Inativo"}
+                      </span>
+                      <ToggleSwitch checked={isNivelamentoActive} onChange={toggleNivelamento} />
                     </div>
-                    <h3 className="text-lg font-bold text-foreground mt-1">Teste de Nivelamento de Inglês (CEFR)</h3>
+                    <h3 className="text-lg font-bold text-foreground mt-1.5">Teste de Nivelamento de Inglês (CEFR)</h3>
                     <p className="text-xs text-muted-foreground">Avaliação gramatical e de vocabulário contendo {questions.length} questões com skip-logic adaptativa.</p>
                   </div>
                   
                   <div className="flex gap-2">
                     <button
-                      onClick={copyPublicLink}
+                      onClick={() => copyPublicLink("nivelamento")}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface/50 px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent transition-all cursor-pointer"
                     >
                       <Share2 className="size-3.5" /> Copiar Link
                     </button>
                     <button
-                      onClick={copyEmbedCode}
+                      onClick={() => copyEmbedCode("nivelamento")}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface/50 px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent transition-all cursor-pointer"
                     >
                       <Code className="size-3.5" /> Código Embed
@@ -548,25 +806,82 @@ function CaptacaoPage() {
                 </div>
               </GlassCard>
 
-              {/* Inactive template card for demonstration */}
-              <GlassCard className="p-6 opacity-60 border-dashed space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="rounded bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 uppercase">Matrícula</span>
-                      <span className="rounded bg-white/10 text-muted-foreground text-[10px] font-bold px-2 py-0.5 uppercase">Inativo</span>
+              {/* Pre-Matrícula form card */}
+              {!isMatriculaUnlocked ? (
+                <GlassCard className="p-6 opacity-70 border-dashed space-y-4 hover:opacity-90 transition-all">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="rounded bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 uppercase">Matrícula</span>
+                        <span className="rounded bg-white/10 text-muted-foreground text-[10px] font-bold px-2 py-0.5 uppercase">Inativo</span>
+                        <span className="rounded bg-amber-500/10 text-amber-400 text-[10px] font-bold px-2 py-0.5 uppercase">Premium</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-foreground mt-1.5">Formulário de Pré-Matrícula Online</h3>
+                      <p className="text-xs text-muted-foreground">Ficha de matrícula padrão para novos alunos. Captura dados residenciais, de responsáveis e financeiros.</p>
                     </div>
-                    <h3 className="text-lg font-bold text-foreground mt-1">Formulário de Pré-Matrícula Online</h3>
-                    <p className="text-xs text-muted-foreground">Ficha de matrícula padrão para novos alunos. Captura dados residenciais e financeiros.</p>
+                    <button
+                      onClick={() => setIsUnlockModalOpen(true)}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 px-3.5 py-2 text-xs font-bold text-white shadow-lg hover:shadow-amber-500/10 transition-all cursor-pointer border-0"
+                    >
+                      <Sparkles className="size-3.5" /> Ativar Módulo Premium
+                    </button>
                   </div>
-                  <button
-                    disabled
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-surface px-3 py-2 text-xs font-semibold text-muted-foreground cursor-not-allowed border border-transparent"
-                  >
-                    Ativar Módulo Premium
-                  </button>
-                </div>
-              </GlassCard>
+                </GlassCard>
+              ) : (
+                <GlassCard className={`p-6 space-y-4 hover:border-white/10 transition-all ${!isMatriculaActive ? "opacity-75" : ""}`}>
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3">
+                        <span className="rounded bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 uppercase">Matrícula</span>
+                        <span className={`rounded text-[10px] font-bold px-2 py-0.5 uppercase ${
+                          isMatriculaActive 
+                            ? "bg-emerald-500/10 text-emerald-400" 
+                            : "bg-rose-500/10 text-rose-400"
+                        }`}>
+                          {isMatriculaActive ? "Ativo" : "Inativo"}
+                        </span>
+                        <ToggleSwitch checked={isMatriculaActive} onChange={toggleMatricula} />
+                      </div>
+                      <h3 className="text-lg font-bold text-foreground mt-1.5">Formulário de Pré-Matrícula Online</h3>
+                      <p className="text-xs text-muted-foreground">Ficha de matrícula padrão para novos alunos. Captura dados residenciais, de responsáveis e financeiros.</p>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => copyPublicLink("pre-matricula")}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface/50 px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent transition-all cursor-pointer"
+                      >
+                        <Share2 className="size-3.5" /> Copiar Link
+                      </button>
+                      <button
+                        onClick={() => copyEmbedCode("pre-matricula")}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface/50 px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent transition-all cursor-pointer"
+                      >
+                        <Code className="size-3.5" /> Código Embed
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-hairline pt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-medium">
+                    <div>
+                      <span className="text-muted-foreground block">Matrículas Realizadas</span>
+                      <span className="font-semibold text-foreground">12 Alunos</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block">Estilo de Layout</span>
+                      <span className="font-semibold text-foreground">Formulário por Passos</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block">Destino do Lead</span>
+                      <span className="font-semibold text-foreground">Base de Alunos (Pré-Matrícula)</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block">White-label</span>
+                      <span className="font-semibold text-foreground">Cores e Logo Ativos</span>
+                    </div>
+                  </div>
+                </GlassCard>
+              )}
             </div>
           </div>
         )}
@@ -645,7 +960,7 @@ function CaptacaoPage() {
         {activeTab === "respostas" && (
           <div className="space-y-6 animate-in fade-in duration-300">
             {/* Search and control filter */}
-            <GlassCard className="p-4 flex items-center justify-between">
+            <GlassCard className="p-4 flex items-center justify-between gap-4">
               <div className="flex flex-1 items-center gap-2 rounded-lg border border-hairline bg-surface/50 px-3 py-2 max-w-md">
                 <Search className="size-4 text-muted-foreground" />
                 <input
@@ -655,6 +970,12 @@ function CaptacaoPage() {
                   className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
                 />
               </div>
+              <button
+                onClick={handleExportCSV}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface/50 hover:bg-accent px-4 py-2 text-xs font-semibold text-foreground hover:text-primary transition-all cursor-pointer bg-transparent border-hairline"
+              >
+                Exportar CSV
+              </button>
             </GlassCard>
 
             {/* Submissions table */}
@@ -685,8 +1006,13 @@ function CaptacaoPage() {
                       return (
                         <tr key={s.id} className="hover:bg-white/[0.01] transition-colors">
                           <td className="p-4">
-                            <p className="text-sm font-semibold text-foreground">{s.nome}</p>
-                            <span className="rounded bg-primary/10 text-primary text-[8px] font-extrabold px-1 py-0.5 uppercase">Lead Gerado</span>
+                            <button
+                              onClick={() => setSelectedLead(s)}
+                              className="text-sm font-semibold text-foreground hover:text-primary transition-colors text-left cursor-pointer bg-transparent border-0 p-0 block outline-none"
+                            >
+                              {s.nome}
+                            </button>
+                            <span className="rounded bg-primary/10 text-primary text-[8px] font-extrabold px-1 py-0.5 uppercase mt-0.5 inline-block">Lead Gerado</span>
                           </td>
                           <td className="p-4 text-xs text-muted-foreground">
                             <div className="flex items-center gap-1.5"><Mail className="size-3" /> {s.email}</div>
@@ -1059,6 +1385,178 @@ function CaptacaoPage() {
                   Salvar Questão
                 </button>
               </form>
+            </GlassCard>
+          </div>
+        )}
+        {/* --- PREMIUM MODULE UNLOCK MODAL --- */}
+        {isUnlockModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <GlassCard className="w-full max-w-md p-6 space-y-6 shadow-2xl relative border-amber-500/20">
+              <button
+                onClick={() => setIsUnlockModalOpen(false)}
+                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0"
+              >
+                <X className="size-4" />
+              </button>
+              
+              <div className="text-center space-y-3">
+                <div className="mx-auto size-16 grid place-items-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-orange-500/20">
+                  <Sparkles className="size-8 animate-pulse" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-extrabold text-foreground tracking-tight">Ativar Pré-Matrícula Online</h3>
+                  <p className="text-xs text-amber-400 font-bold uppercase tracking-wider">Módulo Premium</p>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Automatize a captação de matrículas da sua escola de idiomas com um portal digital. Permita que os alunos enviem dados cadastrais, endereço e dados financeiros diretamente.
+                </p>
+              </div>
+
+              <div className="space-y-3 bg-white/[0.02] border border-hairline rounded-xl p-4 text-xs">
+                <h4 className="font-bold text-foreground">O que está incluso:</h4>
+                <ul className="space-y-2 text-muted-foreground">
+                  <li className="flex items-center gap-2"><Check className="size-3.5 text-emerald-400 shrink-0" /> Portal público de Matrícula White-Label</li>
+                  <li className="flex items-center gap-2"><Check className="size-3.5 text-emerald-400 shrink-0" /> Coleta de dados pessoais, residenciais e CPF</li>
+                  <li className="flex items-center gap-2"><Check className="size-3.5 text-emerald-400 shrink-0" /> Integração automática com a base de Alunos</li>
+                  <li className="flex items-center gap-2"><Check className="size-3.5 text-emerald-400 shrink-0" /> Faturamento financeiro inicial automatizado</li>
+                </ul>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsUnlockModalOpen(false)}
+                  className="flex-1 rounded-lg border border-hairline bg-surface/50 hover:bg-accent py-2.5 text-xs font-semibold text-foreground cursor-pointer transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={unlockMatriculaModule}
+                  className="flex-1 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 hover:opacity-95 py-2.5 text-xs font-bold text-white shadow-lg shadow-amber-500/10 cursor-pointer transition-all border-0"
+                >
+                  Confirmar Ativação
+                </button>
+              </div>
+            </GlassCard>
+          </div>
+        )}
+
+        {/* --- LEAD DETAIL / ANSWERS REVIEW MODAL --- */}
+        {selectedLead && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <GlassCard className="w-full max-w-2xl p-6 space-y-6 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+              <button
+                onClick={() => setSelectedLead(null)}
+                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0"
+              >
+                <X className="size-4" />
+              </button>
+
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-hairline pb-4">
+                <div>
+                  <span className="rounded bg-primary/10 text-primary text-[8px] font-extrabold px-1.5 py-0.5 uppercase">Resultado Nivelamento</span>
+                  <h3 className="text-lg font-bold text-foreground mt-1">{selectedLead.nome}</h3>
+                  <p className="text-xs text-muted-foreground">Preenchido em {new Date(selectedLead.date).toLocaleString("pt-BR")}</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-2xl font-extrabold text-foreground">{selectedLead.level}</span>
+                  <p className="text-xs text-muted-foreground">Pontuação: <span className="font-bold text-primary">{selectedLead.score} / {selectedLead.total} acertos</span></p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs border-b border-hairline pb-4">
+                <div className="space-y-2">
+                  <h4 className="font-bold text-foreground">Dados de Contato</h4>
+                  <div className="space-y-1.5 text-muted-foreground">
+                    <p className="flex items-center gap-1.5"><Mail className="size-3.5 text-primary shrink-0" /> <strong>E-mail:</strong> {selectedLead.email}</p>
+                    <p className="flex items-center gap-1.5"><Phone className="size-3.5 text-primary shrink-0" /> <strong>Telefone:</strong> {selectedLead.telefone}</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-bold text-foreground">Ações de Conversão</h4>
+                  <div className="flex gap-2">
+                    <a
+                      href={`https://wa.me/${selectedLead.telefone.replace(/\D/g, "")}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-1.5 rounded bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white transition-all cursor-pointer shadow-sm border-0 flex-1"
+                    >
+                      <MessageSquare className="size-3.5" /> WhatsApp
+                    </a>
+                    <button
+                      onClick={() => {
+                        toast.success("Enviado e-mail de boas-vindas com o relatório!");
+                      }}
+                      className="inline-flex items-center justify-center gap-1.5 rounded border border-hairline bg-surface/50 hover:bg-accent px-3 py-1.5 text-[11px] font-bold text-foreground transition-all cursor-pointer flex-1"
+                    >
+                      <Mail className="size-3.5" /> Enviar Relatório
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-bold text-foreground text-xs uppercase tracking-wider border-b border-hairline pb-2">Gabarito de Respostas</h4>
+                <div className="space-y-4">
+                  {questions.map((q, idx) => {
+                    const leadAnswer = selectedLead.respostas?.[q.id];
+                    const isCorrect = leadAnswer === q.correta;
+
+                    return (
+                      <div key={q.id} className="rounded-lg border border-hairline bg-white/[0.01] p-4 space-y-2.5">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-bold text-muted-foreground">Questão #{idx + 1} ({q.nivel})</span>
+                          {leadAnswer ? (
+                            isCorrect ? (
+                              <span className="rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5">Correto</span>
+                            ) : (
+                              <span className="rounded bg-rose-500/10 text-rose-400 text-[10px] font-bold px-2 py-0.5">Incorreto</span>
+                            )
+                          ) : (
+                            <span className="rounded bg-zinc-500/10 text-zinc-400 text-[10px] font-bold px-2 py-0.5">Não Respondido</span>
+                          )}
+                        </div>
+
+                        <p className="text-xs font-semibold text-foreground leading-relaxed">{q.enunciado}</p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                          {[
+                            { key: "A", val: q.opcaoA },
+                            { key: "B", val: q.opcaoB },
+                            { key: "C", val: q.opcaoC },
+                            { key: "D", val: q.opcaoD },
+                          ].map((opt) => {
+                            const isChosen = leadAnswer === opt.key;
+                            const isAnswerCorrect = q.correta === opt.key;
+
+                            let optClass = "border-hairline text-muted-foreground bg-transparent";
+                            if (isChosen) {
+                              optClass = isCorrect 
+                                ? "border-emerald-500 bg-emerald-500/10 text-foreground font-semibold"
+                                : "border-rose-500 bg-rose-500/10 text-foreground font-semibold";
+                            } else if (isAnswerCorrect && !isCorrect && leadAnswer !== undefined) {
+                              optClass = "border-emerald-500/50 bg-emerald-500/5 text-emerald-400 font-semibold";
+                            }
+
+                            return (
+                              <div key={opt.key} className={`border rounded p-2 flex items-center justify-between ${optClass}`}>
+                                <span>({opt.key}) {opt.val}</span>
+                                {isChosen && (
+                                  isCorrect 
+                                    ? <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" />
+                                    : <X className="size-3.5 text-rose-400 shrink-0" />
+                                )}
+                                {!isChosen && isAnswerCorrect && !isCorrect && leadAnswer !== undefined && (
+                                  <span className="text-[9px] text-emerald-400 uppercase font-bold">Gabarito</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </GlassCard>
           </div>
         )}

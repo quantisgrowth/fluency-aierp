@@ -129,7 +129,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     pathname.startsWith("/login") ||
     pathname.startsWith("/manager") ||
     pathname.startsWith("/super-admin") ||
-    pathname.startsWith("/portal/aluno");
+    pathname.startsWith("/portal/aluno") ||
+    pathname.startsWith("/public");
 
   if (isCustomPortal) {
     return <div className="min-h-screen w-full bg-background">{children}</div>;

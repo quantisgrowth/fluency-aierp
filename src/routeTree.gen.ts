@@ -24,6 +24,8 @@ import { Route as AdminModulosRouteImport } from './routes/admin/modulos'
 import { Route as AdminPerfilRouteImport } from './routes/admin/perfil'
 import { Route as AdminUsuariosRouteImport } from './routes/admin/usuarios'
 import { Route as PortalAlunoRouteImport } from './routes/portal/aluno'
+import { Route as PublicPreMatriculaRouteImport } from './routes/public/pre-matricula'
+import { Route as PublicTesteNivelRouteImport } from './routes/public/teste-nivel'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -100,6 +102,16 @@ const PortalAlunoRoute = PortalAlunoRouteImport.update({
   path: '/portal/aluno',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PublicPreMatriculaRoute = PublicPreMatriculaRouteImport.update({
+  id: '/public/pre-matricula',
+  path: '/public/pre-matricula',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublicTesteNivelRoute = PublicTesteNivelRouteImport.update({
+  id: '/public/teste-nivel',
+  path: '/public/teste-nivel',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -117,6 +129,8 @@ export interface FileRoutesByFullPath {
   '/admin/perfil': typeof AdminPerfilRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/portal/aluno': typeof PortalAlunoRoute
+  '/public/pre-matricula': typeof PublicPreMatriculaRoute
+  '/public/teste-nivel': typeof PublicTesteNivelRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -134,6 +148,8 @@ export interface FileRoutesByTo {
   '/admin/perfil': typeof AdminPerfilRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/portal/aluno': typeof PortalAlunoRoute
+  '/public/pre-matricula': typeof PublicPreMatriculaRoute
+  '/public/teste-nivel': typeof PublicTesteNivelRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -152,6 +168,8 @@ export interface FileRoutesById {
   '/admin/perfil': typeof AdminPerfilRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/portal/aluno': typeof PortalAlunoRoute
+  '/public/pre-matricula': typeof PublicPreMatriculaRoute
+  '/public/teste-nivel': typeof PublicTesteNivelRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -171,6 +189,8 @@ export interface FileRouteTypes {
     | '/admin/perfil'
     | '/admin/usuarios'
     | '/portal/aluno'
+    | '/public/pre-matricula'
+    | '/public/teste-nivel'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -188,6 +208,8 @@ export interface FileRouteTypes {
     | '/admin/perfil'
     | '/admin/usuarios'
     | '/portal/aluno'
+    | '/public/pre-matricula'
+    | '/public/teste-nivel'
   id:
     | '__root__'
     | '/'
@@ -205,6 +227,8 @@ export interface FileRouteTypes {
     | '/admin/perfil'
     | '/admin/usuarios'
     | '/portal/aluno'
+    | '/public/pre-matricula'
+    | '/public/teste-nivel'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -223,6 +247,8 @@ export interface RootRouteChildren {
   AdminPerfilRoute: typeof AdminPerfilRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
   PortalAlunoRoute: typeof PortalAlunoRoute
+  PublicPreMatriculaRoute: typeof PublicPreMatriculaRoute
+  PublicTesteNivelRoute: typeof PublicTesteNivelRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -332,6 +358,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalAlunoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/public/pre-matricula': {
+      id: '/public/pre-matricula'
+      path: '/public/pre-matricula'
+      fullPath: '/public/pre-matricula'
+      preLoaderRoute: typeof PublicPreMatriculaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/public/teste-nivel': {
+      id: '/public/teste-nivel'
+      path: '/public/teste-nivel'
+      fullPath: '/public/teste-nivel'
+      preLoaderRoute: typeof PublicTesteNivelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -351,6 +391,8 @@ const rootRouteChildren: RootRouteChildren = {
   AdminPerfilRoute: AdminPerfilRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
   PortalAlunoRoute: PortalAlunoRoute,
+  PublicPreMatriculaRoute: PublicPreMatriculaRoute,
+  PublicTesteNivelRoute: PublicTesteNivelRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
