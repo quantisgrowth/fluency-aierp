@@ -22,7 +22,8 @@ export type SchoolUser = {
   email: string;
   role: UserRole;
   permissions: UserPermissions;
-  company: string;
+  companies: string[];
+  company?: string;
 };
 
 export type AdminProfile = {
@@ -30,6 +31,7 @@ export type AdminProfile = {
   email: string;
   phone: string;
   avatar: string;
+  avatarImage?: string;
 };
 
 type UserContextValue = {
@@ -38,8 +40,8 @@ type UserContextValue = {
   adminProfile: AdminProfile;
   activeRole: UserRole;
   activeCompany: string;
-  addUser: (name: string, email: string, role: UserRole, permissions: UserPermissions, company: string) => void;
-  updateUser: (id: string, name: string, email: string, role: UserRole, permissions: UserPermissions, company: string) => void;
+  addUser: (name: string, email: string, role: UserRole, permissions: UserPermissions, companies: string[]) => void;
+  updateUser: (id: string, name: string, email: string, role: UserRole, permissions: UserPermissions, companies: string[]) => void;
   deleteUser: (id: string) => void;
   updateProfile: (profile: Partial<AdminProfile>) => void;
   setActiveRole: (role: UserRole) => void;
@@ -63,7 +65,7 @@ const DEFAULT_USERS: SchoolUser[] = [
     email: "julia.kern@fluency.ai",
     role: "professor",
     permissions: { crm: false, financeiro: false, pedagogico: true, success: false },
-    company: "Unidade Pinheiros",
+    companies: ["Unidade Pinheiros"],
   },
   {
     id: "2",
@@ -71,7 +73,7 @@ const DEFAULT_USERS: SchoolUser[] = [
     email: "marcos.vidal@fluency.ai",
     role: "professor",
     permissions: { crm: false, financeiro: false, pedagogico: true, success: false },
-    company: "Unidade Pinheiros",
+    companies: ["Unidade Pinheiros"],
   },
   {
     id: "3",
@@ -79,7 +81,7 @@ const DEFAULT_USERS: SchoolUser[] = [
     email: "ana.beatriz@fluency.ai",
     role: "professor",
     permissions: { crm: false, financeiro: false, pedagogico: true, success: false },
-    company: "Unidade Jardins",
+    companies: ["Unidade Jardins"],
   },
   {
     id: "4",
@@ -87,7 +89,7 @@ const DEFAULT_USERS: SchoolUser[] = [
     email: "peter.hall@fluency.ai",
     role: "professor",
     permissions: { crm: false, financeiro: false, pedagogico: true, success: false },
-    company: "Unidade Paulista",
+    companies: ["Unidade Paulista"],
   },
   {
     id: "5",
@@ -95,7 +97,7 @@ const DEFAULT_USERS: SchoolUser[] = [
     email: "rodrigo.silva@fluency.ai",
     role: "operador",
     permissions: { crm: true, financeiro: true, pedagogico: true, success: false },
-    company: "Unidade Pinheiros",
+    companies: ["Unidade Pinheiros", "Unidade Jardins"],
   },
   {
     id: "6",
@@ -103,7 +105,7 @@ const DEFAULT_USERS: SchoolUser[] = [
     email: "clara.albuquerque@fluency.ai",
     role: "coordenador",
     permissions: { crm: false, financeiro: false, pedagogico: true, success: true },
-    company: "Unidade Pinheiros",
+    companies: ["Unidade Pinheiros", "Unidade Jardins", "Unidade Paulista"],
   },
 ];
 
@@ -125,7 +127,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
     try {
       const storedUsers = window.localStorage.getItem(STORAGE_USERS_KEY);
       if (storedUsers) {
-        setUsers(JSON.parse(storedUsers));
+        const parsed = JSON.parse(storedUsers);
+        if (Array.isArray(parsed)) {
+          const normalized: SchoolUser[] = parsed.map((u: any) => ({
+            ...u,
+            companies: Array.isArray(u.companies)
+              ? u.companies
+              : u.company
+                ? [u.company]
+                : [],
+          }));
+          setUsers(normalized);
+        }
       }
 
       const storedProfile = window.localStorage.getItem(STORAGE_PROFILE_KEY);
@@ -161,7 +174,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     email: string,
     role: UserRole,
     permissions: UserPermissions,
-    company: string
+    companies: string[]
   ) => {
     const newUser: SchoolUser = {
       id: Date.now().toString(),
@@ -169,7 +182,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       email,
       role,
       permissions,
-      company,
+      companies,
     };
     saveUsers([...users, newUser]);
   };
@@ -180,11 +193,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
     email: string,
     role: UserRole,
     permissions: UserPermissions,
-    company: string
+    companies: string[]
   ) => {
     saveUsers(
       users.map((u) =>
-        u.id === id ? { ...u, name, email, role, permissions, company } : u
+        u.id === id ? { ...u, name, email, role, permissions, companies } : u
       )
     );
   };

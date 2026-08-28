@@ -140,8 +140,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   const isRoleAllowed = (role: string, path: string) => {
     if (role === "admin") return true;
 
-    // Find the user profile simulating this role in the current unit to check their custom flags
-    const simulatedUser = users.find((u) => u.role === role && u.company === activeCompany);
+    // Find the user profile simulating this role in the current unit or with global access
+    const simulatedUser = users.find(
+      (u) =>
+        u.role === role &&
+        (!u.companies ||
+          u.companies.length === 0 ||
+          u.companies.includes(activeCompany) ||
+          activeCompany === "Todas as Unidades" ||
+          u.company === activeCompany)
+    );
 
     if (simulatedUser) {
       if (path === "/financeiro") return simulatedUser.permissions.financeiro;
@@ -282,6 +290,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               onChange={(e) => setActiveCompany(e.target.value)}
               className="rounded-lg border border-hairline bg-surface/60 px-2 py-1 text-xs font-semibold text-foreground outline-none cursor-pointer focus:border-primary hover:bg-surface transition-all"
             >
+              <option value="Todas as Unidades">Todas as Unidades</option>
               {companies.map((c) => (
                 <option key={c} value={c}>
                   {c.replace("Unidade ", "")}
@@ -301,9 +310,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Link
             to="/admin/perfil"
             title="Meu Perfil"
-            className="grid size-9 place-items-center rounded-full border border-hairline bg-surface-elevated text-xs font-semibold text-foreground hover:border-primary transition-all cursor-pointer"
+            className="grid size-9 place-items-center rounded-full border border-hairline bg-surface-elevated text-xs font-semibold text-foreground hover:border-primary transition-all cursor-pointer overflow-hidden shadow-sm"
           >
-            {adminProfile.avatar}
+            {adminProfile.avatarImage ? (
+              <img
+                src={adminProfile.avatarImage}
+                alt={adminProfile.name}
+                className="size-full object-cover"
+              />
+            ) : (
+              adminProfile.avatar
+            )}
           </Link>
         </header>
         <main className="flex-1 px-5 py-8 sm:px-8">{children}</main>

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import {
   Flame,
@@ -14,7 +14,10 @@ import {
   BookOpen,
   ShoppingBag,
   Sparkle,
-  Gift
+  Gift,
+  ArrowLeft,
+  LayoutDashboard,
+  HeartPulse
 } from "lucide-react";
 import { useTenant } from "@/modules/tenant-context";
 import { toast } from "sonner";
@@ -349,27 +352,96 @@ function PortalAlunoPage() {
   const xpPercentage = (xp / nextLevelXp) * 100;
 
   return (
-    <div className="mx-auto max-w-[1400px] flex flex-col lg:flex-row items-center justify-center gap-12 py-4 animate-in fade-in duration-300">
-      
-      {/* Informative Side Panel (Desktop only) */}
-      <div className="hidden lg:flex flex-col justify-center max-w-sm space-y-4">
-        <span className="grid size-11 place-items-center rounded-xl bg-primary/10 border border-primary/20 text-primary">
-          <Award className="size-5" />
-        </span>
-        <h2 className="text-2xl font-bold text-foreground">Portal do Aluno Gamificado</h2>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Esta é a visualização simulação-mobile do **Portal do Aluno**. Ele foi desenvolvido com foco em engajamento mobile-first de crianças e adolescentes.
-        </p>
-        <div className="rounded-xl border border-hairline bg-surface/40 p-4 text-xs text-muted-foreground space-y-2">
-          <p className="font-semibold text-foreground flex items-center gap-1">
-            <Sparkles className="size-3.5 text-primary" /> Conexão Dinâmica:
-          </p>
-          <p>As missões e prêmios da loja exibidos ao lado refletem exatamente o que foi configurado no painel do Gestor da Escola (menu **Success & Retenção**).</p>
-          <p>Praticar vocabulário e resgatar itens deduz as moedas do saldo do aluno em tempo real.</p>
+    <div className="min-h-screen w-full bg-background flex flex-col justify-between">
+      {/* TOP NAVIGATION BAR FOR MANAGER */}
+      <header className="sticky top-0 z-50 w-full border-b border-hairline bg-background/80 backdrop-blur-md px-4 sm:px-8 py-3 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-3">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/20 px-3.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition-all shadow-sm active:scale-95 cursor-pointer"
+          >
+            <ArrowLeft className="size-3.5" />
+            <span>Voltar ao Painel do Gestor</span>
+          </Link>
+          <span className="hidden sm:inline-block h-4 w-[1px] bg-hairline" />
+          <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+            <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+            Ambiente de Simulação do Aluno
+          </span>
         </div>
-      </div>
 
-      {/* SMARTPHONE DEVICE WRAPPER */}
+        <div className="flex items-center gap-2">
+          <Link
+            to="/retencao"
+            className="hidden md:inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface/60 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-surface transition-all"
+          >
+            <HeartPulse className="size-3.5 text-rose-400" />
+            <span>Configurar Missões & Prêmios</span>
+          </Link>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface/60 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-surface transition-all"
+          >
+            <LayoutDashboard className="size-3.5 text-primary" />
+            <span>Dashboard</span>
+          </Link>
+        </div>
+      </header>
+
+      {/* MAIN CONTAINER */}
+      <main className="mx-auto max-w-[1400px] w-full flex-1 flex flex-col lg:flex-row items-center justify-center gap-12 py-8 px-4 animate-in fade-in duration-300">
+        
+        {/* Informative Side Panel (Desktop only) */}
+        <div className="hidden lg:flex flex-col justify-center max-w-sm space-y-5">
+          <div className="flex items-center gap-3">
+            <span className="grid size-11 place-items-center rounded-xl bg-primary/10 border border-primary/20 text-primary">
+              <Award className="size-5" />
+            </span>
+            <div>
+              <h2 className="text-xl font-bold text-foreground">Portal do Aluno Gamificado</h2>
+              <p className="text-xs text-muted-foreground">Visualização mobile em tempo real</p>
+            </div>
+          </div>
+
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Esta é a visualização simulação-mobile do **Portal do Aluno**. Ele foi desenvolvido com foco em engajamento mobile-first de crianças e adolescentes.
+          </p>
+
+          <div className="rounded-xl border border-hairline bg-surface/40 p-4 text-xs text-muted-foreground space-y-2">
+            <p className="font-semibold text-foreground flex items-center gap-1">
+              <Sparkles className="size-3.5 text-primary" /> Conexão Dinâmica:
+            </p>
+            <p>As missões e prêmios da loja exibidos ao lado refletem exatamente o que foi configurado no painel do Gestor da Escola (menu **Success & Retenção**).</p>
+            <p>Praticar vocabulário e resgatar itens deduz as moedas do saldo do aluno em tempo real.</p>
+          </div>
+
+          {/* Quick Actions Card */}
+          <div className="rounded-xl border border-hairline bg-surface-elevated/40 p-4 space-y-3">
+            <p className="text-xs font-semibold text-foreground uppercase tracking-wider">Ações do Gestor</p>
+            <div className="flex flex-col gap-2">
+              <Link
+                to="/"
+                className="flex items-center justify-between rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-all shadow"
+              >
+                <span className="flex items-center gap-2">
+                  <LayoutDashboard className="size-4" /> Ir para o Dashboard
+                </span>
+                <ChevronRight className="size-4" />
+              </Link>
+              <Link
+                to="/retencao"
+                className="flex items-center justify-between rounded-lg border border-hairline bg-surface px-3.5 py-2 text-xs font-medium text-foreground hover:bg-surface-elevated transition-all"
+              >
+                <span className="flex items-center gap-2">
+                  <HeartPulse className="size-4 text-rose-400" /> Editar Missões de Gamificação
+                </span>
+                <ChevronRight className="size-4 text-muted-foreground" />
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* SMARTPHONE DEVICE WRAPPER */}
       <div className="relative mx-auto w-full max-w-[390px] h-[820px] rounded-[50px] border-[12px] border-neutral-900 bg-[#07090e] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col justify-between text-white select-none">
         
         {/* Notch details */}
@@ -695,7 +767,7 @@ function PortalAlunoPage() {
           <div className="w-32 h-1 bg-white/20 rounded-full" />
         </div>
       </div>
-
+      </main>
     </div>
   );
 }
