@@ -473,3 +473,196 @@ export const classDiary = [
   { turma: "A2 · Regular Noite", data: "18/08", conteudo: "Unit 4 — Past continuous drills", presenca: "12/14" },
   { turma: "C1 · Advanced", data: "17/08", conteudo: "Essay workshop — cohesion", presenca: "5/6" },
 ];
+
+// --- PRICING POLICY & FORMULA TYPES ---
+export type PricingModelType = "mensalidade_fixa" | "hora_aula" | "frequencia_semanal" | "pacote_fechado";
+
+export type PricingPolicy = {
+  modeloAtivo: PricingModelType;
+  mensalidadePadrao: number;
+  mensalidadesPorNivel: Record<string, number>;
+  valorHoraAula: number;
+  valorHoraProfessorMedio: number; // Custo hora do professor
+  tabelaFrequencia: { vezesPorSemana: number; valorMensal: number; descricao: string }[];
+  pacoteSemestral: { valorTotal: number; parcelasMax: number; descontoVistaPct: number };
+  taxaMatricula: number;
+  taxaMaterialDidatico: number;
+};
+
+export const defaultPricingPolicy: PricingPolicy = {
+  modeloAtivo: "mensalidade_fixa",
+  mensalidadePadrao: 450,
+  mensalidadesPorNivel: {
+    A1: 390,
+    A2: 450,
+    B1: 490,
+    B2: 520,
+    C1: 590,
+    C2: 650,
+  },
+  valorHoraAula: 65.0,
+  valorHoraProfessorMedio: 45.0,
+  tabelaFrequencia: [
+    { vezesPorSemana: 1, valorMensal: 280, descricao: "1x na semana (ex: Sábados Intensivos ou Sextas)" },
+    { vezesPorSemana: 2, valorMensal: 450, descricao: "2x na semana (ex: Seg/Qua ou Ter/Qui - Padrão)" },
+    { vezesPorSemana: 3, valorMensal: 590, descricao: "3x na semana (ex: Seg/Qua/Sex - Semi-Intensivo)" },
+    { vezesPorSemana: 5, valorMensal: 890, descricao: "5x na semana (Imersão Diária)" },
+  ],
+  pacoteSemestral: {
+    valorTotal: 2520,
+    parcelasMax: 6,
+    descontoVistaPct: 10,
+  },
+  taxaMatricula: 150,
+  taxaMaterialDidatico: 280,
+};
+
+// --- SCHOOL COSTS & DRE TYPES ---
+export type CostCategory =
+  | "Folha Docente (Professores)"
+  | "Infraestrutura & Imóvel"
+  | "Utilidades & Consumo"
+  | "Administrativo & Operacional"
+  | "Marketing & Captação"
+  | "Materiais & Recursos Pedagógicos"
+  | "Sistemas, TI & Licenças";
+
+export type SchoolCost = {
+  id: string;
+  descricao: string;
+  categoria: CostCategory;
+  tipo: "fixo" | "variavel";
+  valor: number;
+  frequencia: "mensal" | "anual" | "por_aluno" | "por_hora_aula";
+  recorrente: boolean;
+  diaVencimento?: number;
+  responsavel?: string;
+  observacoes?: string;
+};
+
+export const initialSchoolCosts: SchoolCost[] = [
+  {
+    id: "cost-1",
+    descricao: "Aluguel do Imóvel Comercial (Sede Principal)",
+    categoria: "Infraestrutura & Imóvel",
+    tipo: "fixo",
+    valor: 8500.0,
+    frequencia: "mensal",
+    recorrente: true,
+    diaVencimento: 10,
+    responsavel: "Direção Geral",
+    observacoes: "Contrato de locação reajustado anualmente pelo IGP-M.",
+  },
+  {
+    id: "cost-2",
+    descricao: "Condomínio & IPTU Comercial",
+    categoria: "Infraestrutura & Imóvel",
+    tipo: "fixo",
+    valor: 1850.0,
+    frequencia: "mensal",
+    recorrente: true,
+    diaVencimento: 15,
+    responsavel: "Administração",
+  },
+  {
+    id: "cost-3",
+    descricao: "Energia Elétrica (Enel / Ar Condicionados 6 Salas)",
+    categoria: "Utilidades & Consumo",
+    tipo: "fixo",
+    valor: 2450.0,
+    frequencia: "mensal",
+    recorrente: true,
+    diaVencimento: 20,
+    responsavel: "Manutenção",
+    observacoes: "Consumo médio de 1.800 kWh/mês.",
+  },
+  {
+    id: "cost-4",
+    descricao: "Internet Fibra Dedicada 1 Gbps + Wi-Fi Mesh Alunos",
+    categoria: "Utilidades & Consumo",
+    tipo: "fixo",
+    valor: 480.0,
+    frequencia: "mensal",
+    recorrente: true,
+    diaVencimento: 5,
+    responsavel: "TI",
+  },
+  {
+    id: "cost-5",
+    descricao: "Salários: Equipe de Recepção & Atendimento (2 Colab.)",
+    categoria: "Administrativo & Operacional",
+    tipo: "fixo",
+    valor: 5400.0,
+    frequencia: "mensal",
+    recorrente: true,
+    diaVencimento: 5,
+    responsavel: "RH",
+  },
+  {
+    id: "cost-6",
+    descricao: "Salário: Coordenação Pedagógica Geral",
+    categoria: "Administrativo & Operacional",
+    tipo: "fixo",
+    valor: 4800.0,
+    frequencia: "mensal",
+    recorrente: true,
+    diaVencimento: 5,
+    responsavel: "Diretoria",
+  },
+  {
+    id: "cost-7",
+    descricao: "Serviço de Limpeza, Conservação & Copa",
+    categoria: "Administrativo & Operacional",
+    tipo: "fixo",
+    valor: 2200.0,
+    frequencia: "mensal",
+    recorrente: true,
+    diaVencimento: 10,
+    responsavel: "Apoio Operacional",
+  },
+  {
+    id: "cost-8",
+    descricao: "Tráfego Pago & Anúncios (Meta Ads & Google Ads)",
+    categoria: "Marketing & Captação",
+    tipo: "fixo",
+    valor: 3500.0,
+    frequencia: "mensal",
+    recorrente: true,
+    diaVencimento: 1,
+    responsavel: "Comercial / Marketing",
+    observacoes: "Geração de leads para matrículas do próximo semestre.",
+  },
+  {
+    id: "cost-9",
+    descricao: "Licenças de Software, ERP Fluency AI & Google Workspace",
+    categoria: "Sistemas, TI & Licenças",
+    tipo: "fixo",
+    valor: 1190.0,
+    frequencia: "mensal",
+    recorrente: true,
+    diaVencimento: 15,
+    responsavel: "TI",
+  },
+  {
+    id: "cost-10",
+    descricao: "Custo Médio de Aquisição de Livros Didáticos (Estoque)",
+    categoria: "Materiais & Recursos Pedagógicos",
+    tipo: "variavel",
+    valor: 120.0, // Custo por livro
+    frequencia: "por_aluno",
+    recorrente: false,
+    responsavel: "Coordenação",
+    observacoes: "Comprado da editora a R$ 120 e repassado/incluso a R$ 280.",
+  },
+  {
+    id: "cost-11",
+    descricao: "Hora/Aula Professores Contratados (Média Horas Lecionadas)",
+    categoria: "Folha Docente (Professores)",
+    tipo: "variavel",
+    valor: 45.0, // R$/hora
+    frequencia: "por_hora_aula",
+    recorrente: true,
+    responsavel: "Coordenação Pedagógica",
+    observacoes: "Valor base de R$ 45/h + DSR para corpo docente.",
+  },
+];

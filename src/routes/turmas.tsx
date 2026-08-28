@@ -24,6 +24,7 @@ import {
   Building2,
   MapPin,
   Tv,
+  DollarSign,
 } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
@@ -2768,6 +2769,61 @@ function TurmasPage() {
                         </p>
                       )}
                     </div>
+
+                    {/* UNIT ECONOMICS & FINANCIAL HEALTH OF THE CLASS */}
+                    {(() => {
+                      const monthlyHours = weeklyHours * 4.33;
+                      const teacherCostMonthly = monthlyHours * 45; // R$ 45/h base
+                      const roomOverheadCost = 150; // Rateio energia/infra
+                      const classTotalCost = teacherCostMonthly + roomOverheadCost;
+                      const classEstimatedRevenue = enrolledStudents.length * 450;
+                      const classProfit = classEstimatedRevenue - classTotalCost;
+                      const classMarginPct = classEstimatedRevenue > 0 ? (classProfit / classEstimatedRevenue) * 100 : 0;
+                      const breakEvenStudents = Math.ceil(classTotalCost / 450);
+
+                      return (
+                        <div className="space-y-2.5 pt-3 border-t border-hairline">
+                          <div className="flex justify-between items-center">
+                            <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
+                              <DollarSign className="size-3.5 text-primary" /> Saúde Financeira & Unit Economics da Turma
+                            </h4>
+                            <span className="rounded bg-primary/10 border border-primary/20 px-2 py-0.5 text-[9px] font-bold text-primary">
+                              Precificação Ativa
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                            <div className="rounded-lg border border-hairline bg-surface/40 p-2.5 space-y-0.5">
+                              <p className="text-[9px] font-semibold text-muted-foreground uppercase">Custo Docente</p>
+                              <p className="font-bold text-foreground">{teacherCostMonthly.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+                              <p className="text-[8px] text-muted-foreground">~{monthlyHours.toFixed(0)}h/mês × R$ 45/h</p>
+                            </div>
+
+                            <div className="rounded-lg border border-hairline bg-surface/40 p-2.5 space-y-0.5">
+                              <p className="text-[9px] font-semibold text-muted-foreground uppercase">Receita Estimada</p>
+                              <p className="font-bold text-foreground">{classEstimatedRevenue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+                              <p className="text-[8px] text-muted-foreground">{enrolledStudents.length} alunos × R$ 450</p>
+                            </div>
+
+                            <div className={`rounded-lg border p-2.5 space-y-0.5 ${
+                              classProfit >= 0
+                                ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
+                                : "bg-rose-500/10 border-rose-500/25 text-rose-400"
+                            }`}>
+                              <p className="text-[9px] font-semibold uppercase">Lucro Líquido</p>
+                              <p className="font-bold">{classProfit.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+                              <p className="text-[8px] opacity-90">{classMarginPct.toFixed(0)}% margem líquida</p>
+                            </div>
+
+                            <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-2.5 space-y-0.5 text-amber-300">
+                              <p className="text-[9px] font-semibold uppercase text-amber-400">Ponto de Equilíbrio</p>
+                              <p className="font-bold text-foreground">{breakEvenStudents} Alunos</p>
+                              <p className="text-[8px] opacity-90">Para cobrir custos da turma</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                   </div>
                 </div>
