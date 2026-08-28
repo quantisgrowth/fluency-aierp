@@ -48,13 +48,192 @@ export const upcomingClasses = [
   { turma: "C1 · Advanced", horario: "20:00", professor: "Ana Beatriz", sala: "Online" },
 ];
 
+// --- EDUCATIONAL PRODUCTS & COURSE CATALOG TYPES ---
+export type EducationalProduct = {
+  id: string;
+  nome: string;
+  codigo: string;
+  modalidade: PricingModelType; // "mensalidade_fixa" | "hora_aula" | "frequencia_semanal" | "pacote_fechado"
+  nivel: string;
+  cargaHorariaSemanal: number;
+  livroPadraoId?: string;
+  livroPadraoNome?: string;
+  valorBase: number;
+  descricao: string;
+  publicoAlvo: string;
+  ativo: boolean;
+  permiteTurma: boolean;
+  maxAlunosTurma?: number;
+};
+
+export const initialEducationalProducts: EducationalProduct[] = [
+  {
+    id: "prod-regular",
+    nome: "Inglês Regular Semestral (Turma)",
+    codigo: "CUR-REG-01",
+    modalidade: "mensalidade_fixa",
+    nivel: "A1 a C2",
+    cargaHorariaSemanal: 3,
+    livroPadraoId: "livro-2",
+    livroPadraoNome: "Pathway to Fluency B2",
+    valorBase: 450.0,
+    descricao: "Curso presencial em turmas de até 14 alunos com foco em conversação, gramática aplicada e dinâmicas interativas.",
+    publicoAlvo: "Jovens e Adultos (Geral)",
+    ativo: true,
+    permiteTurma: true,
+    maxAlunosTurma: 14,
+  },
+  {
+    id: "prod-vip",
+    nome: "Inglês VIP Executivo (Particular / Hora-Aula)",
+    codigo: "CUR-VIP-02",
+    modalidade: "hora_aula",
+    nivel: "Personalizado (A1..C2)",
+    cargaHorariaSemanal: 2,
+    livroPadraoId: "livro-3",
+    livroPadraoNome: "Professional English C1",
+    valorBase: 75.0, // R$ 75 / hora lecionada
+    descricao: "Aulas individuais 1-on-1 com professor dedicado e flexibilidade de horários. Cobrança proporcional às horas consumidas no mês.",
+    publicoAlvo: "Executivos, Médicos e Profissionais com agenda dinâmica",
+    ativo: true,
+    permiteTurma: false,
+    maxAlunosTurma: 1,
+  },
+  {
+    id: "prod-ielts",
+    nome: "Preparatório IELTS & TOEFL Intensivo (Pacote)",
+    codigo: "CUR-EXAM-03",
+    modalidade: "pacote_fechado",
+    nivel: "B2 / C1 / C2",
+    cargaHorariaSemanal: 4,
+    livroPadraoId: "livro-4",
+    livroPadraoNome: "Academic Mastery C2",
+    valorBase: 2800.0, // Valor total do módulo em até 6x
+    descricao: "Módulo fechado de 60 horas focado em simulados cronometrados, redação acadêmica e estratégias de pontuação máxima em testes internacionais.",
+    publicoAlvo: "Candidatos a bolsas internacionais, imigração e mestrados",
+    ativo: true,
+    permiteTurma: true,
+    maxAlunosTurma: 10,
+  },
+  {
+    id: "prod-kids",
+    nome: "Kids & Teens Saturday Immersion",
+    codigo: "CUR-KIDS-04",
+    modalidade: "frequencia_semanal",
+    nivel: "A1 / A2 Kids",
+    cargaHorariaSemanal: 3,
+    livroPadraoId: "livro-1",
+    livroPadraoNome: "English Foundations A1",
+    valorBase: 290.0, // 1x na semana aos sábados
+    descricao: "Imersão lúdica e interativa de 3 horas aos sábados com jogos pedagógicos, contação de histórias e gamificação.",
+    publicoAlvo: "Crianças e Adolescentes (7 a 14 anos)",
+    ativo: true,
+    permiteTurma: true,
+    maxAlunosTurma: 12,
+  },
+  {
+    id: "prod-business",
+    nome: "Business & Corporate English (Semi-Intensivo)",
+    codigo: "CUR-CORP-05",
+    modalidade: "mensalidade_fixa",
+    nivel: "B1 / B2 / C1",
+    cargaHorariaSemanal: 3,
+    livroPadraoId: "livro-3",
+    livroPadraoNome: "Professional English C1",
+    valorBase: 490.0,
+    descricao: "Focado em apresentações corporativas, reuniões executivas, negociações globais e vocabulário financeiro.",
+    publicoAlvo: "Profissionais de empresas multinacionais",
+    ativo: true,
+    permiteTurma: true,
+    maxAlunosTurma: 10,
+  },
+];
+
 export const students = [
-  { nome: "Marina Rocha", nivel: "B2", turma: "Conversation Noite", inicio: "12/03/2026", status: "Ativo", horasContratadas: 4 },
-  { nome: "Caio Bertolli", nivel: "A2", turma: "Regular Noite", inicio: "04/05/2026", status: "Inadimplente", horasContratadas: 4 },
-  { nome: "Helena Prado", nivel: "C1", turma: "Advanced Manhã", inicio: "22/01/2026", status: "Ativo", horasContratadas: 2 },
-  { nome: "Bruno Salles", nivel: "A2", turma: "Regular Tarde", inicio: "18/06/2026", status: "Em risco", horasContratadas: 4 },
-  { nome: "Aline Ferraz", nivel: "B1", turma: "Teens", inicio: "09/07/2026", status: "Ativo", horasContratadas: 2 },
-  { nome: "Rafael Lima", nivel: "C1", turma: "Advanced Noite", inicio: "27/02/2026", status: "Em risco", horasContratadas: 4 },
+  {
+    nome: "Marina Rocha",
+    nivel: "B2",
+    turma: "Conversation Noite",
+    inicio: "12/03/2026",
+    status: "Ativo",
+    horasContratadas: 3,
+    produtoId: "prod-regular",
+    produtoNome: "Inglês Regular Semestral (Turma)",
+    tipoContrato: "turma" as const,
+    valorMensalidade: 450,
+    diaVencimento: 10,
+    livroEmUso: "Pathway to Fluency B2",
+  },
+  {
+    nome: "Caio Bertolli",
+    nivel: "A2",
+    turma: "Regular Noite",
+    inicio: "04/05/2026",
+    status: "Inadimplente",
+    horasContratadas: 3,
+    produtoId: "prod-regular",
+    produtoNome: "Inglês Regular Semestral (Turma)",
+    tipoContrato: "turma" as const,
+    valorMensalidade: 450,
+    diaVencimento: 10,
+    livroEmUso: "English Foundations A1",
+  },
+  {
+    nome: "Helena Prado",
+    nivel: "C1",
+    turma: "VIP Individual",
+    inicio: "22/01/2026",
+    status: "Ativo",
+    horasContratadas: 2,
+    produtoId: "prod-vip",
+    produtoNome: "Inglês VIP Executivo (Particular)",
+    tipoContrato: "hora_aula" as const,
+    valorMensalidade: 650, // 2h/sem * 4.33 * 75
+    diaVencimento: 5,
+    livroEmUso: "Professional English C1",
+  },
+  {
+    nome: "Bruno Salles",
+    nivel: "A2",
+    turma: "Regular Tarde",
+    inicio: "18/06/2026",
+    status: "Em risco",
+    horasContratadas: 3,
+    produtoId: "prod-regular",
+    produtoNome: "Inglês Regular Semestral (Turma)",
+    tipoContrato: "turma" as const,
+    valorMensalidade: 450,
+    diaVencimento: 15,
+    livroEmUso: "English Foundations A1",
+  },
+  {
+    nome: "Aline Ferraz",
+    nivel: "B1",
+    turma: "Preparatório IELTS Turma A",
+    inicio: "09/07/2026",
+    status: "Ativo",
+    horasContratadas: 4,
+    produtoId: "prod-ielts",
+    produtoNome: "Preparatório IELTS & TOEFL Intensivo (Pacote)",
+    tipoContrato: "pacote_fechado" as const,
+    valorMensalidade: 466.67, // R$ 2800 / 6 parcelas
+    diaVencimento: 10,
+    livroEmUso: "Academic Mastery C2",
+  },
+  {
+    nome: "Rafael Lima",
+    nivel: "C1",
+    turma: "Advanced Noite",
+    inicio: "27/02/2026",
+    status: "Em risco",
+    horasContratadas: 3,
+    produtoId: "prod-business",
+    produtoNome: "Business & Corporate English",
+    tipoContrato: "turma" as const,
+    valorMensalidade: 490,
+    diaVencimento: 10,
+    livroEmUso: "Professional English C1",
+  },
 ];
 
 export type ClassColorTheme = {
@@ -699,5 +878,69 @@ export const initialSchoolCosts: SchoolCost[] = [
     recorrente: true,
     responsavel: "Coordenação Pedagógica",
     observacoes: "Valor base de R$ 45/h + DSR para corpo docente.",
+  },
+];
+
+// --- LIVROS E TRILHAS DIDÁTICAS COMPARTILHADAS ---
+export type BookTrailLesson = {
+  id: string;
+  aula: number;
+  tema: string;
+  descricao: string;
+};
+
+export type BookTrail = {
+  id: string;
+  titulo: string;
+  nivel: string;
+  aulas: BookTrailLesson[];
+};
+
+export const livrosTrilhas: BookTrail[] = [
+  {
+    id: "livro-1",
+    titulo: "Kids Explorer - Stage 1",
+    nivel: "A1",
+    aulas: [
+      { id: "l1-1", aula: 1, tema: "Welcome & Color Songs", descricao: "Apresentação e introdução de cores primárias com música." },
+      { id: "l1-2", aula: 2, tema: "Vocabulary: Farm Animals", descricao: "Aprendizado dos nomes de animais de fazenda em inglês." },
+      { id: "l1-3", aula: 3, tema: "Singing & Action Verbs", descricao: "Música interativa e ações (jump, run, clap)." },
+      { id: "l1-4", aula: 4, tema: "Vocabulary: Fruit & Foods", descricao: "Introdução de nomes de frutas comuns e vocabulário de comida." },
+      { id: "l1-5", aula: 5, tema: "Review & Games", descricao: "Atividades lúdicas de revisão de cores e animais." },
+    ],
+  },
+  {
+    id: "livro-2",
+    titulo: "English File - Elementary & Pre-Int",
+    nivel: "A2",
+    aulas: [
+      { id: "l2-1", aula: 1, tema: "Simple Past vs Past Continuous", descricao: "Revisão e exercícios de gramática com tempos verbais passados." },
+      { id: "l2-2", aula: 2, tema: "Travel Vocabulary & Bookings", descricao: "Como fazer reservas e vocabulário útil para viagens." },
+      { id: "l2-3", aula: 3, tema: "Conversational Drills", descricao: "Simulações práticas de diálogo em aeroportos e hotéis." },
+      { id: "l2-4", aula: 4, tema: "Reading & Pronunciation", descricao: "Leitura de textos e foco em pronúncia e entonação." },
+    ],
+  },
+  {
+    id: "livro-3",
+    titulo: "Oxford Grammar & Business English",
+    nivel: "B1",
+    aulas: [
+      { id: "l3-1", aula: 1, tema: "Greetings & Self Introduction", descricao: "Como se apresentar profissionalmente em inglês." },
+      { id: "l3-2", aula: 2, tema: "Writing Professional Emails", descricao: "Estruturas, formalidades e expressões de e-mail comercial." },
+      { id: "l3-3", aula: 3, tema: "Meeting Phrasal Verbs", descricao: "Principais phrasal verbs usados em reuniões." },
+      { id: "l3-4", aula: 4, tema: "Negotiation Tactics", descricao: "Vocabulário de negociação e expressão de opiniões." },
+    ],
+  },
+  {
+    id: "livro-4",
+    titulo: "Cambridge - Conversation Mastery & C1",
+    nivel: "B2",
+    aulas: [
+      { id: "l4-1", aula: 1, tema: "Welcome & Diagnostic Speaking", descricao: "Apresentação e avaliação inicial de fluência oral." },
+      { id: "l4-2", aula: 2, tema: "Debating the Future of Work - AI Impact", descricao: "Debate estruturado sobre o impacto da Inteligência Artificial no mercado." },
+      { id: "l4-3", aula: 3, tema: "Expressing Agreement & Disagreement", descricao: "Expressões e conectores para concordar e discordar educadamente." },
+      { id: "l4-4", aula: 4, tema: "Idiomatic Expressions for Negotiation", descricao: "Expressões idiomáticas nativas usadas em acordos." },
+      { id: "l4-5", aula: 5, tema: "Final Presentation - Persuasive Pitch", descricao: "Apresentações finais e feedbacks individuais detalhados." },
+    ],
   },
 ];
