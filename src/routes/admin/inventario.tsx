@@ -32,6 +32,7 @@ import {
   Wifi,
   Volume2,
   Maximize2,
+  ArrowLeft,
 } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
@@ -145,10 +146,16 @@ function InventarioPage() {
   const [selectedMapClass, setSelectedMapClass] = useState<any | null>(null);
   const [isMapClassDetailOpen, setIsMapClassDetailOpen] = useState(false);
 
+  // View State: "dashboard" (Standard tabbed inventory) | "sala-detail" (Full Page Dedicated Room Manager)
+  const [currentView, setCurrentView] = useState<"dashboard" | "sala-detail">("dashboard");
+
+  // Room Equipment Search and Segment Filters inside Full Page View
+  const [equipSearchTerm, setEquipSearchTerm] = useState("");
+  const [equipSegmentFilter, setEquipSegmentFilter] = useState<string>("todos");
+
   // Modals state
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
-  const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Classroom | null>(null);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [qrItem, setQrItem] = useState<InventoryItem | null>(null);
@@ -307,10 +314,12 @@ function InventarioPage() {
     setRoomStatus("Disponível");
     setRoomResponsavel("Marcos Vidal");
     setRoomAllocatedItemIds([]);
-    setRoomFacilities(["Wi-Fi Fluency-5G", "Quadro Magnético"]);
+    setRoomFacilities(["Wi-Fi Fluency-5G", "Quadro Magnético", "Ar Condicionado 18k BTUs"]);
     setSelectedEquipIdToAllocate("");
     setNewFacilityInput("");
-    setIsRoomModalOpen(true);
+    setEquipSearchTerm("");
+    setEquipSegmentFilter("todos");
+    setCurrentView("sala-detail");
   };
 
   const handleOpenEditRoom = (room: Classroom) => {
@@ -332,7 +341,9 @@ function InventarioPage() {
     
     setSelectedEquipIdToAllocate("");
     setNewFacilityInput("");
-    setIsRoomModalOpen(true);
+    setEquipSearchTerm("");
+    setEquipSegmentFilter("todos");
+    setCurrentView("sala-detail");
   };
 
   const handleAllocateEquipment = (itemId: string) => {
@@ -431,7 +442,8 @@ function InventarioPage() {
 
       toast.success(`Sala "${roomNome}" criada com ${allocatedItemsObjects.length} equipamentos!`);
     }
-    setIsRoomModalOpen(false);
+    setCurrentView("dashboard");
+    setActiveTab("salas");
   };
 
   const handleDeleteRoom = (id: string, nome: string) => {
@@ -458,6 +470,494 @@ function InventarioPage() {
     document.body.removeChild(link);
     toast.success("Relatório de patrimônio exportado com sucesso!");
   };
+
+  // FULL PAGE VIEW: GESTÃO DA SALA DE AULA DEDICADA
+  if (currentView === "sala-detail") {
+    const allocatedItems = items.filter((i) => roomAllocatedItemIds.includes(i.id));
+    const totalRoomAssetsValue = allocatedItems.reduce((acc, i) => acc + (i.valorCompra || 0), 0);
+
+    // Filter available equipment from inventory (excluding items already allocated to this room)
+    const availableItemsToAllocate = items.filter((i) => {
+      const isAlreadyAllocated = roomAllocatedItemIds.includes(i.id);
+      if (isAlreadyAllocated) return false;
+
+      const matchesSearch =
+        equipSearchTerm === "" ||
+        i.nome.toLowerCase().includes(equipSearchTerm.toLowerCase()) ||
+        i.patrimonioCodigo.toLowerCase().includes(equipSearchTerm.toLowerCase()) ||
+        i.marcaModelo.toLowerCase().includes(equipSearchTerm.toLowerCase()) ||
+        i.numeroSerie.toLowerCase().includes(equipSearchTerm.toLowerCase());
+
+      const matchesSegment = equipSegmentFilter === "todos" || i.segmento === equipSegmentFilter;
+
+      return matchesSearch && matchesSegment;
+    });
+
+    // Room classes linked to this room
+    const targetRoomId = editingRoom?.id || "";
+    const linkedClasses = classesList.filter((c: any) =>
+      c.salaId === targetRoomId || (editingRoom && c.salaNome?.toLowerCase().includes(editingRoom.nome.toLowerCase()))
+    );
+
+    return (
+      <div className="mx-auto max-w-[1400px] space-y-8 animate-in fade-in duration-300 pb-12">
+        {/* Navigation & Breadcrumb */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-hairline pb-4">
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => setCurrentView("dashboard")}
+              className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-primary transition-colors cursor-pointer mb-1"
+            >
+              <ArrowLeft className="size-4" /> Voltar para Inventário & Salas
+            </button>
+            <div className="flex items-center gap-3">
+              <span className="grid size-10 place-items-center rounded-xl bg-primary/10 border border-primary/20 text-primary">
+                <Building2 className="size-5" />
+              </span>
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">
+                  {editingRoom ? `Gestão da Sala: ${roomNome || editingRoom.nome}` : "Cadastro de Nova Sala de Aula Física"}
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Ambiente físico, capacidade máxima, facilidades e catálogo completo de equipamentos instalados.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Metrics Badges on Top */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-bold ${
+                roomStatus === "Disponível"
+                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                  : roomStatus === "Em Manutenção"
+                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                  : "bg-purple-500/10 text-purple-400 border border-purple-500/20"
+              }`}
+            >
+              Status: {roomStatus}
+            </span>
+            <span className="rounded-full bg-surface border border-hairline px-3 py-1 text-xs font-semibold text-foreground">
+              Capacidade: <strong>{roomCapacidade} lugares</strong>
+            </span>
+            <span className="rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs font-bold text-primary">
+              Patrimônio: {totalRoomAssetsValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+            </span>
+          </div>
+        </div>
+
+        {/* Full Page Main Form */}
+        <form onSubmit={handleSaveRoom} className="space-y-8">
+          <div className="grid lg:grid-cols-12 gap-8 items-start">
+            
+            {/* COLUMN 1: PHYSICAL ROOM ATTRIBUTES & CLASSES (lg:col-span-5) */}
+            <div className="lg:col-span-5 space-y-6">
+              
+              {/* Card 1: Informações Gerais do Ambiente */}
+              <GlassCard className="p-6 space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-2 border-b border-hairline pb-3">
+                  <Building2 className="size-4" /> Informações do Espaço Físico
+                </h3>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Nome da Sala / Ambiente
+                  </label>
+                  <input
+                    placeholder="Ex: Sala 01 - London"
+                    value={roomNome}
+                    onChange={(e) => setRoomNome(e.target.value)}
+                    className="h-11 w-full rounded-xl border border-hairline bg-surface/50 px-3.5 text-sm text-foreground font-medium outline-none focus:border-primary transition-colors"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Capacidade (Lugares)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={roomCapacidade}
+                      onChange={(e) => setRoomCapacidade(Number(e.target.value))}
+                      className="h-11 w-full rounded-xl border border-hairline bg-surface/50 px-3.5 text-sm text-foreground outline-none focus:border-primary"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Andar / Bloco
+                    </label>
+                    <input
+                      placeholder="Ex: 1º Andar - Bloco A"
+                      value={roomBloco}
+                      onChange={(e) => setRoomBloco(e.target.value)}
+                      className="h-11 w-full rounded-xl border border-hairline bg-surface/50 px-3.5 text-sm text-foreground outline-none focus:border-primary"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Status Operacional
+                    </label>
+                    <select
+                      value={roomStatus}
+                      onChange={(e) => setRoomStatus(e.target.value as any)}
+                      className="h-11 w-full rounded-xl border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary cursor-pointer"
+                    >
+                      <option value="Disponível">Disponível / Ativa</option>
+                      <option value="Em Manutenção">Em Manutenção / Obras</option>
+                      <option value="Reservada">Reservada para Eventos</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Responsável do Espaço
+                    </label>
+                    <input
+                      placeholder="Ex: Marcos Vidal"
+                      value={roomResponsavel}
+                      onChange={(e) => setRoomResponsavel(e.target.value)}
+                      className="h-11 w-full rounded-xl border border-hairline bg-surface/50 px-3.5 text-xs text-foreground outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+              </GlassCard>
+
+              {/* Card 2: Facilidades & Infraestrutura */}
+              <GlassCard className="p-6 space-y-4">
+                <div className="flex items-center justify-between border-b border-hairline pb-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                    <Wifi className="size-4" /> Facilidades & Infraestrutura
+                  </h3>
+                  <span className="text-[11px] text-muted-foreground">Ex: Wi-Fi, Tomadas, Quadro</span>
+                </div>
+
+                {/* Badges of current facilities */}
+                <div className="flex flex-wrap gap-2 min-h-[44px] p-2.5 rounded-xl border border-hairline bg-surface/30">
+                  {roomFacilities.map((fac) => (
+                    <span
+                      key={fac}
+                      className="inline-flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/20 px-3 py-1.5 text-xs font-medium text-primary"
+                    >
+                      {fac}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFacility(fac)}
+                        className="text-primary hover:text-foreground cursor-pointer bg-transparent border-0 p-0 transition-colors"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </span>
+                  ))}
+                  {roomFacilities.length === 0 && (
+                    <span className="text-xs text-muted-foreground italic py-1">Nenhuma facilidade extra cadastrada.</span>
+                  )}
+                </div>
+
+                {/* Input to add facility */}
+                <div className="flex gap-2">
+                  <input
+                    placeholder="Adicionar facilidade (ex: Tomadas 220V, Iluminação Dimerizável)..."
+                    value={newFacilityInput}
+                    onChange={(e) => setNewFacilityInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddFacility();
+                      }
+                    }}
+                    className="h-10 flex-1 rounded-xl border border-hairline bg-surface/50 px-3.5 text-xs text-foreground outline-none focus:border-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddFacility}
+                    className="rounded-xl bg-surface-elevated border border-hairline px-4 text-xs font-bold text-foreground hover:bg-accent cursor-pointer transition-colors"
+                  >
+                    + Adicionar
+                  </button>
+                </div>
+              </GlassCard>
+
+              {/* Card 3: Turmas que utilizam este Espaço */}
+              {editingRoom && (
+                <GlassCard className="p-6 space-y-4">
+                  <div className="flex items-center justify-between border-b border-hairline pb-3">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                      <BookOpen className="size-4" /> Turmas Vinculadas nesta Sala ({linkedClasses.length})
+                    </h3>
+                    <Link to="/turmas" className="text-[11px] text-primary hover:underline font-semibold">
+                      Ver no Módulo de Turmas ➜
+                    </Link>
+                  </div>
+
+                  <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                    {linkedClasses.length > 0 ? (
+                      linkedClasses.map((c: any) => {
+                        const themeObj = CLASS_COLOR_THEMES.find((t) => t.id === c.corTheme) || CLASS_COLOR_THEMES[0];
+                        return (
+                          <div
+                            key={c.nome}
+                            className={`p-3 rounded-xl border text-xs flex items-center justify-between ${themeObj.badgeBg} ${themeObj.border}`}
+                          >
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-2">
+                                <span className={`font-bold ${themeObj.text}`}>{c.nome}</span>
+                                <span className="rounded bg-surface/80 border border-hairline px-1.5 py-0.2 text-[9px] font-bold text-foreground">
+                                  CEFR {c.nivel}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground">Prof. {c.professor}</p>
+                            </div>
+                            <span className="font-mono text-[10px] font-semibold text-foreground bg-surface/60 px-2 py-1 rounded-md border border-hairline">
+                              {c.horario}
+                            </span>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic text-center py-4 border border-dashed border-hairline rounded-xl">
+                        Nenhuma turma agendada para esta sala no momento.
+                      </p>
+                    )}
+                  </div>
+                </GlassCard>
+              )}
+            </div>
+
+            {/* COLUMN 2: INVENTORY ASSETS & EQUIPMENT ALLOCATION (lg:col-span-7) */}
+            <div className="lg:col-span-7 space-y-6">
+              
+              {/* Card 1: Painel Visual de Alocação de Equipamentos */}
+              <GlassCard className="p-6 space-y-5 border-primary/20">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-hairline pb-4">
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                      <Boxes className="size-4 text-primary" /> Vincular Equipamento do Inventário
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Pesquise e vincule ativos de tecnologia, climatização e mobília diretamente para esta sala.
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs font-bold text-primary self-start sm:self-auto">
+                    {availableItemsToAllocate.length} disponíveis
+                  </span>
+                </div>
+
+                {/* Search Bar & Segment Filter */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 rounded-xl border border-hairline bg-surface/50 px-3.5 py-2.5">
+                    <Search className="size-4 text-muted-foreground shrink-0" />
+                    <input
+                      placeholder="Buscar por nome do equipamento, código PAT, marca ou modelo..."
+                      value={equipSearchTerm}
+                      onChange={(e) => setEquipSearchTerm(e.target.value)}
+                      className="w-full bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
+                    />
+                    {equipSearchTerm && (
+                      <button
+                        type="button"
+                        onClick={() => setEquipSearchTerm("")}
+                        className="text-muted-foreground hover:text-foreground text-xs cursor-pointer"
+                      >
+                        Limpar
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Segment Filter Pills */}
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setEquipSegmentFilter("todos")}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
+                        equipSegmentFilter === "todos"
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-surface/50 border border-hairline text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      Todos os Segmentos
+                    </button>
+                    {ALL_SEGMENTS.map((seg) => (
+                      <button
+                        key={seg}
+                        type="button"
+                        onClick={() => setEquipSegmentFilter(seg)}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
+                          equipSegmentFilter === seg
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "bg-surface/50 border border-hairline text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {seg.split(" ")[0]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Available Items List in Cards (Clean & High Visibility) */}
+                <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                  {availableItemsToAllocate.length > 0 ? (
+                    availableItemsToAllocate.map((item) => {
+                      const IconComp = SEGMENT_ICONS[item.segmento] || Boxes;
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-hairline bg-surface-elevated/30 hover:bg-surface-elevated/70 transition-all text-xs"
+                        >
+                          <div className="flex items-start gap-3">
+                            <span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary shrink-0 mt-0.5 sm:mt-0">
+                              <IconComp className="size-4" />
+                            </span>
+                            <div className="space-y-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-mono text-[10px] font-bold text-primary bg-surface border border-hairline px-1.5 py-0.5 rounded">
+                                  {item.patrimonioCodigo}
+                                </span>
+                                <h4 className="font-bold text-foreground text-xs">{item.nome}</h4>
+                                <span className="text-[10px] rounded bg-surface border border-hairline px-1.5 py-0.2 text-muted-foreground">
+                                  {item.segmento}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground">
+                                {item.marcaModelo} · S/N: <span className="font-mono">{item.numeroSerie}</span> · {item.valorCompra.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                              </p>
+                              <p className="text-[10px] text-primary/80 font-medium">
+                                Local Atual: <strong>{item.salaNome}</strong>
+                              </p>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleAllocateEquipment(item.id)}
+                            className="rounded-lg bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/95 shadow-sm cursor-pointer transition-all active:scale-[0.97] self-end sm:self-center shrink-0"
+                          >
+                            + Vincular à Sala
+                          </button>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="py-8 text-center border border-dashed border-hairline rounded-xl text-muted-foreground space-y-1">
+                      <Boxes className="size-8 mx-auto text-muted-foreground opacity-40" />
+                      <p className="text-xs font-semibold">Nenhum equipamento disponível encontrado.</p>
+                      <p className="text-[11px]">Tente alterar os termos de busca ou o filtro de segmento acima.</p>
+                    </div>
+                  )}
+                </div>
+              </GlassCard>
+
+              {/* Card 2: Lista dos Equipamentos Atualmente Instalados nesta Sala */}
+              <GlassCard className="p-6 space-y-5">
+                <div className="flex items-center justify-between border-b border-hairline pb-4">
+                  <div className="space-y-0.5">
+                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                      <ShieldCheck className="size-4 text-emerald-400" /> Equipamentos Instalados nesta Sala ({allocatedItems.length})
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Lista de ativos de patrimônio atribuídos fisicamente a este ambiente.
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-bold text-emerald-400">
+                      Total: {totalRoomAssetsValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                  {allocatedItems.length > 0 ? (
+                    allocatedItems.map((item) => {
+                      const IconComp = SEGMENT_ICONS[item.segmento] || Boxes;
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between p-3.5 rounded-xl border border-hairline bg-surface/50 hover:bg-surface-elevated transition-colors text-xs"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary shrink-0">
+                              <IconComp className="size-4" />
+                            </span>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-[10px] font-bold text-primary bg-surface border border-hairline px-1.5 py-0.5 rounded">
+                                  {item.patrimonioCodigo}
+                                </span>
+                                <h4 className="font-bold text-foreground text-xs">{item.nome}</h4>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground">
+                                {item.marcaModelo} · S/N: <span className="font-mono">{item.numeroSerie}</span> · {item.valorCompra.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <span
+                              className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                                item.estadoConservacao === "Novo"
+                                  ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                                  : item.estadoConservacao === "Excelente"
+                                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                  : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                              }`}
+                            >
+                              {item.estadoConservacao}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleDeallocateEquipment(item.id)}
+                              title="Desvincular e mover para Almoxarifado"
+                              className="p-2 rounded-lg bg-surface border border-hairline hover:bg-overdue/10 text-muted-foreground hover:text-overdue transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="py-10 text-center border border-dashed border-hairline rounded-xl text-muted-foreground space-y-2">
+                      <Boxes className="size-8 mx-auto text-muted-foreground opacity-40" />
+                      <p className="text-xs font-semibold">Nenhum equipamento de patrimônio alocado nesta sala.</p>
+                      <p className="text-[11px]">Selecione e vincule equipamentos no catálogo acima para equipar esta sala de aula.</p>
+                    </div>
+                  )}
+                </div>
+              </GlassCard>
+
+            </div>
+          </div>
+
+          {/* Sticky Bottom Actions Bar */}
+          <div className="flex items-center justify-between p-4 rounded-2xl border border-hairline bg-surface/80 backdrop-blur-md sticky bottom-4 shadow-xl z-20">
+            <button
+              type="button"
+              onClick={() => setCurrentView("dashboard")}
+              className="rounded-xl border border-hairline px-6 py-3 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+            >
+              Cancelar e Voltar
+            </button>
+            <button
+              type="submit"
+              className="rounded-xl bg-primary px-8 py-3 text-xs font-bold text-primary-foreground hover:bg-primary/95 shadow-lg cursor-pointer transition-all active:scale-[0.98]"
+            >
+              Salvar Configurações da Sala
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-8 animate-in fade-in duration-300">
@@ -1164,294 +1664,6 @@ function InventarioPage() {
                 </button>
               </div>
             </form>
-          </GlassCard>
-        </div>
-      )}
-
-      {/* MODAL: CADASTRAR / EDITAR SALA DE AULA (LAYOUT AMPLO & VÍNCULO DIRETO COM BANCO DE EQUIPAMENTOS) */}
-      {isRoomModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200">
-          <GlassCard className="w-full max-w-5xl max-h-[92vh] overflow-y-auto p-6 md:p-8 space-y-6 shadow-2xl relative border-primary/20">
-            <button
-              onClick={() => setIsRoomModalOpen(false)}
-              className="absolute top-5 right-5 text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors"
-            >
-              <X className="size-5" />
-            </button>
-
-            {/* Header */}
-            <div className="flex items-center gap-3 border-b border-hairline pb-4">
-              <span className="grid size-10 place-items-center rounded-xl bg-primary/10 border border-primary/20 text-primary">
-                <Building2 className="size-5" />
-              </span>
-              <div>
-                <h3 className="text-lg font-bold text-foreground">
-                  {editingRoom ? `Editar Sala: ${editingRoom.nome}` : "Nova Sala de Aula Física"}
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Configure o ambiente físico, capacidade máxima e vincule diretamente os equipamentos de tecnologia e mobília do banco de dados.
-                </p>
-              </div>
-            </div>
-
-            {(() => {
-              // Objects of currently allocated equipment
-              const allocatedItems = items.filter((i) => roomAllocatedItemIds.includes(i.id));
-              const totalRoomAssetsValue = allocatedItems.reduce((acc, i) => acc + (i.valorCompra || 0), 0);
-
-              // Available items from database to allocate (not in this room currently)
-              const availableItemsToAllocate = items.filter((i) => !roomAllocatedItemIds.includes(i.id));
-
-              return (
-                <form onSubmit={handleSaveRoom} className="space-y-6">
-                  <div className="grid lg:grid-cols-2 gap-8 items-start">
-                    
-                    {/* COLUMN 1: BASIC ROOM ATTRIBUTES */}
-                    <div className="space-y-4">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5 border-b border-hairline pb-2">
-                        <Building2 className="size-3.5" /> Informações do Espaço Físico
-                      </h4>
-
-                      <div className="space-y-1">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nome do Ambiente / Sala</label>
-                        <input
-                          placeholder="Ex: Sala 01 - London"
-                          value={roomNome}
-                          onChange={(e) => setRoomNome(e.target.value)}
-                          className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary transition-colors"
-                          required
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Capacidade (Lugares)</label>
-                          <input
-                            type="number"
-                            min={1}
-                            value={roomCapacidade}
-                            onChange={(e) => setRoomCapacidade(Number(e.target.value))}
-                            className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary"
-                            required
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Andar / Bloco</label>
-                          <input
-                            placeholder="Ex: 1º Andar - Bloco A"
-                            value={roomBloco}
-                            onChange={(e) => setRoomBloco(e.target.value)}
-                            className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status Operacional</label>
-                          <select
-                            value={roomStatus}
-                            onChange={(e) => setRoomStatus(e.target.value as any)}
-                            className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary cursor-pointer"
-                          >
-                            <option value="Disponível">Disponível / Ativa</option>
-                            <option value="Em Manutenção">Em Manutenção / Obras</option>
-                            <option value="Reservada">Reservada para Eventos</option>
-                          </select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Responsável do Espaço</label>
-                          <input
-                            placeholder="Ex: Marcos Vidal"
-                            value={roomResponsavel}
-                            onChange={(e) => setRoomResponsavel(e.target.value)}
-                            className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Extra Facilities / Infrastucture */}
-                      <div className="space-y-2 pt-2">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
-                          <span>Facilidades & Infraestrutura da Sala</span>
-                          <span className="text-[10px] text-muted-foreground font-normal">Ex: Wi-Fi, Tomadas, Quadro</span>
-                        </label>
-
-                        {/* Badges of current facilities */}
-                        <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-lg border border-hairline bg-surface/30">
-                          {roomFacilities.map((fac) => (
-                            <span
-                              key={fac}
-                              className="inline-flex items-center gap-1.5 rounded-md bg-primary/10 border border-primary/20 px-2 py-1 text-xs font-medium text-primary"
-                            >
-                              {fac}
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveFacility(fac)}
-                                className="text-primary hover:text-foreground cursor-pointer bg-transparent border-0 p-0"
-                              >
-                                <X className="size-3" />
-                              </button>
-                            </span>
-                          ))}
-                          {roomFacilities.length === 0 && (
-                            <span className="text-[11px] text-muted-foreground italic py-0.5">Nenhuma facilidade extra cadastrada.</span>
-                          )}
-                        </div>
-
-                        {/* Input to add facility */}
-                        <div className="flex gap-2">
-                          <input
-                            placeholder="Adicionar facilidade (ex: Tomadas 220V, Iluminação Cênica)..."
-                            value={newFacilityInput}
-                            onChange={(e) => setNewFacilityInput(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                handleAddFacility();
-                              }
-                            }}
-                            className="h-9 flex-1 rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
-                          />
-                          <button
-                            type="button"
-                            onClick={handleAddFacility}
-                            className="rounded-lg bg-surface-elevated border border-hairline px-3 text-xs font-semibold text-foreground hover:bg-accent cursor-pointer transition-colors"
-                          >
-                            + Adicionar
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* COLUMN 2: INVENTORY ASSETS / DATABASE EQUIPMENT ALLOCATION */}
-                    <div className="space-y-4 rounded-xl border border-hairline bg-surface/20 p-5">
-                      <div className="flex items-center justify-between border-b border-hairline pb-2">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
-                          <Boxes className="size-3.5" /> Equipamentos Alocados ({allocatedItems.length})
-                        </h4>
-                        <span className="text-xs font-bold text-foreground">
-                          Total: {totalRoomAssetsValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                        </span>
-                      </div>
-
-                      {/* Equipment Allocation Dropdown from Database */}
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                          Vincular Equipamento do Banco de Dados
-                        </label>
-                        <div className="flex gap-2">
-                          <select
-                            value={selectedEquipIdToAllocate}
-                            onChange={(e) => setSelectedEquipIdToAllocate(e.target.value)}
-                            className="h-10 flex-1 rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary cursor-pointer transition-colors"
-                          >
-                            <option value="">Selecione um equipamento cadastrado no inventário...</option>
-                            {availableItemsToAllocate.map((item) => (
-                              <option key={item.id} value={item.id}>
-                                [{item.patrimonioCodigo}] {item.nome} ({item.marcaModelo}) · {item.segmento} (Atual: {item.salaNome})
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            disabled={!selectedEquipIdToAllocate}
-                            onClick={() => handleAllocateEquipment(selectedEquipIdToAllocate)}
-                            className="rounded-lg bg-primary px-4 text-xs font-bold text-primary-foreground hover:bg-primary/95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-all shadow shrink-0"
-                          >
-                            + Alocar
-                          </button>
-                        </div>
-                        <p className="text-[10px] text-muted-foreground">
-                          * Ao alocar, o equipamento será transferido automaticamente para esta sala no inventário geral.
-                        </p>
-                      </div>
-
-                      {/* List of currently allocated equipment items */}
-                      <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                        {allocatedItems.length > 0 ? (
-                          allocatedItems.map((item) => {
-                            const IconComp = SEGMENT_ICONS[item.segmento] || Boxes;
-                            return (
-                              <div
-                                key={item.id}
-                                className="flex items-center justify-between p-3 rounded-lg border border-hairline bg-surface-elevated/40 hover:bg-surface-elevated transition-colors"
-                              >
-                                <div className="flex items-center gap-2.5">
-                                  <span className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary shrink-0">
-                                    <IconComp className="size-4" />
-                                  </span>
-                                  <div>
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-mono text-[10px] font-bold text-primary bg-surface border border-hairline px-1.5 py-0.5 rounded">
-                                        {item.patrimonioCodigo}
-                                      </span>
-                                      <p className="text-xs font-bold text-foreground">{item.nome}</p>
-                                    </div>
-                                    <p className="text-[11px] text-muted-foreground">
-                                      {item.marcaModelo} · S/N: {item.numeroSerie} · {item.valorCompra.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                                    </p>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                  <span
-                                    className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
-                                      item.estadoConservacao === "Novo"
-                                        ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                                        : item.estadoConservacao === "Excelente"
-                                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                                        : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                                    }`}
-                                  >
-                                    {item.estadoConservacao}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeallocateEquipment(item.id)}
-                                    title="Desvincular e mover para Almoxarifado"
-                                    className="p-1.5 rounded bg-surface border border-hairline hover:bg-overdue/10 text-muted-foreground hover:text-overdue transition-colors cursor-pointer"
-                                  >
-                                    <Trash2 className="size-3.5" />
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <div className="py-8 text-center border border-dashed border-hairline rounded-lg text-muted-foreground space-y-1">
-                            <Boxes className="size-6 mx-auto text-muted-foreground opacity-50" />
-                            <p className="text-xs font-semibold">Nenhum equipamento de patrimônio alocado.</p>
-                            <p className="text-[11px]">Selecione um equipamento no dropdown acima para instalá-lo nesta sala.</p>
-                          </div>
-                        )}
-                      </div>
-
-                    </div>
-                  </div>
-
-                  {/* Footer Actions */}
-                  <div className="flex justify-end gap-3 pt-4 border-t border-hairline">
-                    <button
-                      type="button"
-                      onClick={() => setIsRoomModalOpen(false)}
-                      className="rounded-lg border border-hairline px-5 py-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="submit"
-                      className="rounded-lg bg-primary px-6 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/95 shadow cursor-pointer transition-all active:scale-[0.98]"
-                    >
-                      Salvar Configurações da Sala
-                    </button>
-                  </div>
-                </form>
-              );
-            })()}
           </GlassCard>
         </div>
       )}
