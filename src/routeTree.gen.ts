@@ -20,6 +20,7 @@ import { Route as ManagerRouteImport } from './routes/manager'
 import { Route as RetencaoRouteImport } from './routes/retencao'
 import { Route as SuperAdminRouteImport } from './routes/super-admin'
 import { Route as TurmasRouteImport } from './routes/turmas'
+import { Route as AdminInventarioRouteImport } from './routes/admin/inventario'
 import { Route as AdminModulosRouteImport } from './routes/admin/modulos'
 import { Route as AdminPerfilRouteImport } from './routes/admin/perfil'
 import { Route as AdminUsuariosRouteImport } from './routes/admin/usuarios'
@@ -82,6 +83,11 @@ const TurmasRoute = TurmasRouteImport.update({
   path: '/turmas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminInventarioRoute = AdminInventarioRouteImport.update({
+  id: '/admin/inventario',
+  path: '/admin/inventario',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminModulosRoute = AdminModulosRouteImport.update({
   id: '/admin/modulos',
   path: '/admin/modulos',
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/retencao': typeof RetencaoRoute
   '/super-admin': typeof SuperAdminRoute
   '/turmas': typeof TurmasRoute
+  '/admin/inventario': typeof AdminInventarioRoute
   '/admin/modulos': typeof AdminModulosRoute
   '/admin/perfil': typeof AdminPerfilRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/retencao': typeof RetencaoRoute
   '/super-admin': typeof SuperAdminRoute
   '/turmas': typeof TurmasRoute
+  '/admin/inventario': typeof AdminInventarioRoute
   '/admin/modulos': typeof AdminModulosRoute
   '/admin/perfil': typeof AdminPerfilRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/retencao': typeof RetencaoRoute
   '/super-admin': typeof SuperAdminRoute
   '/turmas': typeof TurmasRoute
+  '/admin/inventario': typeof AdminInventarioRoute
   '/admin/modulos': typeof AdminModulosRoute
   '/admin/perfil': typeof AdminPerfilRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
     | '/retencao'
     | '/super-admin'
     | '/turmas'
+    | '/admin/inventario'
     | '/admin/modulos'
     | '/admin/perfil'
     | '/admin/usuarios'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/retencao'
     | '/super-admin'
     | '/turmas'
+    | '/admin/inventario'
     | '/admin/modulos'
     | '/admin/perfil'
     | '/admin/usuarios'
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/retencao'
     | '/super-admin'
     | '/turmas'
+    | '/admin/inventario'
     | '/admin/modulos'
     | '/admin/perfil'
     | '/admin/usuarios'
@@ -243,6 +255,7 @@ export interface RootRouteChildren {
   RetencaoRoute: typeof RetencaoRoute
   SuperAdminRoute: typeof SuperAdminRoute
   TurmasRoute: typeof TurmasRoute
+  AdminInventarioRoute: typeof AdminInventarioRoute
   AdminModulosRoute: typeof AdminModulosRoute
   AdminPerfilRoute: typeof AdminPerfilRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
@@ -330,6 +343,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TurmasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/inventario': {
+      id: '/admin/inventario'
+      path: '/admin/inventario'
+      fullPath: '/admin/inventario'
+      preLoaderRoute: typeof AdminInventarioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/modulos': {
       id: '/admin/modulos'
       path: '/admin/modulos'
@@ -387,6 +407,7 @@ const rootRouteChildren: RootRouteChildren = {
   RetencaoRoute: RetencaoRoute,
   SuperAdminRoute: SuperAdminRoute,
   TurmasRoute: TurmasRoute,
+  AdminInventarioRoute: AdminInventarioRoute,
   AdminModulosRoute: AdminModulosRoute,
   AdminPerfilRoute: AdminPerfilRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,

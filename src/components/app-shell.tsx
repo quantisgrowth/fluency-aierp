@@ -17,6 +17,7 @@ import {
   UserCog,
   LogOut,
   ClipboardList,
+  Boxes,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -62,6 +63,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Administração",
     items: [
+      { to: "/admin/inventario", label: "Inventário & Salas", icon: Boxes },
       { to: "/admin/modulos", label: "Módulos & Planos", icon: SlidersHorizontal },
       { to: "/admin/usuarios", label: "Usuários & Permissões", icon: Shield },
       { to: "/admin/perfil", label: "Meu Perfil", icon: UserCog },

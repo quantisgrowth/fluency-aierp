@@ -21,11 +21,19 @@ import {
   Info,
   Ban,
   GraduationCap,
+  Building2,
+  MapPin,
+  Tv,
 } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import { useUser } from "@/modules/user-context";
-import { classes as initialClasses, students as initialStudents } from "@/data/mock";
+import {
+  classes as initialClasses,
+  students as initialStudents,
+  classrooms as initialClassrooms,
+  type Classroom,
+} from "@/data/mock";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/turmas")({
@@ -50,6 +58,8 @@ type ClassItem = {
   horaFimSelecionada?: string;
   livroId?: string;
   aulaAtual?: number;
+  salaId?: string;
+  salaNome?: string;
 };
 
 type Lesson = {
@@ -177,6 +187,8 @@ const parseClassHorario = (c: any) => {
   }
 
   let aulaAtual = c.aulaAtual || 1;
+  let salaId = c.salaId || "sala-1";
+  let salaNome = c.salaNome || "Sala 01 - London";
 
   return {
     ...c,
@@ -184,12 +196,25 @@ const parseClassHorario = (c: any) => {
     horaSelecionada,
     horaFimSelecionada,
     livroId,
-    aulaAtual
+    aulaAtual,
+    salaId,
+    salaNome,
   };
 };
 
 function TurmasPage() {
   const { activeRole } = useUser();
+
+  // Classrooms State
+  const [rooms, setRooms] = useState<Classroom[]>(() => {
+    try {
+      const stored = window.localStorage.getItem("fluency-ai:inventory:rooms");
+      return stored ? JSON.parse(stored) : initialClassrooms;
+    } catch {
+      return initialClassrooms;
+    }
+  });
+
   const [classes, setClasses] = useState<ClassItem[]>(() => {
     try {
       const stored = window.localStorage.getItem("fluency-ai:classes:list");
@@ -401,6 +426,7 @@ function TurmasPage() {
   const [formHora, setFormHora] = useState("19:00");
   const [formHoraFim, setFormHoraFim] = useState("20:30");
   const [formLivroId, setFormLivroId] = useState("livro-1");
+  const [formSalaId, setFormSalaId] = useState("sala-1");
 
   // Dynamic Grade Horaria / Calendar Times
   const [calendarTimes, setCalendarTimes] = useState<string[]>(() => {
@@ -551,6 +577,7 @@ function TurmasPage() {
     setFormHora("19:00");
     setFormHoraFim("20:30");
     setFormLivroId("livro-1");
+    setFormSalaId(rooms[0]?.id || "sala-1");
     setIsCreateOpen(true);
   };
 
@@ -560,6 +587,8 @@ function TurmasPage() {
 
     const daysPart = formDias.join("/");
     const combinedHorario = `${daysPart} ${formHora}-${formHoraFim}`;
+    const roomObj = rooms.find((r) => r.id === formSalaId);
+    const salaNome = roomObj ? roomObj.nome : "Sala 01 - London";
 
     const newClass: ClassItem = {
       nome: formName,
@@ -573,10 +602,12 @@ function TurmasPage() {
       horaFimSelecionada: formHoraFim,
       livroId: formLivroId,
       aulaAtual: 1,
+      salaId: formSalaId,
+      salaNome,
     };
 
     setClasses([...classes, newClass]);
-    toast.success(`Turma "${formName}" criada com sucesso!`);
+    toast.success(`Turma "${formName}" criada com sucesso na ${salaNome}!`);
     setIsCreateOpen(false);
   };
 
@@ -591,6 +622,7 @@ function TurmasPage() {
     setFormHora(c.horaSelecionada || "19:00");
     setFormHoraFim(c.horaFimSelecionada || "20:30");
     setFormLivroId(c.livroId || "livro-1");
+    setFormSalaId(c.salaId || "sala-1");
     setIsEditOpen(true);
   };
 
@@ -600,6 +632,8 @@ function TurmasPage() {
 
     const daysPart = formDias.join("/");
     const combinedHorario = `${daysPart} ${formHora}-${formHoraFim}`;
+    const roomObj = rooms.find((r) => r.id === formSalaId);
+    const salaNome = roomObj ? roomObj.nome : "Sala 01 - London";
 
     setClasses(
       classes.map((c) =>
@@ -614,7 +648,9 @@ function TurmasPage() {
               diasSelecionados: formDias,
               horaSelecionada: formHora,
               horaFimSelecionada: formHoraFim,
-              livroId: formLivroId
+              livroId: formLivroId,
+              salaId: formSalaId,
+              salaNome,
             }
           : c
       )
@@ -949,10 +985,16 @@ function TurmasPage() {
                         </span>
                       </div>
 
-                      {/* Title & Teacher */}
-                      <div>
+                      {/* Title, Teacher & Room */}
+                      <div className="space-y-1">
                         <h3 className="text-base font-semibold text-foreground">{c.nome}</h3>
-                        <p className="text-xs text-muted-foreground mt-0.5">Professor: {c.professor}</p>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>Professor: {c.professor}</span>
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+                            <MapPin className="size-3 text-primary shrink-0" />
+                            {c.salaNome || "Sala 01 - London"}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -1904,6 +1946,46 @@ function TurmasPage() {
                 </select>
               </div>
 
+              {/* Classroom selection */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <Building2 className="size-3.5 text-primary" /> Sala de Aula Física
+                </label>
+                <select
+                  value={formSalaId}
+                  onChange={(e) => setFormSalaId(e.target.value)}
+                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary cursor-pointer"
+                >
+                  {rooms.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.nome} ({r.capacidade} lugares · {r.blocoOuAndar})
+                    </option>
+                  ))}
+                </select>
+                {(() => {
+                  const selRoom = rooms.find((r) => r.id === formSalaId);
+                  if (!selRoom) return null;
+                  const isExceeded = formVagas > selRoom.capacidade;
+                  return (
+                    <div className="space-y-1 pt-0.5">
+                      <div className="flex flex-wrap gap-1">
+                        {selRoom.recursos.map((rec, i) => (
+                          <span key={i} className="rounded bg-surface-elevated border border-hairline px-1.5 py-0.2 text-[9px] text-muted-foreground font-medium">
+                            {rec}
+                          </span>
+                        ))}
+                      </div>
+                      {isExceeded && (
+                        <p className="text-[11px] text-amber-400 font-semibold flex items-center gap-1">
+                          <AlertTriangle className="size-3.5 shrink-0" />
+                          Atenção: Vagas ({formVagas}) ultrapassam a capacidade física da sala ({selRoom.capacidade} lugares).
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+
               <button
                 type="submit"
                 className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center border-0"
@@ -2146,6 +2228,46 @@ function TurmasPage() {
                           * Este material possui <strong>{selectedBook.aulas.length} aulas estruturadas</strong> voltadas para proficiência <strong>{selectedBook.nivel}</strong>.
                         </p>
                       )}
+                    </div>
+
+                    {/* Classroom selection */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Building2 className="size-3.5 text-primary" /> Sala de Aula Física
+                      </label>
+                      <select
+                        value={formSalaId}
+                        onChange={(e) => setFormSalaId(e.target.value)}
+                        className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary cursor-pointer transition-colors"
+                      >
+                        {rooms.map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.nome} ({r.capacidade} lugares · {r.blocoOuAndar})
+                          </option>
+                        ))}
+                      </select>
+                      {(() => {
+                        const selRoom = rooms.find((r) => r.id === formSalaId);
+                        if (!selRoom) return null;
+                        const isExceeded = formVagas > selRoom.capacidade;
+                        return (
+                          <div className="space-y-1 pt-0.5">
+                            <div className="flex flex-wrap gap-1">
+                              {selRoom.recursos.map((rec, i) => (
+                                <span key={i} className="rounded bg-surface-elevated border border-hairline px-1.5 py-0.2 text-[9px] text-muted-foreground font-medium">
+                                  {rec}
+                                </span>
+                              ))}
+                            </div>
+                            {isExceeded && (
+                              <p className="text-[11px] text-amber-400 font-semibold flex items-center gap-1">
+                                <AlertTriangle className="size-3.5 shrink-0" />
+                                Atenção: Vagas ({formVagas}) ultrapassam a capacidade física da sala ({selRoom.capacidade} lugares).
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <button

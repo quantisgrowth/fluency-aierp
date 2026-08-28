@@ -58,12 +58,344 @@ export const students = [
 ];
 
 export const classes = [
-  { nome: "Kids Playgroup", nivel: "A1", professor: "Marcos Vidal", alunos: 9, vagas: 12, horario: "Seg/Qua 19:00" },
-  { nome: "Regular Noite", nivel: "A2", professor: "Julia Kern", alunos: 14, vagas: 14, horario: "Ter/Qui 18:30" },
-  { nome: "Business English", nivel: "B1", professor: "Ana Beatriz", alunos: 8, vagas: 12, horario: "Seg/Qua 07:30" },
-  { nome: "Conversation", nivel: "B2", professor: "Julia Kern", alunos: 11, vagas: 12, horario: "Ter/Qui 20:00" },
-  { nome: "Advanced Manhã", nivel: "C1", professor: "Ana Beatriz", alunos: 6, vagas: 10, horario: "Sex 09:00" },
-  { nome: "Proficiency Lab", nivel: "C2", professor: "Peter Hall", alunos: 4, vagas: 8, horario: "Sáb 10:00" },
+  { nome: "Kids Playgroup", nivel: "A1", professor: "Marcos Vidal", alunos: 9, vagas: 12, horario: "Seg/Qua 19:00", salaId: "sala-5", salaNome: "Espaço Kids - Disney" },
+  { nome: "Regular Noite", nivel: "A2", professor: "Julia Kern", alunos: 14, vagas: 14, horario: "Ter/Qui 18:30", salaId: "sala-2", salaNome: "Sala 02 - New York" },
+  { nome: "Business English", nivel: "B1", professor: "Ana Beatriz", alunos: 8, vagas: 12, horario: "Seg/Qua 07:30", salaId: "sala-1", salaNome: "Sala 01 - London" },
+  { nome: "Conversation", nivel: "B2", professor: "Julia Kern", alunos: 11, vagas: 12, horario: "Ter/Qui 20:00", salaId: "sala-3", salaNome: "Sala 03 - Dublin" },
+  { nome: "Advanced Manhã", nivel: "C1", professor: "Ana Beatriz", alunos: 6, vagas: 10, horario: "Sex 09:00", salaId: "sala-4", salaNome: "Lab Tech - Silicon Valley" },
+  { nome: "Proficiency Lab", nivel: "C2", professor: "Peter Hall", alunos: 4, vagas: 8, horario: "Sáb 10:00", salaId: "sala-6", salaNome: "Auditório Oxford" },
+];
+
+export type Classroom = {
+  id: string;
+  nome: string;
+  capacidade: number;
+  blocoOuAndar: string;
+  recursos: string[];
+  status: "Disponível" | "Em Manutenção" | "Reservada";
+  corIdentificadora?: string;
+  responsavel?: string;
+};
+
+export const classrooms: Classroom[] = [
+  {
+    id: "sala-1",
+    nome: "Sala 01 - London",
+    capacidade: 14,
+    blocoOuAndar: "Térreo - Bloco A",
+    recursos: ["Smart TV 65\" 4K", "Ar Condicionado 18k BTUs", "Quadro Magnético", "Wi-Fi Fluency-5G", "Caixa de Som Bluetooth"],
+    status: "Disponível",
+    corIdentificadora: "from-blue-500/20 to-indigo-500/20",
+    responsavel: "Marcos Vidal",
+  },
+  {
+    id: "sala-2",
+    nome: "Sala 02 - New York",
+    capacidade: 16,
+    blocoOuAndar: "1º Andar - Bloco A",
+    recursos: ["Smart TV 75\" 4K", "Ar Condicionado 24k BTUs", "Quadro Branco Vitrificado", "Wi-Fi Fluency-5G", "Som Embutido no Teto"],
+    status: "Disponível",
+    corIdentificadora: "from-amber-500/20 to-orange-500/20",
+    responsavel: "Julia Kern",
+  },
+  {
+    id: "sala-3",
+    nome: "Sala 03 - Dublin",
+    capacidade: 12,
+    blocoOuAndar: "1º Andar - Bloco B",
+    recursos: ["Smart TV 55\" 4K", "Ar Condicionado 12k BTUs", "Cavalete Flip-Chart", "Wi-Fi Fluency-5G", "Mesa Redonda Conversação"],
+    status: "Disponível",
+    corIdentificadora: "from-emerald-500/20 to-teal-500/20",
+    responsavel: "Ana Beatriz",
+  },
+  {
+    id: "sala-4",
+    nome: "Lab Tech - Silicon Valley",
+    capacidade: 10,
+    blocoOuAndar: "2º Andar - Bloco Tech",
+    recursos: ["10 Computadores All-in-One", "Headsets com Cancelamento de Ruído", "Projetor Laser HD", "Ar Condicionado 18k BTUs", "Switch Gigabit"],
+    status: "Disponível",
+    corIdentificadora: "from-purple-500/20 to-pink-500/20",
+    responsavel: "Peter Hall",
+  },
+  {
+    id: "sala-5",
+    nome: "Espaço Kids - Disney",
+    capacidade: 12,
+    blocoOuAndar: "Térreo - Bloco Kids",
+    recursos: ["Smart TV 55\" com Suporte Articulado", "Ar Condicionado 18k BTUs", "Tapete Pedagógico Emborrachado", "Tablets Infantis", "Jogos de Tabuleiro"],
+    status: "Disponível",
+    corIdentificadora: "from-rose-500/20 to-orange-500/20",
+    responsavel: "Marcos Vidal",
+  },
+  {
+    id: "sala-6",
+    nome: "Auditório Oxford",
+    capacidade: 30,
+    blocoOuAndar: "2º Andar - Bloco Central",
+    recursos: ["Projetor 4K Epson 5000 Lumens", "Sistema de Microfone Sem Fio Duplo", "Mesa de Som 8 Canais", "2x Ar Condicionado 30k BTUs", "Palco para Apresentações"],
+    status: "Disponível",
+    corIdentificadora: "from-cyan-500/20 to-blue-500/20",
+    responsavel: "Peter Hall",
+  },
+];
+
+export type InventorySegment =
+  | "Tecnologia & Audiovisual"
+  | "Climatização & Conforto"
+  | "Móveis & Mobiliário"
+  | "Eletrodomésticos & Copa"
+  | "Recursos Didáticos"
+  | "Segurança & Infraestrutura";
+
+export type InventoryItem = {
+  id: string;
+  patrimonioCodigo: string;
+  nome: string;
+  segmento: InventorySegment;
+  marcaModelo: string;
+  numeroSerie: string;
+  salaId: string;
+  salaNome: string;
+  estadoConservacao: "Novo" | "Excelente" | "Bom" | "Necessita Reparo" | "Em Manutenção" | "Inativo";
+  dataAquisicao: string;
+  valorCompra: number;
+  garantiaAte: string;
+  responsavel: string;
+  notas?: string;
+  ultimaManutencao?: string;
+  proximaManutencao?: string;
+};
+
+export const inventoryItems: InventoryItem[] = [
+  {
+    id: "inv-1",
+    patrimonioCodigo: "PAT-2026-001",
+    nome: "Smart TV 65\" Crystal UHD 4K",
+    segmento: "Tecnologia & Audiovisual",
+    marcaModelo: "Samsung UN65CU7700",
+    numeroSerie: "SAM-65CU-99881",
+    salaId: "sala-1",
+    salaNome: "Sala 01 - London",
+    estadoConservacao: "Excelente",
+    dataAquisicao: "15/01/2026",
+    valorCompra: 3499.0,
+    garantiaAte: "15/01/2027",
+    responsavel: "Marcos Vidal",
+    notas: "Instalada na parede principal com suporte articulado inclinável.",
+    ultimaManutencao: "10/02/2026",
+  },
+  {
+    id: "inv-2",
+    patrimonioCodigo: "PAT-2026-002",
+    nome: "Ar Condicionado Split Inverter 18.000 BTUs",
+    segmento: "Climatização & Conforto",
+    marcaModelo: "Daikin EcoSwing R-32",
+    numeroSerie: "DKN-18K-44512",
+    salaId: "sala-1",
+    salaNome: "Sala 01 - London",
+    estadoConservacao: "Excelente",
+    dataAquisicao: "10/01/2026",
+    valorCompra: 3890.0,
+    garantiaAte: "10/01/2028",
+    responsavel: "Manutenção Geral",
+    notas: "Filtros lavados a cada 60 dias.",
+    ultimaManutencao: "01/08/2026",
+    proximaManutencao: "01/10/2026",
+  },
+  {
+    id: "inv-3",
+    patrimonioCodigo: "PAT-2026-003",
+    nome: "Smart TV 75\" QLED 4K",
+    segmento: "Tecnologia & Audiovisual",
+    marcaModelo: "LG 75QNED80",
+    numeroSerie: "LG-75QN-11029",
+    salaId: "sala-2",
+    salaNome: "Sala 02 - New York",
+    estadoConservacao: "Novo",
+    dataAquisicao: "20/02/2026",
+    valorCompra: 5299.0,
+    garantiaAte: "20/02/2027",
+    responsavel: "Julia Kern",
+    notas: "Cabo HDMI 2.1 5m embutido na calha.",
+  },
+  {
+    id: "inv-4",
+    patrimonioCodigo: "PAT-2026-004",
+    nome: "Ar Condicionado Split Inverter 24.000 BTUs",
+    segmento: "Climatização & Conforto",
+    marcaModelo: "Fujitsu Premium Inverter",
+    numeroSerie: "FUJ-24K-88712",
+    salaId: "sala-2",
+    salaNome: "Sala 02 - New York",
+    estadoConservacao: "Excelente",
+    dataAquisicao: "15/01/2026",
+    valorCompra: 4950.0,
+    garantiaAte: "15/01/2028",
+    responsavel: "Manutenção Geral",
+    ultimaManutencao: "15/07/2026",
+    proximaManutencao: "15/09/2026",
+  },
+  {
+    id: "inv-5",
+    patrimonioCodigo: "PAT-2026-005",
+    nome: "Projetor Laser 5.000 Lumens Full HD",
+    segmento: "Tecnologia & Audiovisual",
+    marcaModelo: "Epson PowerLite L520W",
+    numeroSerie: "EPS-520-77621",
+    salaId: "sala-6",
+    salaNome: "Auditório Oxford",
+    estadoConservacao: "Excelente",
+    dataAquisicao: "05/01/2026",
+    valorCompra: 8900.0,
+    garantiaAte: "05/01/2029",
+    responsavel: "Peter Hall",
+    notas: "Lente laser com vida útil de 20.000 horas.",
+  },
+  {
+    id: "inv-6",
+    patrimonioCodigo: "PAT-2026-006",
+    nome: "Sistema de Microfone Sem Fio Duplo UHF",
+    segmento: "Tecnologia & Audiovisual",
+    marcaModelo: "Shure BLX288/PG58",
+    numeroSerie: "SHR-PG58-33120",
+    salaId: "sala-6",
+    salaNome: "Auditório Oxford",
+    estadoConservacao: "Excelente",
+    dataAquisicao: "12/01/2026",
+    valorCompra: 3750.0,
+    garantiaAte: "12/01/2028",
+    responsavel: "Peter Hall",
+    notas: "Acompanha maleta de transporte e pilhas recarregáveis.",
+  },
+  {
+    id: "inv-7",
+    patrimonioCodigo: "PAT-2026-007",
+    nome: "Conjunto de 14 Carteiras Universitárias Estofadas",
+    segmento: "Móveis & Mobiliário",
+    marcaModelo: "Cavaletti Slim Universitária",
+    numeroSerie: "CVL-SLIM-14X",
+    salaId: "sala-1",
+    salaNome: "Sala 01 - London",
+    estadoConservacao: "Excelente",
+    dataAquisicao: "08/01/2026",
+    valorCompra: 6160.0,
+    garantiaAte: "08/01/2031",
+    responsavel: "Coordenação",
+    notas: "Prancheta escamoteável e estofamento grafite.",
+  },
+  {
+    id: "inv-8",
+    patrimonioCodigo: "PAT-2026-008",
+    nome: "Conjunto de 16 Carteiras Universitárias Estofadas",
+    segmento: "Móveis & Mobiliário",
+    marcaModelo: "Cavaletti Slim Universitária",
+    numeroSerie: "CVL-SLIM-16X",
+    salaId: "sala-2",
+    salaNome: "Sala 02 - New York",
+    estadoConservacao: "Excelente",
+    dataAquisicao: "08/01/2026",
+    valorCompra: 7040.0,
+    garantiaAte: "08/01/2031",
+    responsavel: "Coordenação",
+  },
+  {
+    id: "inv-9",
+    patrimonioCodigo: "PAT-2026-009",
+    nome: "10x Computadores All-in-One Core i5 16GB",
+    segmento: "Tecnologia & Audiovisual",
+    marcaModelo: "Dell Inspiron 5420 AIO",
+    numeroSerie: "DLL-AIO-LOT-10",
+    salaId: "sala-4",
+    salaNome: "Lab Tech - Silicon Valley",
+    estadoConservacao: "Novo",
+    dataAquisicao: "25/01/2026",
+    valorCompra: 42900.0,
+    garantiaAte: "25/01/2029",
+    responsavel: "TI / Suporte",
+    notas: "Software de imersão de pronúncia e listening instalado em todas as máquinas.",
+  },
+  {
+    id: "inv-10",
+    patrimonioCodigo: "PAT-2026-010",
+    nome: "Cafeteira Expresso Grão Automática",
+    segmento: "Eletrodomésticos & Copa",
+    marcaModelo: "Philips Walita Série 2200",
+    numeroSerie: "PHL-2200-99120",
+    salaId: "estoque",
+    salaNome: "Sala dos Professores / Copa",
+    estadoConservacao: "Excelente",
+    dataAquisicao: "02/02/2026",
+    valorCompra: 2899.0,
+    garantiaAte: "02/02/2027",
+    responsavel: "Recepção / Apoio",
+    notas: "Moinho em cerâmica integrado.",
+  },
+  {
+    id: "inv-11",
+    patrimonioCodigo: "PAT-2026-011",
+    nome: "Purificador de Água Gelada e Natural",
+    segmento: "Eletrodomésticos & Copa",
+    marcaModelo: "IBBL FR600 Speciale",
+    numeroSerie: "IBBL-FR600-4412",
+    salaId: "estoque",
+    salaNome: "Recepção / Hall Central",
+    estadoConservacao: "Bom",
+    dataAquisicao: "10/01/2026",
+    valorCompra: 1190.0,
+    garantiaAte: "10/01/2027",
+    responsavel: "Recepção / Apoio",
+    notas: "Refil de filtragem trocado a cada 6 meses.",
+    ultimaManutencao: "10/07/2026",
+    proximaManutencao: "10/01/2027",
+  },
+  {
+    id: "inv-12",
+    patrimonioCodigo: "PAT-2026-012",
+    nome: "Roteador Wi-Fi 6 Mesh Tri-Band (Kit 3 Unidades)",
+    segmento: "Segurança & Infraestrutura",
+    marcaModelo: "TP-Link Deco XE75 Pro",
+    numeroSerie: "TPL-DEC-99881",
+    salaId: "sala-1",
+    salaNome: "Infraestrutura Geral da Escola",
+    estadoConservacao: "Novo",
+    dataAquisicao: "14/01/2026",
+    valorCompra: 2650.0,
+    garantiaAte: "14/01/2029",
+    responsavel: "TI / Suporte",
+    notas: "Cobertura de 650m² com 500Mbps simétricos para professores e alunos.",
+  },
+  {
+    id: "inv-13",
+    patrimonioCodigo: "PAT-2026-013",
+    nome: "Quadro Branco Magnético Vitrificado 2,00m x 1,20m",
+    segmento: "Recursos Didáticos",
+    marcaModelo: "Cortiarte Luxo Magnético",
+    numeroSerie: "CRT-MAG-200",
+    salaId: "sala-1",
+    salaNome: "Sala 01 - London",
+    estadoConservacao: "Excelente",
+    dataAquisicao: "09/01/2026",
+    valorCompra: 780.0,
+    garantiaAte: "09/01/2031",
+    responsavel: "Coordenação",
+  },
+  {
+    id: "inv-14",
+    patrimonioCodigo: "PAT-2026-014",
+    nome: "Sistema de CFTV 8 Câmeras IP Full HD + NVR 2TB",
+    segmento: "Segurança & Infraestrutura",
+    marcaModelo: "Intelbras VIP 1230 B G2",
+    numeroSerie: "INT-CFTV-88120",
+    salaId: "estoque",
+    salaNome: "Infraestrutura Geral da Escola",
+    estadoConservacao: "Excelente",
+    dataAquisicao: "04/01/2026",
+    valorCompra: 4850.0,
+    garantiaAte: "04/01/2027",
+    responsavel: "Direção",
+    notas: "Monitoramento 24h na portaria e corredores.",
+  },
 ];
 
 export const crmStages = [
