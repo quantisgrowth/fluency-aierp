@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Wallet,
   AlertTriangle,
@@ -25,6 +25,15 @@ import {
   Check,
   HelpCircle,
   X,
+  RotateCcw,
+  Save,
+  History,
+  ShieldCheck,
+  BookOpen,
+  Info,
+  ChevronDown,
+  ChevronUp,
+  Star,
 } from "lucide-react";
 import {
   Area,
@@ -55,6 +64,7 @@ import {
   type CostCategory,
   type PricingPolicy,
   type PricingModelType,
+  type PricingHistoryEntry,
   classes as defaultClasses,
   students as defaultStudents,
 } from "@/data/mock";
@@ -85,8 +95,38 @@ const CATEGORY_COLORS: Record<CostCategory, string> = {
   "Sistemas, TI & Licenças": "#6366f1",
 };
 
+const MODEL_INFO: Record<
+  PricingModelType,
+  { title: string; subtitle: string; desc: string; sample: string }
+> = {
+  mensalidade_fixa: {
+    title: "1. Mensalidade Fixa / Nível",
+    subtitle: "Tabela Fixa por Estágio CEFR",
+    desc: "Ideal para turmas regulares e franquias tradicionais. O aluno paga valor fixo mensal conforme o nível (A1..C2).",
+    sample: "Média: R$ 450/mês",
+  },
+  hora_aula: {
+    title: "2. Valor por Hora/Aula",
+    subtitle: "Cálculo por Horas Consumidas",
+    desc: "Ideal para cursos VIP, particulares ou grupos reduzidos. A mensalidade varia proporcionalmente à carga horária semanal.",
+    sample: "R$ 65 / hora lecionada",
+  },
+  frequencia_semanal: {
+    title: "3. Frequência Semanal",
+    subtitle: "Matriz por Dias na Semana",
+    desc: "O valor é calculado pela quantidade de encontros semanais contratados (1x sábado, 2x regular, 3x semi-intensivo ou 5x diário).",
+    sample: "2x/sem = R$ 450 · 3x/sem = R$ 590",
+  },
+  pacote_fechado: {
+    title: "4. Pacote Semestral / Fechado",
+    subtitle: "Valor Fechado do Módulo",
+    desc: "Cobrança fechada pelo estágio semestral de 6 meses com desconto à vista e parcelamento no cartão ou boleto.",
+    sample: "R$ 2.520 (em até 6x)",
+  },
+};
+
 function FinanceiroPage() {
-  const { activeRole } = useUser();
+  const { activeRole, currentUser } = useUser();
   const [activeTab, setActiveTab] = useState<"fluxo-caixa" | "dre" | "custos" | "precificacao">("fluxo-caixa");
 
   // Inadimplência
@@ -109,15 +149,39 @@ function FinanceiroPage() {
     }
   });
 
-  // Política de Precificação
+  // Política de Precificação Persistida
   const [pricing, setPricing] = useState<PricingPolicy>(() => {
     try {
       const stored = window.localStorage.getItem(PRICING_KEY);
-      return stored ? JSON.parse(stored) : defaultPricingPolicy;
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Garantir compatibilidade com campos novos
+        return {
+          ...defaultPricingPolicy,
+          ...parsed,
+          modelosHabilitados: parsed.modelosHabilitados || ["mensalidade_fixa", "hora_aula", "pacote_fechado"],
+          modeloPadrao: parsed.modeloPadrao || "mensalidade_fixa",
+          historicoAlteracoes: parsed.historicoAlteracoes || defaultPricingPolicy.historicoAlteracoes,
+        };
+      }
+      return defaultPricingPolicy;
     } catch {
       return defaultPricingPolicy;
     }
   });
+
+  // Rascunho de Edição dos Parâmetros (Draft)
+  const [draftPricing, setDraftPricing] = useState<PricingPolicy>(pricing);
+
+  // Sincronizar draft quando pricing for atualizado
+  useEffect(() => {
+    setDraftPricing(pricing);
+  }, [pricing]);
+
+  // Modal de Salvamento e Justificativa de Reajuste
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [saveJustificativa, setSaveJustificativa] = useState("");
+  const [showBestPractices, setShowBestPractices] = useState(false);
 
   // Filtros de Custos
   const [costSearch, setCostSearch] = useState("");
@@ -184,62 +248,43 @@ function FinanceiroPage() {
     .filter((c) => c.tipo === "fixo")
     .reduce((sum, c) => sum + (c.frequencia === "anual" ? c.valor / 12 : c.valor), 0);
 
-  // Estimativa de alunos ativos e turmas
-  const totalAlunosAtivos = 71; // Base de alunos ativos do mock
-  const totalTurmasAtivas = 6;
-  const horasSemanaisTotais = 18; // Soma das horas das turmas
-  const horasMensaisDocentes = horasSemanaisTotais * 4.33; // ~78 horas/mês
+  const totalAlunosAtivos = 71;
+  const horasSemanaisTotais = 18;
+  const horasMensaisDocentes = horasSemanaisTotais * 4.33;
   const custoDocenteTotal = horasMensaisDocentes * pricing.valorHoraProfessorMedio;
 
-  // Receita Bruta Estimada baseada na política ativa
-  const receitaBrutaMensal = (() => {
-    if (pricing.modeloAtivo === "mensalidade_fixa") {
-      return totalAlunosAtivos * 480; // Média ponderada pelos níveis
-    } else if (pricing.modeloAtivo === "hora_aula") {
-      return totalAlunosAtivos * (3 * 4.33 * pricing.valorHoraAula);
-    } else if (pricing.modeloAtivo === "frequencia_semanal") {
-      return totalAlunosAtivos * 460;
-    } else {
-      return totalAlunosAtivos * (pricing.pacoteSemestral.valorTotal / 6);
-    }
-  })();
-
-  const receitaMateriais = totalAlunosAtivos * 35; // Amortização mensal de livros e materiais
-  const receitaMatriculas = 8 * pricing.taxaMatricula; // 8 novas matrículas/mês
+  const receitaBrutaMensal = totalAlunosAtivos * 480;
+  const receitaMateriais = totalAlunosAtivos * 35;
+  const receitaMatriculas = 8 * pricing.taxaMatricula;
   const faturamentoBrutoTotal = receitaBrutaMensal + receitaMateriais + receitaMatriculas;
 
-  // Deduções e Inadimplência
   const totalInadimplencia = delinquencyList.reduce((sum, d) => sum + d.valor, 0);
-  const deducoesComerciaisEBolsas = faturamentoBrutoTotal * 0.05; // 5% de bolsas/descontos
-  const deducoesTotais = (totalInadimplencia * 0.3) + deducoesComerciaisEBolsas;
+  const deducoesComerciaisEBolsas = faturamentoBrutoTotal * 0.05;
+  const deducoesTotais = totalInadimplencia * 0.3 + deducoesComerciaisEBolsas;
 
   const receitaLiquida = faturamentoBrutoTotal - deducoesTotais;
 
-  // Custos Diretos de Ensino (Variáveis)
-  const custoMateriaisLivros = totalAlunosAtivos * 18; // Custo de reposição de livros
+  const custoMateriaisLivros = totalAlunosAtivos * 18;
   const custosDiretosEnsino = custoDocenteTotal + custoMateriaisLivros;
 
-  // Margem de Contribuição Bruta
   const margemContribuicao = receitaLiquida - custosDiretosEnsino;
   const margemContribuicaoPct = (margemContribuicao / receitaLiquida) * 100;
 
-  // Lucro Operacional Líquido (EBITDA)
   const lucroOperacionalLiquido = margemContribuicao - fixedCostsTotal;
   const margemLiquidaPct = (lucroOperacionalLiquido / receitaLiquida) * 100;
 
-  // Ponto de Equilíbrio Geral da Escola (Break-Even em alunos)
-  const margemMediaPorAluno = (receitaBrutaMensal / totalAlunosAtivos) - (custosDiretosEnsino / totalAlunosAtivos);
+  const margemMediaPorAluno = receitaBrutaMensal / totalAlunosAtivos - custosDiretosEnsino / totalAlunosAtivos;
   const alunosBreakEven = margemMediaPorAluno > 0 ? Math.ceil(fixedCostsTotal / margemMediaPorAluno) : 0;
   const faturamentoBreakEven = alunosBreakEven * (receitaBrutaMensal / totalAlunosAtivos);
 
-  // Ticket Médio
   const ticketMedioPorAluno = receitaBrutaMensal / totalAlunosAtivos;
 
   // Custos filtrados
   const filteredCosts = costs.filter((c) => {
-    const matchesSearch = c.descricao.toLowerCase().includes(costSearch.toLowerCase()) ||
-                          c.categoria.toLowerCase().includes(costSearch.toLowerCase()) ||
-                          (c.responsavel && c.responsavel.toLowerCase().includes(costSearch.toLowerCase()));
+    const matchesSearch =
+      c.descricao.toLowerCase().includes(costSearch.toLowerCase()) ||
+      c.categoria.toLowerCase().includes(costSearch.toLowerCase()) ||
+      (c.responsavel && c.responsavel.toLowerCase().includes(costSearch.toLowerCase()));
     const matchesCategory = costCategoryFilter === "Todas" || c.categoria === costCategoryFilter;
     const matchesType = costTypeFilter === "todos" || c.tipo === costTypeFilter;
     return matchesSearch && matchesCategory && matchesType;
@@ -336,18 +381,146 @@ function FinanceiroPage() {
     toast.success(`Despesa "${desc}" excluída.`);
   };
 
-  // Handler para atualizar pricing policy
-  const handleUpdatePricingModel = (model: PricingModelType) => {
-    setPricing({ ...pricing, modeloAtivo: model });
-    toast.success(`Modelo de precificação alterado para: ${
-      model === "mensalidade_fixa"
-        ? "Mensalidade Fixa por Nível"
-        : model === "hora_aula"
-        ? "Cobrança por Hora/Aula"
-        : model === "frequencia_semanal"
-        ? "Por Frequência Semanal"
-        : "Pacote Fechado / Semestral"
-    }`);
+  // --- MULTI-MODEL TOGGLE HANDLER ---
+  const handleTogglePricingModel = (model: PricingModelType) => {
+    const isCurrentlyEnabled = pricing.modelosHabilitados.includes(model);
+
+    if (isCurrentlyEnabled) {
+      if (pricing.modelosHabilitados.length <= 1) {
+        toast.error("Atenção: A escola precisa ter pelo menos 1 modelo de precificação ativo!");
+        return;
+      }
+      const nextEnabled = pricing.modelosHabilitados.filter((m) => m !== model);
+      let nextDefault = pricing.modeloPadrao;
+      if (pricing.modeloPadrao === model) {
+        nextDefault = nextEnabled[0];
+      }
+
+      const updated: PricingPolicy = {
+        ...pricing,
+        modelosHabilitados: nextEnabled,
+        modeloPadrao: nextDefault,
+        historicoAlteracoes: [
+          {
+            id: `hist-${Date.now()}`,
+            dataHora: new Date().toLocaleString("pt-BR"),
+            usuario: currentUser?.nome || "Administrador",
+            motivo: `Desabilitação do modelo de cobrança: ${MODEL_INFO[model].title}`,
+            alteracoes: [`Modelo '${MODEL_INFO[model].title}' desabilitado na escola.`],
+          },
+          ...pricing.historicoAlteracoes,
+        ],
+      };
+
+      setPricing(updated);
+      setDraftPricing(updated);
+      toast.info(`Modelo "${MODEL_INFO[model].title}" desabilitado na escola.`);
+    } else {
+      const nextEnabled = [...pricing.modelosHabilitados, model];
+      const updated: PricingPolicy = {
+        ...pricing,
+        modelosHabilitados: nextEnabled,
+        historicoAlteracoes: [
+          {
+            id: `hist-${Date.now()}`,
+            dataHora: new Date().toLocaleString("pt-BR"),
+            usuario: currentUser?.nome || "Administrador",
+            motivo: `Habilitação do modelo de cobrança: ${MODEL_INFO[model].title}`,
+            alteracoes: [`Modelo '${MODEL_INFO[model].title}' agora disponível para matrículas.`],
+          },
+          ...pricing.historicoAlteracoes,
+        ],
+      };
+
+      setPricing(updated);
+      setDraftPricing(updated);
+      toast.success(`Modelo "${MODEL_INFO[model].title}" habilitado com sucesso!`);
+    }
+  };
+
+  const handleSetDefaultModel = (model: PricingModelType) => {
+    if (!pricing.modelosHabilitados.includes(model)) {
+      toast.error("Habilite este modelo antes de defini-lo como padrão.");
+      return;
+    }
+
+    const updated: PricingPolicy = {
+      ...pricing,
+      modeloPadrao: model,
+    };
+    setPricing(updated);
+    setDraftPricing(updated);
+    toast.success(`"${MODEL_INFO[model].title}" definido como o Modelo Padrão da escola!`);
+  };
+
+  // --- DETECÇÃO DE ALTERAÇÕES NO FORMULÁRIO (DIRTY CHECK) ---
+  const changedDifferences = useMemo(() => {
+    const diffs: string[] = [];
+
+    // Níveis
+    Object.entries(draftPricing.mensalidadesPorNivel).forEach(([lvl, val]) => {
+      const originalVal = pricing.mensalidadesPorNivel[lvl];
+      if (val !== originalVal) {
+        diffs.push(`Mensalidade CEFR ${lvl}: ${brl(originalVal)} ➜ ${brl(val)}`);
+      }
+    });
+
+    if (draftPricing.valorHoraAula !== pricing.valorHoraAula) {
+      diffs.push(`Valor Hora/Aula: ${brl(pricing.valorHoraAula)} ➜ ${brl(draftPricing.valorHoraAula)}`);
+    }
+
+    if (draftPricing.valorHoraProfessorMedio !== pricing.valorHoraProfessorMedio) {
+      diffs.push(
+        `Custo Hora Professor: ${brl(pricing.valorHoraProfessorMedio)} ➜ ${brl(
+          draftPricing.valorHoraProfessorMedio
+        )}`
+      );
+    }
+
+    if (draftPricing.taxaMatricula !== pricing.taxaMatricula) {
+      diffs.push(`Taxa de Matrícula: ${brl(pricing.taxaMatricula)} ➜ ${brl(draftPricing.taxaMatricula)}`);
+    }
+
+    if (draftPricing.taxaMaterialDidatico !== pricing.taxaMaterialDidatico) {
+      diffs.push(
+        `Material Didático: ${brl(pricing.taxaMaterialDidatico)} ➜ ${brl(draftPricing.taxaMaterialDidatico)}`
+      );
+    }
+
+    return diffs;
+  }, [draftPricing, pricing]);
+
+  const isFormDirty = changedDifferences.length > 0;
+
+  const handleDiscardChanges = () => {
+    setDraftPricing(pricing);
+    toast.info("Alterações descartadas. Valores originais restaurados.");
+  };
+
+  const handleConfirmSavePricing = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!saveJustificativa.trim()) {
+      toast.error("Por favor, preencha o motivo/justificativa da alteração.");
+      return;
+    }
+
+    const newHistoryEntry: PricingHistoryEntry = {
+      id: `hist-${Date.now()}`,
+      dataHora: new Date().toLocaleString("pt-BR"),
+      usuario: currentUser?.nome || "Administrador",
+      motivo: saveJustificativa.trim(),
+      alteracoes: changedDifferences,
+    };
+
+    const updatedPricing: PricingPolicy = {
+      ...draftPricing,
+      historicoAlteracoes: [newHistoryEntry, ...pricing.historicoAlteracoes],
+    };
+
+    setPricing(updatedPricing);
+    setSaveJustificativa("");
+    setIsSaveModalOpen(false);
+    toast.success("Tabela de precificação salva e histórico registrado com sucesso!");
   };
 
   return (
@@ -356,7 +529,7 @@ function FinanceiroPage() {
         <SectionHeader
           eyebrow="Operação & Finanças"
           title="Gestão Financeira, DRE & Precificação"
-          description="Controle a liquidez, analise o DRE com ponto de equilíbrio, gerencie despesas fixas e configure suas regras de precificação."
+          description="Controle a liquidez, analise o DRE com ponto de equilíbrio, gerencie despesas fixas e configure suas regras de precificação multi-modelo."
         />
 
         {/* Navigation Tabs */}
@@ -472,7 +645,7 @@ function FinanceiroPage() {
               <GlassCard className="p-6">
                 <h3 className="text-sm font-semibold text-foreground">Régua de Cobrança Inteligente</h3>
                 <p className="text-xs text-muted-foreground">Regras ativas no plano de comunicação da unidade</p>
-                
+
                 <div className="mt-5 space-y-4">
                   {dunningSteps.map((step) => (
                     <div key={step.dia} className="flex items-start gap-3 text-xs">
@@ -485,7 +658,9 @@ function FinanceiroPage() {
                           <span className="text-[10px] text-muted-foreground">{step.canal}</span>
                         </div>
                         <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                          <span className="inline-flex items-center gap-1"><CheckCircle2 className="size-3 text-paid" /> {step.status}</span>
+                          <span className="inline-flex items-center gap-1">
+                            <CheckCircle2 className="size-3 text-paid" /> {step.status}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -566,7 +741,11 @@ function FinanceiroPage() {
                     Simular Boleto
                   </button>
                   <button
-                    onClick={() => toast.success("Pix Copia e Cola gerado!", { description: "00020101021226870014br.gov.bcb.pix..." })}
+                    onClick={() =>
+                      toast.success("Pix Copia e Cola gerado!", {
+                        description: "00020101021226870014br.gov.bcb.pix...",
+                      })
+                    }
                     className="flex items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 shadow transition-all cursor-pointer"
                   >
                     Simular Pix QR
@@ -597,7 +776,9 @@ function FinanceiroPage() {
                   <Percent className="size-4 text-blue-400" />
                 </div>
                 <p className="text-2xl font-bold text-blue-400">{brl(margemContribuicao)}</p>
-                <p className="text-[11px] text-muted-foreground">Margem Bruta de Ensino: <strong>{margemContribuicaoPct.toFixed(1)}%</strong></p>
+                <p className="text-[11px] text-muted-foreground">
+                  Margem Bruta de Ensino: <strong>{margemContribuicaoPct.toFixed(1)}%</strong>
+                </p>
               </GlassCard>
 
               <GlassCard className="p-5 space-y-2">
@@ -606,18 +787,34 @@ function FinanceiroPage() {
                   <ArrowDownRight className="size-4 text-rose-400" />
                 </div>
                 <p className="text-2xl font-bold text-rose-400">{brl(fixedCostsTotal)}</p>
-                <p className="text-[11px] text-muted-foreground">{costs.filter(c => c.tipo === "fixo").length} despesas fixas cadastradas</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {costs.filter((c) => c.tipo === "fixo").length} despesas fixas cadastradas
+                </p>
               </GlassCard>
 
-              <GlassCard className={`p-5 space-y-2 ${lucroOperacionalLiquido >= 0 ? "border-emerald-500/30 bg-emerald-500/5" : "border-rose-500/30 bg-rose-500/5"}`}>
+              <GlassCard
+                className={`p-5 space-y-2 ${
+                  lucroOperacionalLiquido >= 0
+                    ? "border-emerald-500/30 bg-emerald-500/5"
+                    : "border-rose-500/30 bg-rose-500/5"
+                }`}
+              >
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span className="font-semibold uppercase tracking-wider">EBITDA / Lucro Operacional</span>
-                  <TrendingUp className={`size-4 ${lucroOperacionalLiquido >= 0 ? "text-emerald-400" : "text-rose-400"}`} />
+                  <TrendingUp
+                    className={`size-4 ${lucroOperacionalLiquido >= 0 ? "text-emerald-400" : "text-rose-400"}`}
+                  />
                 </div>
-                <p className={`text-2xl font-bold ${lucroOperacionalLiquido >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                <p
+                  className={`text-2xl font-bold ${
+                    lucroOperacionalLiquido >= 0 ? "text-emerald-400" : "text-rose-400"
+                  }`}
+                >
                   {brl(lucroOperacionalLiquido)}
                 </p>
-                <p className="text-[11px] text-muted-foreground">Margem Líquida da Escola: <strong>{margemLiquidaPct.toFixed(1)}%</strong></p>
+                <p className="text-[11px] text-muted-foreground">
+                  Margem Líquida da Escola: <strong>{margemLiquidaPct.toFixed(1)}%</strong>
+                </p>
               </GlassCard>
             </div>
 
@@ -629,9 +826,12 @@ function FinanceiroPage() {
                     <Sparkles className="size-5" />
                   </span>
                   <div>
-                    <h3 className="text-base font-bold text-foreground">Ponto de Equilíbrio Geral (Break-Even da Escola)</h3>
+                    <h3 className="text-base font-bold text-foreground">
+                      Ponto de Equilíbrio Geral (Break-Even da Escola)
+                    </h3>
                     <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                      Para cobrir 100% de todas as despesas fixas (Aluguel, Folha Adm, Energia, Marketing) e custos docentes, sua escola precisa manter no mínimo:
+                      Para cobrir 100% de todas as despesas fixas (Aluguel, Folha Adm, Energia, Marketing) e custos
+                      docentes, sua escola precisa manter no mínimo:
                     </p>
                   </div>
                 </div>
@@ -640,7 +840,13 @@ function FinanceiroPage() {
                   <div>
                     <p className="text-[10px] font-bold text-muted-foreground uppercase">Alunos Necessários</p>
                     <p className="text-xl font-bold text-amber-500">{alunosBreakEven} Alunos</p>
-                    <p className="text-[10px] text-muted-foreground">Atualmente: {totalAlunosAtivos} ({totalAlunosAtivos - alunosBreakEven > 0 ? `+${totalAlunosAtivos - alunosBreakEven} de margem segura` : "Abaixo da meta"})</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Atualmente: {totalAlunosAtivos} (
+                      {totalAlunosAtivos - alunosBreakEven > 0
+                        ? `+${totalAlunosAtivos - alunosBreakEven} de margem segura`
+                        : "Abaixo da meta"}
+                      )
+                    </p>
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-muted-foreground uppercase">Faturamento Mínimo</p>
@@ -696,7 +902,9 @@ function FinanceiroPage() {
             <GlassCard className="p-6 space-y-6">
               <div className="flex items-center justify-between border-b border-hairline pb-4">
                 <div>
-                  <h3 className="text-base font-bold text-foreground">Demonstrativo de Resultado do Exercício (DRE Gerencial)</h3>
+                  <h3 className="text-base font-bold text-foreground">
+                    Demonstrativo de Resultado do Exercício (DRE Gerencial)
+                  </h3>
                   <p className="text-xs text-muted-foreground">Visão analítica mensal consolidada da escola.</p>
                 </div>
                 <span className="rounded-lg bg-surface border border-hairline px-3 py-1 text-xs font-semibold text-foreground">
@@ -705,7 +913,6 @@ function FinanceiroPage() {
               </div>
 
               <div className="divide-y divide-hairline text-sm">
-                
                 {/* 1. RECEITA BRUTA */}
                 <div className="py-3 flex justify-between items-center font-bold text-foreground bg-surface/30 px-3 rounded-lg">
                   <span className="flex items-center gap-2">
@@ -745,7 +952,10 @@ function FinanceiroPage() {
                   <span className="text-rose-400">- {brl(custosDiretosEnsino)}</span>
                 </div>
                 <div className="py-2 pl-8 pr-3 flex justify-between items-center text-xs text-muted-foreground">
-                  <span>(-) Folha Docente / Professores ({horasMensaisDocentes.toFixed(0)}h lecionadas a {brl(pricing.valorHoraProfessorMedio)}/h)</span>
+                  <span>
+                    (-) Folha Docente / Professores ({horasMensaisDocentes.toFixed(0)}h lecionadas a{" "}
+                    {brl(pricing.valorHoraProfessorMedio)}/h)
+                  </span>
                   <span>- {brl(custoDocenteTotal)}</span>
                 </div>
                 <div className="py-2 pl-8 pr-3 flex justify-between items-center text-xs text-muted-foreground">
@@ -767,22 +977,26 @@ function FinanceiroPage() {
                 {costs
                   .filter((c) => c.tipo === "fixo")
                   .map((c) => (
-                    <div key={c.id} className="py-1.5 pl-8 pr-3 flex justify-between items-center text-xs text-muted-foreground">
+                    <div
+                      key={c.id}
+                      className="py-1.5 pl-8 pr-3 flex justify-between items-center text-xs text-muted-foreground"
+                    >
                       <span>(-) {c.descricao}</span>
                       <span>- {brl(c.frequencia === "anual" ? c.valor / 12 : c.valor)}</span>
                     </div>
                   ))}
 
                 {/* 7. EBITDA / LUCRO LÍQUIDO */}
-                <div className={`py-4 flex justify-between items-center font-extrabold text-base px-3 rounded-lg border ${
-                  lucroOperacionalLiquido >= 0
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                    : "bg-rose-500/10 border-rose-500/30 text-rose-400"
-                }`}>
+                <div
+                  className={`py-4 flex justify-between items-center font-extrabold text-base px-3 rounded-lg border ${
+                    lucroOperacionalLiquido >= 0
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                      : "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                  }`}
+                >
                   <span>(=) 7. EBITDA / RESULTADO OPERACIONAL LÍQUIDO ({margemLiquidaPct.toFixed(1)}%)</span>
                   <span>{brl(lucroOperacionalLiquido)}</span>
                 </div>
-
               </div>
             </GlassCard>
           </div>
@@ -796,7 +1010,8 @@ function FinanceiroPage() {
               <div className="space-y-1">
                 <h3 className="text-base font-bold text-foreground">Catálogo de Despesas & Custos da Unidade</h3>
                 <p className="text-xs text-muted-foreground">
-                  Despesas fixas mensais consolidadas: <strong className="text-rose-400">{brl(fixedCostsTotal)}/mês</strong>
+                  Despesas fixas mensais consolidadas:{" "}
+                  <strong className="text-rose-400">{brl(fixedCostsTotal)}/mês</strong>
                 </p>
               </div>
 
@@ -837,7 +1052,9 @@ function FinanceiroPage() {
                   <button
                     onClick={() => setCostTypeFilter("todos")}
                     className={`px-3 py-1.5 text-[10px] font-bold uppercase transition-all cursor-pointer border-0 rounded-md ${
-                      costTypeFilter === "todos" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground bg-transparent"
+                      costTypeFilter === "todos"
+                        ? "bg-primary text-primary-foreground shadow"
+                        : "text-muted-foreground bg-transparent"
                     }`}
                   >
                     Todos
@@ -845,7 +1062,9 @@ function FinanceiroPage() {
                   <button
                     onClick={() => setCostTypeFilter("fixo")}
                     className={`px-3 py-1.5 text-[10px] font-bold uppercase transition-all cursor-pointer border-0 rounded-md ${
-                      costTypeFilter === "fixo" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground bg-transparent"
+                      costTypeFilter === "fixo"
+                        ? "bg-primary text-primary-foreground shadow"
+                        : "text-muted-foreground bg-transparent"
                     }`}
                   >
                     Fixos
@@ -853,7 +1072,9 @@ function FinanceiroPage() {
                   <button
                     onClick={() => setCostTypeFilter("variavel")}
                     className={`px-3 py-1.5 text-[10px] font-bold uppercase transition-all cursor-pointer border-0 rounded-md ${
-                      costTypeFilter === "variavel" ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground bg-transparent"
+                      costTypeFilter === "variavel"
+                        ? "bg-primary text-primary-foreground shadow"
+                        : "text-muted-foreground bg-transparent"
                     }`}
                   >
                     Variáveis
@@ -868,7 +1089,10 @@ function FinanceiroPage() {
                 const categoryColor = CATEGORY_COLORS[cost.categoria] || "#3b82f6";
 
                 return (
-                  <GlassCard key={cost.id} className="p-5 flex flex-col justify-between space-y-4 hover:border-white/10 transition-all">
+                  <GlassCard
+                    key={cost.id}
+                    className="p-5 flex flex-col justify-between space-y-4 hover:border-white/10 transition-all"
+                  >
                     <div className="space-y-2">
                       <div className="flex justify-between items-start">
                         <span
@@ -881,11 +1105,13 @@ function FinanceiroPage() {
                         >
                           {cost.categoria}
                         </span>
-                        <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${
-                          cost.tipo === "fixo"
-                            ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
-                            : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                        }`}>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${
+                            cost.tipo === "fixo"
+                              ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
+                              : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                          }`}
+                        >
                           {cost.tipo}
                         </span>
                       </div>
@@ -943,123 +1169,175 @@ function FinanceiroPage() {
         {/* TAB 4: FÓRMULAS DE PRECIFICAÇÃO & SIMULADOR DE MARGEM */}
         {activeTab === "precificacao" && (
           <div className="space-y-8 animate-in fade-in duration-300">
-            {/* Active Model Selector Cards */}
-            <div className="space-y-3">
-              <div>
-                <h3 className="text-base font-bold text-foreground">Escolha o Modelo de Precificação da Escola</h3>
-                <p className="text-xs text-muted-foreground">
-                  Selecione como a sua escola prefere cobrar os cursos. Essa regra será aplicada na sugestão de matrículas e no cálculo de faturamento das turmas.
-                </p>
+            {/* Top Multi-Model Selector Cards with Switches */}
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                    <Tag className="size-4 text-primary" /> Modelos de Cobrança Habilitados na Escola
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Ative ou desative as modalidades que sua escola oferece (chave liga/desliga). Você pode operar com
+                    múltiplos modelos simultâneos e definir o padrão para novas matrículas.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowBestPractices(!showBestPractices)}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline bg-transparent border-0 cursor-pointer self-start sm:self-auto"
+                >
+                  <BookOpen className="size-3.5" /> {showBestPractices ? "Ocultar Guia Estratégico" : "Ver Guia de Melhores Práticas"}
+                </button>
               </div>
 
+              {/* Best Practices Expandable Banner */}
+              {showBestPractices && (
+                <GlassCard className="p-5 space-y-3 border-primary/30 bg-primary/5 animate-in fade-in">
+                  <div className="flex items-center gap-2 font-bold text-xs text-primary uppercase tracking-wider">
+                    <Sparkles className="size-4" /> Melhores Práticas de Gestão Financeira para Escolas de Idiomas & Lei nº 9.870/99
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-3 text-xs text-muted-foreground leading-relaxed">
+                    <div className="space-y-1 rounded-lg border border-hairline bg-surface/40 p-3">
+                      <p className="font-bold text-foreground flex items-center gap-1">
+                        <Check className="size-3.5 text-primary" /> 1. Convivência Multi-Modelo
+                      </p>
+                      <p className="text-[11px]">
+                        Ofereça <strong>Mensalidade Recorrente</strong> para garantir previsibilidade de caixa nas turmas regulares e <strong>Hora/Aula</strong> para flexibilizar pacotes VIP.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1 rounded-lg border border-hairline bg-surface/40 p-3">
+                      <p className="font-bold text-foreground flex items-center gap-1">
+                        <Check className="size-3.5 text-primary" /> 2. Margem de Contribuição & Break-Even
+                      </p>
+                      <p className="text-[11px]">
+                        Garanta que cada turma tenha pelo menos <strong>4 a 6 alunos</strong> para cobrir o custo da hora docente e do ar-condicionado/sala antes de abrir o horário.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1 rounded-lg border border-hairline bg-surface/40 p-3">
+                      <p className="font-bold text-foreground flex items-center gap-1">
+                        <Check className="size-3.5 text-primary" /> 3. Governança & Histórico de Reajustes
+                      </p>
+                      <p className="text-[11px]">
+                        A <strong>Lei nº 9.870/99</strong> exige justificativa contábil em reajustes anuais. Nosso sistema registra quem alterou, quando e o motivo em um log auditável.
+                      </p>
+                    </div>
+                  </div>
+                </GlassCard>
+              )}
+
+              {/* 4 Cards with Toggle Switches */}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {/* Option 1 */}
-                <GlassCard
-                  onClick={() => handleUpdatePricingModel("mensalidade_fixa")}
-                  className={`p-5 space-y-3 cursor-pointer transition-all ${
-                    pricing.modeloAtivo === "mensalidade_fixa"
-                      ? "border-primary bg-primary/10 ring-2 ring-primary/30"
-                      : "hover:border-hairline/80 opacity-75 hover:opacity-100"
-                  }`}
-                >
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-xs uppercase text-primary">1. Mensalidade Fixa / Nível</span>
-                    {pricing.modeloAtivo === "mensalidade_fixa" && <Check className="size-4 text-primary" />}
-                  </div>
-                  <p className="text-xs text-foreground font-semibold">Tabela Fixa por Estágio CEFR</p>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Ideal para franquias tradicionais. O aluno paga um valor fixo mensal de acordo com o nível (A1, A2, B1, B2, C1, C2).
-                  </p>
-                  <p className="text-xs font-bold text-foreground pt-2 border-t border-hairline">
-                    Média: {brl(pricing.mensalidadePadrao)}/mês
-                  </p>
-                </GlassCard>
+                {(["mensalidade_fixa", "hora_aula", "frequencia_semanal", "pacote_fechado"] as PricingModelType[]).map(
+                  (modelKey) => {
+                    const isEnabled = pricing.modelosHabilitados.includes(modelKey);
+                    const isDefault = pricing.modeloPadrao === modelKey;
+                    const info = MODEL_INFO[modelKey];
 
-                {/* Option 2 */}
-                <GlassCard
-                  onClick={() => handleUpdatePricingModel("hora_aula")}
-                  className={`p-5 space-y-3 cursor-pointer transition-all ${
-                    pricing.modeloAtivo === "hora_aula"
-                      ? "border-primary bg-primary/10 ring-2 ring-primary/30"
-                      : "hover:border-hairline/80 opacity-75 hover:opacity-100"
-                  }`}
-                >
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-xs uppercase text-primary">2. Valor por Hora/Aula</span>
-                    {pricing.modeloAtivo === "hora_aula" && <Check className="size-4 text-primary" />}
-                  </div>
-                  <p className="text-xs text-foreground font-semibold">Cálculo por Horas Consumidas</p>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Ideal para cursos VIP, particulares ou grupos reduzidos. A mensalidade varia conforme a carga horária semanal.
-                  </p>
-                  <p className="text-xs font-bold text-foreground pt-2 border-t border-hairline">
-                    Taxa: {brl(pricing.valorHoraAula)} / hora
-                  </p>
-                </GlassCard>
+                    return (
+                      <GlassCard
+                        key={modelKey}
+                        className={`p-5 flex flex-col justify-between space-y-3 transition-all relative ${
+                          isEnabled
+                            ? "border-primary/40 bg-surface/60 shadow-sm"
+                            : "border-hairline bg-surface/20 opacity-60 hover:opacity-85"
+                        }`}
+                      >
+                        <div className="space-y-2.5">
+                          {/* Top: Header and Switch */}
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-xs uppercase tracking-wider text-primary">
+                              {info.title.split(" ")[0]} {info.title.split(" ")[1]}
+                            </span>
 
-                {/* Option 3 */}
-                <GlassCard
-                  onClick={() => handleUpdatePricingModel("frequencia_semanal")}
-                  className={`p-5 space-y-3 cursor-pointer transition-all ${
-                    pricing.modeloAtivo === "frequencia_semanal"
-                      ? "border-primary bg-primary/10 ring-2 ring-primary/30"
-                      : "hover:border-hairline/80 opacity-75 hover:opacity-100"
-                  }`}
-                >
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-xs uppercase text-primary">3. Frequência Semanal</span>
-                    {pricing.modeloAtivo === "frequencia_semanal" && <Check className="size-4 text-primary" />}
-                  </div>
-                  <p className="text-xs text-foreground font-semibold">Matriz de Vezes na Semana</p>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    O valor mensal é definido pela quantidade de encontros na semana (1x, 2x, 3x ou intensivo diário).
-                  </p>
-                  <p className="text-xs font-bold text-foreground pt-2 border-t border-hairline">
-                    2x/sem = {brl(450)} · 3x/sem = {brl(590)}
-                  </p>
-                </GlassCard>
+                            {/* Switch ON / OFF */}
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePricingModel(modelKey)}
+                              title={isEnabled ? "Desativar este modelo na escola" : "Habilitar este modelo na escola"}
+                              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                isEnabled ? "bg-primary" : "bg-hairline"
+                              }`}
+                            >
+                              <span
+                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                  isEnabled ? "translate-x-5" : "translate-x-0"
+                                }`}
+                              />
+                            </button>
+                          </div>
 
-                {/* Option 4 */}
-                <GlassCard
-                  onClick={() => handleUpdatePricingModel("pacote_fechado")}
-                  className={`p-5 space-y-3 cursor-pointer transition-all ${
-                    pricing.modeloAtivo === "pacote_fechado"
-                      ? "border-primary bg-primary/10 ring-2 ring-primary/30"
-                      : "hover:border-hairline/80 opacity-75 hover:opacity-100"
-                  }`}
-                >
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-xs uppercase text-primary">4. Pacote Semestral / Curso</span>
-                    {pricing.modeloAtivo === "pacote_fechado" && <Check className="size-4 text-primary" />}
-                  </div>
-                  <p className="text-xs text-foreground font-semibold">Valor Fechado do Módulo</p>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Cobrança no cartão ou boleto parcelado pelo estágio completo de 6 meses com desconto à vista.
-                  </p>
-                  <p className="text-xs font-bold text-foreground pt-2 border-t border-hairline">
-                    {brl(pricing.pacoteSemestral.valorTotal)} (em até 6x)
-                  </p>
-                </GlassCard>
+                          <div>
+                            <h4 className="text-xs font-bold text-foreground">{info.subtitle}</h4>
+                            <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{info.desc}</p>
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-hairline space-y-2">
+                          <p className="text-xs font-bold text-foreground">{info.sample}</p>
+
+                          <div className="flex justify-between items-center pt-1">
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                                isEnabled
+                                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                  : "bg-surface-elevated text-muted-foreground border border-hairline"
+                              }`}
+                            >
+                              {isEnabled ? "🟢 Habilitado" : "⚪ Inativo"}
+                            </span>
+
+                            {isEnabled && (
+                              <button
+                                type="button"
+                                onClick={() => handleSetDefaultModel(modelKey)}
+                                title={isDefault ? "Modelo Principal Padrão" : "Definir como modelo padrão na matrícula"}
+                                className={`flex items-center gap-1 text-[10px] font-bold transition-all px-2 py-0.5 rounded cursor-pointer border ${
+                                  isDefault
+                                    ? "bg-amber-500/15 border-amber-500/30 text-amber-400"
+                                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-surface-elevated"
+                                }`}
+                              >
+                                <Star className={`size-3 ${isDefault ? "fill-amber-400 text-amber-400" : ""}`} />
+                                {isDefault ? "Padrão" : "Tornar Padrão"}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </GlassCard>
+                    );
+                  }
+                )}
               </div>
             </div>
 
-            {/* Detailed Pricing Configuration Matrix */}
+            {/* Parameters Form & Simulator */}
             <div className="grid gap-8 lg:grid-cols-12 items-start">
-              
-              {/* Left Form: Edit Pricing Values */}
-              <GlassCard className="lg:col-span-6 p-6 space-y-5">
+              {/* Left Form: Edit Pricing Values with Manual Save Button */}
+              <GlassCard className="lg:col-span-6 p-6 space-y-5 relative">
                 <div className="flex items-center justify-between border-b border-hairline pb-3">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-2">
                     <Sliders className="size-4" /> Parâmetros de Precificação da Escola
                   </h4>
-                  <span className="text-[10px] text-muted-foreground">Auto-salvamento ativo</span>
+                  {isFormDirty ? (
+                    <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-bold text-amber-400 animate-pulse">
+                      ● Alterações Pendentes
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <ShieldCheck className="size-3 text-emerald-400" /> Sincronizado
+                    </span>
+                  )}
                 </div>
 
                 {/* Fixed by level prices */}
                 <div className="space-y-3">
-                  <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Tabela de Mensalidades por Nível (R$/mês)</label>
+                  <label className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                    Tabela de Mensalidades por Nível CEFR (R$/mês)
+                  </label>
                   <div className="grid grid-cols-3 gap-3">
-                    {Object.entries(pricing.mensalidadesPorNivel).map(([lvl, val]) => (
+                    {Object.entries(draftPricing.mensalidadesPorNivel).map(([lvl, val]) => (
                       <div key={lvl} className="space-y-1">
                         <span className="text-[10px] font-bold text-muted-foreground">CEFR {lvl}</span>
                         <div className="relative">
@@ -1068,10 +1346,10 @@ function FinanceiroPage() {
                             value={val}
                             onChange={(e) => {
                               const nextVal = Number(e.target.value);
-                              setPricing({
-                                ...pricing,
+                              setDraftPricing({
+                                ...draftPricing,
                                 mensalidadesPorNivel: {
-                                  ...pricing.mensalidadesPorNivel,
+                                  ...draftPricing.mensalidadesPorNivel,
                                   [lvl]: nextVal,
                                 },
                               });
@@ -1087,21 +1365,27 @@ function FinanceiroPage() {
                 {/* Hourly rate and teacher cost */}
                 <div className="grid grid-cols-2 gap-4 pt-2 border-t border-hairline">
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Valor Hora/Aula (Cobrado)</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Valor Hora/Aula (Cobrado R$/h)
+                    </label>
                     <input
                       type="number"
-                      value={pricing.valorHoraAula}
-                      onChange={(e) => setPricing({ ...pricing, valorHoraAula: Number(e.target.value) })}
+                      value={draftPricing.valorHoraAula}
+                      onChange={(e) => setDraftPricing({ ...draftPricing, valorHoraAula: Number(e.target.value) })}
                       className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Custo Hora Professor (Médio)</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Custo Hora Professor (Médio R$/h)
+                    </label>
                     <input
                       type="number"
-                      value={pricing.valorHoraProfessorMedio}
-                      onChange={(e) => setPricing({ ...pricing, valorHoraProfessorMedio: Number(e.target.value) })}
+                      value={draftPricing.valorHoraProfessorMedio}
+                      onChange={(e) =>
+                        setDraftPricing({ ...draftPricing, valorHoraProfessorMedio: Number(e.target.value) })
+                      }
                       className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
                     />
                   </div>
@@ -1110,25 +1394,67 @@ function FinanceiroPage() {
                 {/* Additional Fees */}
                 <div className="grid grid-cols-2 gap-4 pt-2 border-t border-hairline">
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Taxa de Matrícula (R$)</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Taxa de Matrícula (R$)
+                    </label>
                     <input
                       type="number"
-                      value={pricing.taxaMatricula}
-                      onChange={(e) => setPricing({ ...pricing, taxaMatricula: Number(e.target.value) })}
+                      value={draftPricing.taxaMatricula}
+                      onChange={(e) => setDraftPricing({ ...draftPricing, taxaMatricula: Number(e.target.value) })}
                       className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Material Didático / Livro (R$)</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Material Didático / Livro (R$)
+                    </label>
                     <input
                       type="number"
-                      value={pricing.taxaMaterialDidatico}
-                      onChange={(e) => setPricing({ ...pricing, taxaMaterialDidatico: Number(e.target.value) })}
+                      value={draftPricing.taxaMaterialDidatico}
+                      onChange={(e) =>
+                        setDraftPricing({ ...draftPricing, taxaMaterialDidatico: Number(e.target.value) })
+                      }
                       className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
                     />
                   </div>
                 </div>
+
+                {/* Action Bar when Form is Dirty */}
+                {isFormDirty ? (
+                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 space-y-3 animate-in fade-in">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                        <AlertTriangle className="size-4 shrink-0" />
+                        {changedDifferences.length} parâmetro(s) alterado(s)
+                      </p>
+                      <span className="text-[10px] text-muted-foreground">Clique para salvar no histórico</span>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleDiscardChanges}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-hairline py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-surface transition-all cursor-pointer"
+                      >
+                        <RotateCcw className="size-3.5" /> Descartar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsSaveModalOpen(true)}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary py-2 text-xs font-bold text-primary-foreground hover:bg-primary/95 shadow transition-all cursor-pointer"
+                      >
+                        <Save className="size-3.5" /> Salvar Alterações
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pt-2 text-center">
+                    <p className="text-[11px] text-muted-foreground italic">
+                      Altere qualquer valor acima para habilitar o botão de salvamento e registro de histórico.
+                    </p>
+                  </div>
+                )}
               </GlassCard>
 
               {/* Right Panel: Interactive Simulator & Profit Margin Calculator */}
@@ -1194,24 +1520,24 @@ function FinanceiroPage() {
                 {/* Simulation Output Card */}
                 {(() => {
                   const horasMes = simHorasSemanais * 4.33;
-                  const custoDocente = horasMes * pricing.valorHoraProfessorMedio;
-                  const custoRateioSala = 150; // Custo rateado de luz, ar condicionado e sala
+                  const custoDocente = horasMes * draftPricing.valorHoraProfessorMedio;
+                  const custoRateioSala = 150;
                   const custoTotalTurma = custoDocente + custoRateioSala;
 
-                  // Preço sugerido por aluno para atingir a margem desejada
-                  const faturamentoNecessario = custoTotalTurma / (1 - (simMargemAlvo / 100));
+                  const faturamentoNecessario = custoTotalTurma / (1 - simMargemAlvo / 100);
                   const mensalidadeSugeridaPorAluno = faturamentoNecessario / Math.max(1, simAlunos);
                   const faturamentoTotalTurma = mensalidadeSugeridaPorAluno * simAlunos;
                   const lucroTurma = faturamentoTotalTurma - custoTotalTurma;
 
-                  // Break-even da turma (quantos alunos pagam o professor)
                   const breakEvenTurma = Math.ceil(custoTotalTurma / mensalidadeSugeridaPorAluno);
 
                   return (
                     <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
                       <div className="flex justify-between items-center border-b border-primary/20 pb-2">
                         <span className="text-xs font-bold text-foreground">Preço Sugerido por Aluno</span>
-                        <span className="text-xl font-extrabold text-primary">{brl(mensalidadeSugeridaPorAluno)}/mês</span>
+                        <span className="text-xl font-extrabold text-primary">
+                          {brl(mensalidadeSugeridaPorAluno)}/mês
+                        </span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3 text-xs">
@@ -1242,9 +1568,137 @@ function FinanceiroPage() {
                     </div>
                   );
                 })()}
-
               </GlassCard>
             </div>
+
+            {/* TIMELINE DE HISTÓRICO DE REAJUSTES & AUDITORIA (LEI 9.870/99) */}
+            <GlassCard className="p-6 space-y-5">
+              <div className="flex items-center justify-between border-b border-hairline pb-3">
+                <div>
+                  <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <History className="size-4 text-primary" /> Histórico de Alterações de Preço & Auditoria Contábil
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    Registro de todas as versões salvas, reajustes anuais e alterações de parâmetros na escola.
+                  </p>
+                </div>
+                <span className="rounded-lg bg-surface border border-hairline px-3 py-1 text-xs font-semibold text-muted-foreground">
+                  {pricing.historicoAlteracoes.length} registros
+                </span>
+              </div>
+
+              <div className="space-y-4">
+                {pricing.historicoAlteracoes.map((hist, idx) => (
+                  <div
+                    key={hist.id || idx}
+                    className="flex items-start gap-4 p-4 rounded-xl border border-hairline bg-surface/30 hover:bg-surface/50 transition-colors"
+                  >
+                    <span className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary shrink-0 mt-0.5 font-bold text-xs">
+                      #{pricing.historicoAlteracoes.length - idx}
+                    </span>
+
+                    <div className="flex-1 space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                        <p className="text-xs font-bold text-foreground">{hist.motivo}</p>
+                        <span className="text-[10px] text-muted-foreground shrink-0">{hist.dataHora}</span>
+                      </div>
+
+                      <p className="text-[11px] text-muted-foreground">
+                        Responsável: <strong className="text-foreground">{hist.usuario}</strong>
+                      </p>
+
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {hist.alteracoes.map((alt, aIdx) => (
+                          <span
+                            key={aIdx}
+                            className="rounded-md bg-surface-elevated border border-hairline px-2 py-0.5 text-[10px] font-medium text-foreground flex items-center gap-1"
+                          >
+                            <Check className="size-3 text-primary" /> {alt}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </GlassCard>
+          </div>
+        )}
+
+        {/* MODAL: CONFIRMAR SALVAMENTO DE PRECIFICAÇÃO COM JUSTIFICATIVA */}
+        {isSaveModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200">
+            <GlassCard className="w-full max-w-lg p-6 space-y-5 shadow-2xl relative border-primary/30">
+              <button
+                onClick={() => setIsSaveModalOpen(false)}
+                className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0"
+              >
+                <X className="size-4" />
+              </button>
+
+              <div className="flex items-center gap-2.5 border-b border-hairline pb-3">
+                <span className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
+                  <Save className="size-4" />
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-foreground">Confirmar Salvamento & Registrar Reajuste</h3>
+                  <p className="text-[10px] text-muted-foreground">
+                    Documente a justificativa contábil para o histórico da escola (Lei 9.870/99).
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleConfirmSavePricing} className="space-y-4">
+                {/* Changes List */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Alterações Detectadas ({changedDifferences.length})
+                  </label>
+                  <div className="max-h-36 overflow-y-auto space-y-1.5 rounded-lg border border-hairline bg-surface/40 p-3 text-xs">
+                    {changedDifferences.map((diff, i) => (
+                      <div key={i} className="flex items-center gap-1.5 text-foreground">
+                        <span className="size-1.5 rounded-full bg-primary shrink-0" />
+                        <span>{diff}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Justification Field */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-foreground uppercase tracking-wider">
+                    Motivo / Justificativa do Reajuste *
+                  </label>
+                  <textarea
+                    placeholder="Ex: Reajuste semestral de 6% e atualização da hora/aula docente..."
+                    value={saveJustificativa}
+                    onChange={(e) => setSaveJustificativa(e.target.value)}
+                    rows={3}
+                    className="w-full rounded-lg border border-hairline bg-surface/50 p-2.5 text-xs text-foreground outline-none focus:border-primary resize-none"
+                    required
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Essa justificativa será salva permanentemente no log de auditoria com a assinatura do seu usuário.
+                  </p>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-hairline">
+                  <button
+                    type="button"
+                    onClick={() => setIsSaveModalOpen(false)}
+                    className="rounded-lg border border-hairline px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded-lg bg-primary px-5 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/95 shadow cursor-pointer"
+                  >
+                    Salvar e Registrar Histórico
+                  </button>
+                </div>
+              </form>
+            </GlassCard>
           </div>
         )}
 
@@ -1273,7 +1727,9 @@ function FinanceiroPage() {
 
               <form onSubmit={handleSaveCost} className="space-y-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Descrição da Despesa</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Descrição da Despesa
+                  </label>
                   <input
                     placeholder="Ex: Aluguel Sede, Internet Fibra, Salários..."
                     value={costDesc}
@@ -1285,7 +1741,9 @@ function FinanceiroPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Categoria Contábil</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Categoria Contábil
+                    </label>
                     <select
                       value={costCat}
                       onChange={(e) => setCostCat(e.target.value as CostCategory)}
@@ -1302,7 +1760,9 @@ function FinanceiroPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tipo de Custo</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Tipo de Custo
+                    </label>
                     <select
                       value={costTipo}
                       onChange={(e) => setCostTipo(e.target.value as any)}
@@ -1316,7 +1776,9 @@ function FinanceiroPage() {
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Valor (R$)</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Valor (R$)
+                    </label>
                     <input
                       type="number"
                       step="0.01"
@@ -1329,7 +1791,9 @@ function FinanceiroPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Frequência</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Frequência
+                    </label>
                     <select
                       value={costFreq}
                       onChange={(e) => setCostFreq(e.target.value as any)}
@@ -1343,7 +1807,9 @@ function FinanceiroPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dia Vencimento</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Dia Vencimento
+                    </label>
                     <input
                       type="number"
                       min={1}
@@ -1356,7 +1822,9 @@ function FinanceiroPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Responsável</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Responsável
+                  </label>
                   <input
                     placeholder="Ex: Diretoria, RH, TI, Manutenção..."
                     value={costResp}
@@ -1366,7 +1834,9 @@ function FinanceiroPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Observações</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Observações
+                  </label>
                   <textarea
                     placeholder="Detalhes sobre o contrato, fornecedor ou forma de pagamento..."
                     value={costObs}

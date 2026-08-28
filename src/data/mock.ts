@@ -477,8 +477,17 @@ export const classDiary = [
 // --- PRICING POLICY & FORMULA TYPES ---
 export type PricingModelType = "mensalidade_fixa" | "hora_aula" | "frequencia_semanal" | "pacote_fechado";
 
+export type PricingHistoryEntry = {
+  id: string;
+  dataHora: string;
+  usuario: string;
+  motivo: string;
+  alteracoes: string[];
+};
+
 export type PricingPolicy = {
-  modeloAtivo: PricingModelType;
+  modelosHabilitados: PricingModelType[];
+  modeloPadrao: PricingModelType;
   mensalidadePadrao: number;
   mensalidadesPorNivel: Record<string, number>;
   valorHoraAula: number;
@@ -487,10 +496,12 @@ export type PricingPolicy = {
   pacoteSemestral: { valorTotal: number; parcelasMax: number; descontoVistaPct: number };
   taxaMatricula: number;
   taxaMaterialDidatico: number;
+  historicoAlteracoes: PricingHistoryEntry[];
 };
 
 export const defaultPricingPolicy: PricingPolicy = {
-  modeloAtivo: "mensalidade_fixa",
+  modelosHabilitados: ["mensalidade_fixa", "hora_aula", "pacote_fechado"],
+  modeloPadrao: "mensalidade_fixa",
   mensalidadePadrao: 450,
   mensalidadesPorNivel: {
     A1: 390,
@@ -515,6 +526,30 @@ export const defaultPricingPolicy: PricingPolicy = {
   },
   taxaMatricula: 150,
   taxaMaterialDidatico: 280,
+  historicoAlteracoes: [
+    {
+      id: "hist-1",
+      dataHora: "15/01/2026 14:30",
+      usuario: "Administrador (Marcos Vidal)",
+      motivo: "Reajuste anual de início de ano letivo 2026.1 e dissídio dos professores.",
+      alteracoes: [
+        "Mensalidades por Nível reajustadas em média 6.5%",
+        "Valor Hora/Aula ajustado de R$ 60,00 para R$ 65,00",
+        "Custo Hora Professor ajustado de R$ 40,00 para R$ 45,00",
+        "Taxa de Matrícula fixada em R$ 150,00",
+      ],
+    },
+    {
+      id: "hist-2",
+      dataHora: "01/06/2026 10:15",
+      usuario: "Administrador (Marcos Vidal)",
+      motivo: "Habilitação do Pacote Semestral com desconto à vista para captação do 2º semestre.",
+      alteracoes: [
+        "Habilitado modelo de cobrança 'Pacote Semestral'",
+        "Definido valor semestral fechado em R$ 2.520,00 em até 6x",
+      ],
+    },
+  ],
 };
 
 // --- SCHOOL COSTS & DRE TYPES ---
