@@ -153,3 +153,22 @@
 @utility hairline {
   border-color: var(--color-hairline);
 }
+
+/* HIGH CONTRAST INPUT & SELECT STYLING */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1 !important;
+  cursor: pointer;
+  height: 24px;
+  filter: invert(0.8) contrast(1.5);
+}
+
+.dark input[type="number"]::-webkit-inner-spin-button,
+.dark input[type="number"]::-webkit-outer-spin-button {
+  filter: invert(1) brightness(1.8) contrast(2);
+}
+
+select {
+  color-scheme: light dark;
+}
+

@@ -40,6 +40,8 @@ import {
   brl,
   livrosTrilhas,
   classes as initialClasses,
+  initialEducationalLevels,
+  type EducationalLevel,
 } from "@/data/mock";
 import { toast } from "sonner";
 import { useUser } from "@/modules/user-context";
@@ -383,34 +385,84 @@ function AlunosPage() {
     } catch {}
   }, [studentDetails]);
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("todos");
-  const [modalityFilter, setModalityFilter] = useState<string>("todos");
+  // Levels from localStorage or default
+  const [levels] = useState<EducationalLevel[]>(() => {
+    try {
+      const stored = window.localStorage.getItem("fluency-ai:academic:levels");
+      return stored ? JSON.parse(stored) : initialEducationalLevels;
+    } catch {
+      return initialEducationalLevels;
+    }
+  });
 
-  // Drawer / Modals states
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  // Safe fallback ensuring 360 dossier ALWAYS opens instantly for ANY student
+  const getSafeStudentDetails = (student: Student): StudentDetail => {
+    if (studentDetails[student.nome]) {
+      return studentDetails[student.nome];
+    }
 
-  // Drawer Active Tab
-  const [activeTab, setActiveTab] = useState<"contrato" | "financeiro" | "frequencia" | "pedagogico" | "ocorrencias">(
-    "contrato"
-  );
+    return {
+      presenca: 90,
+      tarefas: 85,
+      streak: 5,
+      coins: 150,
+      xp: 850,
+      liga: "Prata",
+      whats: "5511999998888",
+      historico: [
+        {
+          data: student.inicio || new Date().toLocaleDateString("pt-BR"),
+          texto: `Matrícula regularizada no curso "${student.produtoNome || "Inglês Regular"}".`,
+          autor: "Secretaria Acadêmica",
+        },
+      ],
+      financeiro: [
+        {
+          id: `f-${Date.now()}-1`,
+          descricao: `Mensalidade Atual (${student.nivel})`,
+          valor: student.valorMensalidade || 450,
+          vencimento: `${student.diaVencimento || 10}/08/2026`,
+          situacao: student.status === "Inadimplente" ? "atrasado" : "pago",
+          dataPagamento: student.status === "Inadimplente" ? undefined : "05/08/2026",
+        },
+        {
+          id: `f-${Date.now()}-2`,
+          descricao: `Taxa de Material Didático`,
+          valor: 280,
+          vencimento: "15/07/2026",
+          situacao: "pago",
+          dataPagamento: "15/07/2026",
+        },
+      ],
+      frequencias: [
+        { data: "27/08/2026", aula: "Unit 4 — Active Listening & Dialogue", presenca: true },
+        { data: "20/08/2026", aula: "Unit 3 — Essential Grammar Review", presenca: true },
+        { data: "13/08/2026", aula: "Unit 2 — Vocabulary Expansion", presenca: true },
+      ],
+      avaliacoes: [
+        {
+          ciclo: `Avaliação Diagnóstica (${student.nivel})`,
+          speaking: 8.5,
+          listening: 8.0,
+          reading: 8.5,
+          writing: 8.0,
+          mediaGeral: 8.3,
+          feedback: "Excelente participação e desenvoltura nas atividades práticas.",
+        },
+      ],
+      ocorrencias: [
+        {
+          id: `oc-${Date.now()}`,
+          data: student.inicio || new Date().toLocaleDateString("pt-BR"),
+          tipo: "matricula",
+          descricao: `Contrato ativado no plano ${student.produtoNome || "Regular"}.`,
+          autor: "Secretaria",
+        },
+      ],
+    };
+  };
 
-  // Formulário de Nova Observação Pedagógica
-  const [newNoteText, setNewNoteText] = useState("");
-
-  // Edit form states
-  const [formNome, setFormNome] = useState("");
-  const [formNivel, setFormNivel] = useState("A1");
-  const [formTurma, setFormTurma] = useState("");
-  const [formStatus, setFormStatus] = useState("Ativo");
-  const [formProdutoId, setFormProdutoId] = useState("prod-regular");
-  const [formValor, setFormValor] = useState(450);
-  const [formVencimento, setFormVencimento] = useState(10);
-  const [formHoras, setFormHoras] = useState(3);
-
-  const selectedDetails = selectedStudent ? studentDetails[selectedStudent.nome] : null;
+  const selectedDetails = selectedStudent ? getSafeStudentDetails(selectedStudent) : null;
 
   const handleOpenDrawer = (s: Student) => {
     setSelectedStudent(s);

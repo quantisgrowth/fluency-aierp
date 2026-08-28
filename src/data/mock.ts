@@ -48,6 +48,27 @@ export const upcomingClasses = [
   { turma: "C1 · Advanced", horario: "20:00", professor: "Ana Beatriz", sala: "Online" },
 ];
 
+// --- EDUCATIONAL LEVELS (CEFR & CUSTOMIZABLE) ---
+export type EducationalLevel = {
+  id: string;
+  codigo: string;
+  nome: string;
+  descricao: string;
+  horasSugeridas: number;
+  ordem: number;
+};
+
+export const initialEducationalLevels: EducationalLevel[] = [
+  { id: "lvl-a1", codigo: "A1", nome: "Beginner / Kids", descricao: "Vocabulário básico cotidiano, saudações e frases simples.", horasSugeridas: 60, ordem: 1 },
+  { id: "lvl-a2", codigo: "A2", nome: "Elementary / Básico", descricao: "Comunicação em tarefas rotineiras, tempos passados e compras.", horasSugeridas: 60, ordem: 2 },
+  { id: "lvl-b1", codigo: "B1", nome: "Intermediate / Intermediário", descricao: "Expressão de opiniões, redação de e-mails e narrativas.", horasSugeridas: 80, ordem: 3 },
+  { id: "lvl-b2", codigo: "B2", nome: "Upper-Intermediate / Avançado", descricao: "Fluência em conversação e debates de negócios e atualidades.", horasSugeridas: 90, ordem: 4 },
+  { id: "lvl-c1", codigo: "C1", nome: "Advanced / Fluência Plena", descricao: "Compreensão de textos complexos e argumentação sofisticada.", horasSugeridas: 100, ordem: 5 },
+  { id: "lvl-c2", codigo: "C2", nome: "Mastery / Proficiência", descricao: "Domínio nativo e precisão idiomática para fins acadêmicos/exames.", horasSugeridas: 120, ordem: 6 },
+  { id: "lvl-all", codigo: "TRILHA", nome: "Todos os Níveis (A1 a C2)", descricao: "Trilha progressiva completa em múltiplos semestres.", horasSugeridas: 360, ordem: 7 },
+  { id: "lvl-vip", codigo: "VIP", nome: "Personalizado / VIP Individual", descricao: "Grade modular sob medida conforme necessidade do aluno.", horasSugeridas: 60, ordem: 8 },
+];
+
 // --- EDUCATIONAL PRODUCTS & COURSE CATALOG TYPES ---
 export type EducationalProduct = {
   id: string;
@@ -55,7 +76,11 @@ export type EducationalProduct = {
   codigo: string;
   modalidade: PricingModelType; // "mensalidade_fixa" | "hora_aula" | "frequencia_semanal" | "pacote_fechado"
   nivel: string;
-  cargaHorariaSemanal: number;
+  duracaoAulaMinutos: number; // ex: 90 min (1h30)
+  vezesPorSemana: number; // ex: 2x
+  cargaHorariaSemanal: number; // ex: 3h
+  cargaHorariaMensal: number; // ex: 13h (3 * 4.33)
+  cargaHorariaTotal: number; // ex: 60h total no semestre
   livroPadraoId?: string;
   livroPadraoNome?: string;
   valorBase: number;
@@ -73,9 +98,13 @@ export const initialEducationalProducts: EducationalProduct[] = [
     codigo: "CUR-REG-01",
     modalidade: "mensalidade_fixa",
     nivel: "A1 a C2",
+    duracaoAulaMinutos: 90,
+    vezesPorSemana: 2,
     cargaHorariaSemanal: 3,
+    cargaHorariaMensal: 13,
+    cargaHorariaTotal: 60,
     livroPadraoId: "livro-2",
-    livroPadraoNome: "Pathway to Fluency B2",
+    livroPadraoNome: "English File - Elementary & Pre-Int",
     valorBase: 450.0,
     descricao: "Curso presencial em turmas de até 14 alunos com foco em conversação, gramática aplicada e dinâmicas interativas.",
     publicoAlvo: "Jovens e Adultos (Geral)",
@@ -88,10 +117,14 @@ export const initialEducationalProducts: EducationalProduct[] = [
     nome: "Inglês VIP Executivo (Particular / Hora-Aula)",
     codigo: "CUR-VIP-02",
     modalidade: "hora_aula",
-    nivel: "Personalizado (A1..C2)",
+    nivel: "Personalizado / VIP Individual",
+    duracaoAulaMinutos: 60,
+    vezesPorSemana: 2,
     cargaHorariaSemanal: 2,
+    cargaHorariaMensal: 8.6,
+    cargaHorariaTotal: 40,
     livroPadraoId: "livro-3",
-    livroPadraoNome: "Professional English C1",
+    livroPadraoNome: "Oxford Grammar & Business English",
     valorBase: 75.0, // R$ 75 / hora lecionada
     descricao: "Aulas individuais 1-on-1 com professor dedicado e flexibilidade de horários. Cobrança proporcional às horas consumidas no mês.",
     publicoAlvo: "Executivos, Médicos e Profissionais com agenda dinâmica",
@@ -104,10 +137,14 @@ export const initialEducationalProducts: EducationalProduct[] = [
     nome: "Preparatório IELTS & TOEFL Intensivo (Pacote)",
     codigo: "CUR-EXAM-03",
     modalidade: "pacote_fechado",
-    nivel: "B2 / C1 / C2",
+    nivel: "Upper-Intermediate / Avançado",
+    duracaoAulaMinutos: 120,
+    vezesPorSemana: 2,
     cargaHorariaSemanal: 4,
+    cargaHorariaMensal: 17.3,
+    cargaHorariaTotal: 60,
     livroPadraoId: "livro-4",
-    livroPadraoNome: "Academic Mastery C2",
+    livroPadraoNome: "Cambridge - Conversation Mastery & C1",
     valorBase: 2800.0, // Valor total do módulo em até 6x
     descricao: "Módulo fechado de 60 horas focado em simulados cronometrados, redação acadêmica e estratégias de pontuação máxima em testes internacionais.",
     publicoAlvo: "Candidatos a bolsas internacionais, imigração e mestrados",
@@ -120,10 +157,14 @@ export const initialEducationalProducts: EducationalProduct[] = [
     nome: "Kids & Teens Saturday Immersion",
     codigo: "CUR-KIDS-04",
     modalidade: "frequencia_semanal",
-    nivel: "A1 / A2 Kids",
+    nivel: "Beginner / Kids",
+    duracaoAulaMinutos: 180,
+    vezesPorSemana: 1,
     cargaHorariaSemanal: 3,
+    cargaHorariaMensal: 13,
+    cargaHorariaTotal: 48,
     livroPadraoId: "livro-1",
-    livroPadraoNome: "English Foundations A1",
+    livroPadraoNome: "Kids Explorer - Stage 1",
     valorBase: 290.0, // 1x na semana aos sábados
     descricao: "Imersão lúdica e interativa de 3 horas aos sábados com jogos pedagógicos, contação de histórias e gamificação.",
     publicoAlvo: "Crianças e Adolescentes (7 a 14 anos)",
@@ -136,10 +177,14 @@ export const initialEducationalProducts: EducationalProduct[] = [
     nome: "Business & Corporate English (Semi-Intensivo)",
     codigo: "CUR-CORP-05",
     modalidade: "mensalidade_fixa",
-    nivel: "B1 / B2 / C1",
+    nivel: "Upper-Intermediate / Avançado",
+    duracaoAulaMinutos: 90,
+    vezesPorSemana: 2,
     cargaHorariaSemanal: 3,
+    cargaHorariaMensal: 13,
+    cargaHorariaTotal: 60,
     livroPadraoId: "livro-3",
-    livroPadraoNome: "Professional English C1",
+    livroPadraoNome: "Oxford Grammar & Business English",
     valorBase: 490.0,
     descricao: "Focado em apresentações corporativas, reuniões executivas, negociações globais e vocabulário financeiro.",
     publicoAlvo: "Profissionais de empresas multinacionais",
