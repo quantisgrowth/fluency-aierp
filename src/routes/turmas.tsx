@@ -428,15 +428,25 @@ function TurmasPage() {
   const [formSalaId, setFormSalaId] = useState("sala-1");
   const [formCorTheme, setFormCorTheme] = useState("emerald");
 
-  // Room & Time Conflict Checker Function
-  const checkRoomConflict = (
+  type ClassConflict = {
+    type: "room" | "teacher";
+    conflictingClass: string;
+    professor: string;
+    horario: string;
+    salaNome: string;
+    message: string;
+  };
+
+  // Dual Conflict Checker Function (Room Overlap + Teacher Overlap)
+  const checkClassConflicts = (
     targetSalaId: string,
+    targetProfessor: string,
     targetDias: string[],
     targetHoraInicio: string,
     targetHoraFim: string,
     excludeClassName?: string
-  ) => {
-    if (!targetSalaId || !targetDias || targetDias.length === 0 || !targetHoraInicio) return null;
+  ): ClassConflict | null => {
+    if (!targetDias || targetDias.length === 0 || !targetHoraInicio) return null;
 
     const toMinutes = (timeStr: string) => {
       try {
@@ -452,7 +462,6 @@ function TurmasPage() {
 
     for (const c of classes) {
       if (excludeClassName && c.nome.toLowerCase() === excludeClassName.toLowerCase()) continue;
-      if (c.salaId !== targetSalaId) continue;
 
       const cDias = c.diasSelecionados || [];
       const hasDayOverlap = targetDias.some((d) => cDias.includes(d));
@@ -463,17 +472,48 @@ function TurmasPage() {
 
       // Check overlap: (startA < endB) and (endA > startB)
       const hasTimeOverlap = startMin < cEndMin && endMin > cStartMin;
+      if (!hasTimeOverlap) continue;
 
-      if (hasTimeOverlap) {
+      // 1. Choque de Sala Física
+      if (targetSalaId && c.salaId === targetSalaId) {
         return {
+          type: "room",
           conflictingClass: c.nome,
           professor: c.professor,
           horario: c.horario,
           salaNome: c.salaNome || "Sala Selecionada",
+          message: `A ${c.salaNome || "sala física"} já está ocupada pela turma "${c.nome}" (${c.horario}).`,
+        };
+      }
+
+      // 2. Choque de Professor
+      if (
+        targetProfessor &&
+        c.professor &&
+        targetProfessor.trim().toLowerCase() === c.professor.trim().toLowerCase()
+      ) {
+        return {
+          type: "teacher",
+          conflictingClass: c.nome,
+          professor: c.professor,
+          horario: c.horario,
+          salaNome: c.salaNome || "Sala Selecionada",
+          message: `O professor "${c.professor}" já está escalado para lecionar na turma "${c.nome}" (${c.horario}).`,
         };
       }
     }
     return null;
+  };
+
+  const getClassConflictInfo = (targetClass: ClassItem) => {
+    return checkClassConflicts(
+      targetClass.salaId || "",
+      targetClass.professor || "",
+      targetClass.diasSelecionados || [],
+      targetClass.horaSelecionada || "",
+      targetClass.horaFimSelecionada || "",
+      targetClass.nome
+    );
   };
 
   // Dynamic Grade Horaria / Calendar Times
@@ -646,10 +686,10 @@ function TurmasPage() {
     e.preventDefault();
     if (!formName) return;
 
-    // Room Conflict Validation
-    const conflict = checkRoomConflict(formSalaId, formDias, formHora, formHoraFim);
+    // Dual Conflict Validation (Room + Teacher)
+    const conflict = checkClassConflicts(formSalaId, formProfessor, formDias, formHora, formHoraFim);
     if (conflict) {
-      toast.error(`Conflito de Sala: A ${conflict.salaNome} já está ocupada pela turma "${conflict.conflictingClass}" (${conflict.horario}).`);
+      toast.error(conflict.message);
       return;
     }
 
@@ -700,10 +740,10 @@ function TurmasPage() {
     e.preventDefault();
     if (!selectedClass || !formName) return;
 
-    // Room Conflict Validation
-    const conflict = checkRoomConflict(formSalaId, formDias, formHora, formHoraFim, selectedClass.nome);
+    // Dual Conflict Validation (Room + Teacher)
+    const conflict = checkClassConflicts(formSalaId, formProfessor, formDias, formHora, formHoraFim, selectedClass.nome);
     if (conflict) {
-      toast.error(`Conflito de Sala: A ${conflict.salaNome} já está ocupada pela turma "${conflict.conflictingClass}" (${conflict.horario}).`);
+      toast.error(conflict.message);
       return;
     }
 
@@ -934,10 +974,10 @@ function TurmasPage() {
       />
 
       {/* Role explanation banner */}
-      <div className="rounded-xl border border-primary/10 bg-primary/5 p-4 flex gap-3 text-xs text-primary leading-relaxed items-start">
-        <Sparkles className="size-4.5 shrink-0 mt-0.5" />
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 flex gap-3 text-xs text-amber-950 dark:text-amber-200 leading-relaxed items-start">
+        <Sparkles className="size-4.5 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
         <div>
-          <p className="font-bold uppercase tracking-wider">Cargo Ativo: {activeRole.toUpperCase()}</p>
+          <p className="font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300">Cargo Ativo: {activeRole.toUpperCase()}</p>
           {activeRole === "professor" && (
             <p className="mt-1 opacity-90">Visualização restrita às turmas sob responsabilidade de <strong>Julia Kern</strong>. Ações de criação, exclusão e transferência estão trancadas.</p>
           )}
@@ -1003,10 +1043,10 @@ function TurmasPage() {
                 <button
                   key={lvl}
                   onClick={() => setLevelFilter(lvl)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold tracking-wide transition-all uppercase cursor-pointer border-0 ${
+                  className={`rounded-lg px-3 py-1.5 text-xs font-bold tracking-wide transition-all uppercase cursor-pointer border-0 ${
                     levelFilter === lvl
                       ? "bg-primary text-primary-foreground shadow"
-                      : "text-muted-foreground bg-transparent hover:bg-accent hover:text-foreground"
+                      : "text-muted-foreground bg-surface/50 border border-hairline hover:bg-accent hover:text-foreground"
                   }`}
                 >
                   {lvl === "todos" ? "Todos" : lvl}
@@ -1022,9 +1062,10 @@ function TurmasPage() {
                 const percentage = (c.alunos / c.vagas) * 100;
                 const isFull = c.alunos >= c.vagas;
                 const themeObj = CLASS_COLOR_THEMES.find((t) => t.id === c.corTheme) || CLASS_COLOR_THEMES[0];
+                const conflictInfo = getClassConflictInfo(c);
 
                 return (
-                  <GlassCard key={c.nome} className="p-6 flex flex-col justify-between hover:border-white/10 hover:shadow-lg transition-all duration-300 relative group/card">
+                  <GlassCard key={c.nome} className={`p-6 flex flex-col justify-between hover:border-white/10 hover:shadow-lg transition-all duration-300 relative group/card ${conflictInfo ? "border-rose-500/40 bg-rose-500/[0.03]" : ""}`}>
                     
                     {/* Actions overlay for Coordenador/Admin */}
                     {canManage && (
@@ -1069,15 +1110,41 @@ function TurmasPage() {
 
                       {/* Title, Teacher & Room */}
                       <div className="space-y-1">
-                        <h3 className="text-base font-semibold text-foreground">{c.nome}</h3>
+                        <h3 className="text-base font-bold text-foreground">{c.nome}</h3>
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>Professor: {c.professor}</span>
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
-                            <MapPin className="size-3 text-primary shrink-0" />
+                          <span>Professor: <strong className="text-foreground/90">{c.professor}</strong></span>
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-foreground/80 bg-surface-elevated border border-hairline px-2 py-0.5 rounded-md">
+                            <Building2 className="size-3 text-primary shrink-0" />
                             {c.salaNome || "Sala 01 - London"}
                           </span>
                         </div>
                       </div>
+
+                      {/* Conflict Alert Banner on Card */}
+                      {conflictInfo && (
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEdit(c);
+                          }}
+                          className={`rounded-xl border p-2.5 flex items-start gap-2 text-xs transition-all cursor-pointer shadow-sm ${
+                            conflictInfo.type === "room"
+                              ? "bg-rose-500/15 border-rose-500/40 text-rose-300 hover:bg-rose-500/20"
+                              : "bg-amber-500/15 border-amber-500/40 text-amber-300 hover:bg-amber-500/20"
+                          }`}
+                        >
+                          <AlertTriangle className="size-4 shrink-0 text-rose-400 mt-0.5" />
+                          <div className="space-y-0.5 flex-1">
+                            <p className="font-bold text-foreground flex items-center justify-between">
+                              <span>{conflictInfo.type === "room" ? "⛔ Choque de Sala Física" : "⚠️ Choque de Docente"}</span>
+                              <span className="text-[10px] text-primary underline font-bold">Resolver ➜</span>
+                            </p>
+                            <p className="text-[11px] opacity-95 leading-tight">
+                              {conflictInfo.message}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Bottom Occupancy Progress */}
@@ -1244,7 +1311,24 @@ function TurmasPage() {
                       {CALENDAR_DAYS.map((day) => {
                         const slotClasses = getClassesForSlot(day.key, time);
                         const hasClasses = slotClasses.length > 0;
-                        const hasConflict = slotClasses.length > 1;
+                        
+                        // Check if there is an actual room or teacher collision inside this slot
+                        const hasConflict = (() => {
+                          if (slotClasses.length < 2) return false;
+                          for (let i = 0; i < slotClasses.length; i++) {
+                            for (let j = i + 1; j < slotClasses.length; j++) {
+                              const a = slotClasses[i];
+                              const b = slotClasses[j];
+                              if (
+                                (a.salaId && b.salaId && a.salaId === b.salaId) ||
+                                (a.professor && b.professor && a.professor.trim().toLowerCase() === b.professor.trim().toLowerCase())
+                              ) {
+                                return true;
+                              }
+                            }
+                          }
+                          return false;
+                        })();
 
                         return (
                           <td
@@ -1258,12 +1342,7 @@ function TurmasPage() {
                               <div className="space-y-1">
                                 {slotClasses.map((c) => {
                                   const isFull = c.alunos >= c.vagas;
-                                  let levelColor = "bg-emerald-500/10 border-emerald-500/20 text-emerald-400";
-                                  if (c.nivel.startsWith("B")) {
-                                    levelColor = "bg-blue-500/10 border-blue-500/20 text-blue-400";
-                                  } else if (c.nivel.startsWith("C")) {
-                                    levelColor = "bg-purple-500/10 border-purple-500/20 text-purple-400";
-                                  }
+                                  const themeObj = CLASS_COLOR_THEMES.find((t) => t.id === c.corTheme) || CLASS_COLOR_THEMES[0];
 
                                   return (
                                     <div
@@ -1272,14 +1351,14 @@ function TurmasPage() {
                                         e.stopPropagation();
                                         handleOpenEdit(c);
                                       }}
-                                      className={`rounded-lg border p-2 text-[10px] leading-snug cursor-pointer transition-all hover:scale-[1.02] shadow-sm flex flex-col justify-between ${levelColor}`}
+                                      className={`rounded-lg border p-2 text-[10px] leading-snug cursor-pointer transition-all hover:scale-[1.02] shadow-sm flex flex-col justify-between ${themeObj.badgeBg} ${themeObj.border} ${themeObj.text}`}
                                     >
                                       <div className="flex justify-between items-start font-bold">
                                         <span className="truncate">{c.nome}</span>
-                                        <span className="uppercase text-[8px] font-extrabold px-1 rounded bg-white/10 shrink-0">CEFR {c.nivel}</span>
+                                        <span className="uppercase text-[8px] font-extrabold px-1 rounded bg-black/10 dark:bg-white/10 shrink-0">CEFR {c.nivel}</span>
                                       </div>
                                       <div className="flex justify-between items-center mt-1 text-[9px] opacity-90">
-                                        <span>Prof. {c.professor.split(" ")[0]}</span>
+                                        <span>Prof. {c.professor.split(" ")[0]} · {c.salaNome ? c.salaNome.split("-")[0].trim() : "Sala"}</span>
                                         <span className={isFull ? "text-rose-400 font-bold" : "opacity-80"}>
                                           {c.alunos}/{c.vagas}
                                         </span>
@@ -1288,7 +1367,7 @@ function TurmasPage() {
                                   );
                                 })}
                                 {hasConflict && (
-                                  <div className="absolute bottom-1 right-1 flex items-center gap-1 rounded bg-rose-500 text-white px-1 py-0.5 text-[8px] font-extrabold shadow animate-bounce">
+                                  <div className="absolute bottom-1 right-1 flex items-center gap-1 rounded bg-rose-600 text-white px-1.5 py-0.5 text-[8px] font-extrabold shadow animate-pulse">
                                     <AlertTriangle className="size-2.5" /> Conflito!
                                   </div>
                                 )}
@@ -2104,21 +2183,21 @@ function TurmasPage() {
                 </div>
               </div>
 
-              {/* Room Conflict Alert */}
+              {/* Dual Conflict Alert */}
               {(() => {
-                const roomConflict = checkRoomConflict(formSalaId, formDias, formHora, formHoraFim);
-                if (!roomConflict) return null;
+                const conflict = checkClassConflicts(formSalaId, formProfessor, formDias, formHora, formHoraFim);
+                if (!conflict) return null;
                 return (
                   <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 space-y-1 text-xs text-rose-300 animate-in fade-in">
                     <div className="flex items-center gap-2 font-bold text-rose-400">
                       <AlertTriangle className="size-4 shrink-0" />
-                      <span>Choque de Horário na Sala</span>
+                      <span>{conflict.type === "room" ? "⛔ Choque de Sala Física" : "⚠️ Choque de Docente / Professor"}</span>
                     </div>
                     <p className="text-[11px] text-rose-200/90 leading-tight">
-                      A <strong>{roomConflict.salaNome}</strong> já está ocupada pela turma <strong>"{roomConflict.conflictingClass}"</strong> ({roomConflict.professor}) no horário <strong>{roomConflict.horario}</strong>.
+                      {conflict.message}
                     </p>
                     <p className="text-[10px] text-rose-400 font-bold">
-                      ⛔ Bloqueado: Escolha outro horário, dia ou sala para prosseguir.
+                      ⛔ Bloqueado: Escolha outro horário, dia, sala ou professor para prosseguir.
                     </p>
                   </div>
                 );
@@ -2126,7 +2205,7 @@ function TurmasPage() {
 
               <button
                 type="submit"
-                disabled={!!checkRoomConflict(formSalaId, formDias, formHora, formHoraFim)}
+                disabled={!!checkClassConflicts(formSalaId, formProfessor, formDias, formHora, formHoraFim)}
                 className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow cursor-pointer text-center border-0"
               >
                 Confirmar Criação
@@ -2447,21 +2526,21 @@ function TurmasPage() {
                       </div>
                     </div>
 
-                    {/* Room Conflict Alert */}
+                    {/* Dual Conflict Alert */}
                     {(() => {
-                      const roomConflict = checkRoomConflict(formSalaId, formDias, formHora, formHoraFim, selectedClass.nome);
-                      if (!roomConflict) return null;
+                      const conflict = checkClassConflicts(formSalaId, formProfessor, formDias, formHora, formHoraFim, selectedClass.nome);
+                      if (!conflict) return null;
                       return (
                         <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 space-y-1 text-xs text-rose-300 animate-in fade-in">
                           <div className="flex items-center gap-2 font-bold text-rose-400">
                             <AlertTriangle className="size-4 shrink-0" />
-                            <span>Choque de Horário na Sala</span>
+                            <span>{conflict.type === "room" ? "⛔ Choque de Sala Física" : "⚠️ Choque de Docente / Professor"}</span>
                           </div>
                           <p className="text-[11px] text-rose-200/90 leading-tight">
-                            A <strong>{roomConflict.salaNome}</strong> já está ocupada pela turma <strong>"{roomConflict.conflictingClass}"</strong> ({roomConflict.professor}) no horário <strong>{roomConflict.horario}</strong>.
+                            {conflict.message}
                           </p>
                           <p className="text-[10px] text-rose-400 font-bold">
-                            ⛔ Bloqueado: Escolha outro horário, dia ou sala para prosseguir.
+                            ⛔ Bloqueado: Escolha outro horário, dia, sala ou professor para prosseguir.
                           </p>
                         </div>
                       );
@@ -2469,7 +2548,7 @@ function TurmasPage() {
 
                     <button
                       type="submit"
-                      disabled={!!checkRoomConflict(formSalaId, formDias, formHora, formHoraFim, selectedClass.nome)}
+                      disabled={!!checkClassConflicts(formSalaId, formProfessor, formDias, formHora, formHoraFim, selectedClass.nome)}
                       className="w-full rounded-lg bg-primary py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/95 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow cursor-pointer text-center border-0 active:scale-[0.98]"
                     >
                       Salvar Alterações da Turma

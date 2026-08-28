@@ -47,6 +47,43 @@ const PRESETS: Record<TenantPreset, Tenant> = {
 
 const STORAGE_KEY = "fluency-ai:tenant";
 
+function getContrastForeground(color: string): string {
+  if (!color) return "oklch(0.99 0 0)";
+
+  // Check if it's hex
+  if (color.startsWith("#")) {
+    const hex = color.replace("#", "");
+    const r = parseInt(hex.substring(0, 2), 16) || 0;
+    const g = parseInt(hex.substring(2, 4), 16) || 0;
+    const b = parseInt(hex.substring(4, 6), 16) || 0;
+    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+    return yiq >= 145 ? "oklch(0.12 0.015 260)" : "oklch(0.99 0 0)";
+  }
+
+  // Check if it's oklch
+  if (color.includes("oklch")) {
+    const match = color.match(/oklch\(\s*([\d.]+)/);
+    if (match) {
+      const lightness = parseFloat(match[1]);
+      return lightness >= 0.65 ? "oklch(0.12 0.015 260)" : "oklch(0.99 0 0)";
+    }
+  }
+
+  // Check for bright color keywords (yellow, amber, gold, lime, etc.)
+  const lower = color.toLowerCase();
+  if (
+    lower.includes("yellow") ||
+    lower.includes("gold") ||
+    lower.includes("amber") ||
+    lower.includes("lime") ||
+    lower.includes("cyan")
+  ) {
+    return "oklch(0.12 0.015 260)";
+  }
+
+  return "oklch(0.99 0 0)";
+}
+
 export function TenantProvider({ children }: { children: ReactNode }) {
   const [tenant, setTenant] = useState<Tenant>(PRESETS.lumen);
 
@@ -63,14 +100,12 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Sync primary color to CSS variable
+  // Sync primary color and high-contrast foreground to CSS variables
   useEffect(() => {
     if (typeof document !== "undefined") {
       const root = document.documentElement;
       root.style.setProperty("--primary", tenant.primaryColor);
-      
-      // Let's also adjust --ring or check if we should update it
-      // For simple white label, changing --primary overrides almost all action buttons
+      root.style.setProperty("--primary-foreground", getContrastForeground(tenant.primaryColor));
     }
   }, [tenant.primaryColor]);
 

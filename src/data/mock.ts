@@ -84,12 +84,12 @@ export const CLASS_COLOR_THEMES: ClassColorTheme[] = [
 ];
 
 export const classes = [
-  { nome: "Kids Playgroup", nivel: "A1", professor: "Marcos Vidal", alunos: 9, vagas: 12, horario: "Seg/Qua 19:00", salaId: "sala-5", salaNome: "Espaço Kids - Disney", corTheme: "emerald" },
-  { nome: "Regular Noite", nivel: "A2", professor: "Julia Kern", alunos: 14, vagas: 14, horario: "Ter/Qui 18:30", salaId: "sala-2", salaNome: "Sala 02 - New York", corTheme: "blue" },
-  { nome: "Business English", nivel: "B1", professor: "Ana Beatriz", alunos: 8, vagas: 12, horario: "Seg/Qua 07:30", salaId: "sala-1", salaNome: "Sala 01 - London", corTheme: "purple" },
-  { nome: "Conversation", nivel: "B2", professor: "Julia Kern", alunos: 11, vagas: 12, horario: "Ter/Qui 20:00", salaId: "sala-3", salaNome: "Sala 03 - Dublin", corTheme: "amber" },
-  { nome: "Advanced Manhã", nivel: "C1", professor: "Ana Beatriz", alunos: 6, vagas: 10, horario: "Sex 09:00", salaId: "sala-4", salaNome: "Lab Tech - Silicon Valley", corTheme: "rose" },
-  { nome: "Proficiency Lab", nivel: "C2", professor: "Peter Hall", alunos: 4, vagas: 8, horario: "Sáb 10:00", salaId: "sala-6", salaNome: "Auditório Oxford", corTheme: "cyan" },
+  { nome: "Kids Playgroup", nivel: "A1", professor: "Marcos Vidal", alunos: 9, vagas: 12, horario: "Seg/Qua 19:00-20:30", salaId: "sala-5", salaNome: "Espaço Kids - Disney", corTheme: "emerald" },
+  { nome: "Regular Noite", nivel: "A2", professor: "Julia Kern", alunos: 14, vagas: 14, horario: "Ter/Qui 18:30-20:00", salaId: "sala-2", salaNome: "Sala 02 - New York", corTheme: "blue" },
+  { nome: "Business English", nivel: "B1", professor: "Ana Beatriz", alunos: 8, vagas: 12, horario: "Seg/Qua 07:30-09:00", salaId: "sala-1", salaNome: "Sala 01 - London", corTheme: "purple" },
+  { nome: "Conversation", nivel: "B2", professor: "Lucas Silveira", alunos: 11, vagas: 12, horario: "Ter/Qui 20:00-21:30", salaId: "sala-3", salaNome: "Sala 03 - Dublin", corTheme: "amber" },
+  { nome: "Advanced Manhã", nivel: "C1", professor: "Ana Beatriz", alunos: 6, vagas: 10, horario: "Sex 09:00-10:30", salaId: "sala-4", salaNome: "Lab Tech - Silicon Valley", corTheme: "rose" },
+  { nome: "Proficiency Lab", nivel: "C2", professor: "Peter Hall", alunos: 4, vagas: 8, horario: "Sáb 10:00-11:30", salaId: "sala-6", salaNome: "Auditório Oxford", corTheme: "cyan" },
 ];
 
 export type Classroom = {
