@@ -1,6 +1,31 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
-import { Search, Plus, Filter, CheckCircle2, XCircle, ArrowRight, UserPlus, Info, Tag, Phone, Mail, Building, MapPin, Notebook, Calendar, Eye } from "lucide-react";
+import { useState, useEffect, useRef, type ChangeEvent } from "react";
+import {
+  Search,
+  Plus,
+  Filter,
+  CheckCircle2,
+  XCircle,
+  ArrowRight,
+  UserPlus,
+  Info,
+  Tag,
+  Phone,
+  Mail,
+  Building,
+  MapPin,
+  Notebook,
+  Calendar,
+  Eye,
+  FileSpreadsheet,
+  Upload,
+  Download,
+  FileText,
+  Check,
+  AlertCircle,
+  X,
+  Sparkles,
+} from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import { toast } from "sonner";
@@ -257,8 +282,177 @@ function LeadsPage() {
     }
   };
 
+  // Lead Import Modal states
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importMode, setImportMode] = useState<"file" | "paste">("file");
+  const [importRawText, setImportRawText] = useState("");
+  const [previewLeads, setPreviewLeads] = useState<Lead[]>([]);
+  const [importFileName, setImportFileName] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+  const importFileRef = useRef<HTMLInputElement>(null);
+
+  // Parse raw delimited text (CSV, TSV, semicolon-separated) into Lead objects
+  const parseDelimitedText = (text: string) => {
+    if (!text.trim()) {
+      setPreviewLeads([]);
+      return;
+    }
+
+    const lines = text
+      .split(/\r\n|\n|\r/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    if (lines.length === 0) {
+      setPreviewLeads([]);
+      return;
+    }
+
+    // Determine delimiter: comma, semicolon, tab or pipe
+    const firstLine = lines[0]!;
+    let delimiter = ",";
+    if (firstLine.includes("\t")) delimiter = "\t";
+    else if (firstLine.includes(";")) delimiter = ";";
+    else if (firstLine.includes(",")) delimiter = ",";
+    else if (firstLine.includes("|")) delimiter = "|";
+
+    const parseLine = (line: string): string[] => {
+      const result: string[] = [];
+      let current = "";
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"' || char === "'") {
+          inQuotes = !inQuotes;
+        } else if (char === delimiter && !inQuotes) {
+          result.push(current.trim().replace(/^["']|["']$/g, ""));
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim().replace(/^["']|["']$/g, ""));
+      return result;
+    };
+
+    const parsedRows = lines.map(parseLine);
+    const headers = parsedRows[0]!.map((h) => h.toLowerCase());
+
+    // Check if first row is a header
+    const hasHeader =
+      headers.some((h) =>
+        ["nome", "name", "email", "e-mail", "telefone", "phone", "celular", "origem", "contato"].some((k) =>
+          h.includes(k)
+        )
+      );
+
+    const dataRows = hasHeader ? parsedRows.slice(1) : parsedRows;
+
+    // Detect column indexes
+    let nameIdx = hasHeader ? headers.findIndex((h) => h.includes("nom") || h.includes("name")) : 0;
+    let phoneIdx = hasHeader ? headers.findIndex((h) => h.includes("tel") || h.includes("cel") || h.includes("phone") || h.includes("whats")) : 1;
+    let emailIdx = hasHeader ? headers.findIndex((h) => h.includes("mail") || h.includes("e-mail")) : 2;
+    let origemIdx = hasHeader ? headers.findIndex((h) => h.includes("orig") || h.includes("canal") || h.includes("fonte")) : 3;
+    let tagsIdx = hasHeader ? headers.findIndex((h) => h.includes("tag") || h.includes("nivel") || h.includes("nível") || h.includes("curso")) : 4;
+    let respIdx = hasHeader ? headers.findIndex((h) => h.includes("resp") || h.includes("pai") || h.includes("mãe") || h.includes("mae")) : 5;
+    let cityIdx = hasHeader ? headers.findIndex((h) => h.includes("cid") || h.includes("city") || h.includes("uf") || h.includes("estado")) : 6;
+    let docIdx = hasHeader ? headers.findIndex((h) => h.includes("doc") || h.includes("cpf") || h.includes("cnpj")) : 7;
+    let notesIdx = hasHeader ? headers.findIndex((h) => h.includes("anot") || h.includes("obs") || h.includes("note")) : 8;
+
+    if (nameIdx === -1) nameIdx = 0;
+    if (phoneIdx === -1) phoneIdx = 1;
+    if (emailIdx === -1) emailIdx = 2;
+
+    const leadsGenerated: Lead[] = dataRows
+      .filter((row) => row.length > 0 && row.some((cell) => cell.trim().length > 0))
+      .map((row, idx) => {
+        const leadNome = row[nameIdx] || `Lead Importado #${idx + 1}`;
+        const leadPhone = row[phoneIdx] || "";
+        const leadEmail = row[emailIdx] || "";
+        const leadOrigem = row[origemIdx] || "Importação de Planilha";
+        const leadTagsRaw = row[tagsIdx] || "Importado";
+        const leadTags = leadTagsRaw.split(/[,\/|]/).map((t) => t.trim()).filter(Boolean);
+        const leadResp = row[respIdx] || "Próprio Aluno / Autônomo";
+        const leadCity = row[cityIdx] || "São Paulo";
+        const leadDoc = row[docIdx] || "";
+        const leadNotes = row[notesIdx] || "Importado via planilha em lote.";
+
+        return {
+          id: `lead-imp-${Date.now()}-${idx}`,
+          nome: leadNome,
+          tags: leadTags.length > 0 ? leadTags : ["Importado"],
+          telefone: leadPhone || "+55 ",
+          email: leadEmail || "",
+          site: "",
+          documento: leadDoc,
+          empresa: "",
+          origem: leadOrigem,
+          dataNascimento: "",
+          responsavel: leadResp,
+          fezTesteNivel: false,
+          pais: "Brasil",
+          cep: "",
+          endereco: "",
+          numero: "",
+          complemento: "",
+          bairro: "",
+          cidade: leadCity,
+          uf: "SP",
+          anotacoes: leadNotes,
+          createdAt: new Date().toISOString(),
+        };
+      });
+
+    setPreviewLeads(leadsGenerated);
+  };
+
+  const handleFileUpload = (file: File) => {
+    setImportFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      setImportRawText(text);
+      parseDelimitedText(text);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleDownloadTemplate = () => {
+    const csvContent =
+      "Nome,Telefone,Email,Origem,Tags / Nivel,Responsavel (Pai/Mae),Cidade,CPF/Documento,Anotacoes\n" +
+      "Mariana Carvalho,+55 (11) 99123-4567,mariana@gmail.com,Tráfego Pago (Instagram Ad),Adulto/Iniciante,Próprio Aluno,São Paulo,123.456.789-00,Interesse em inglês para viagens\n" +
+      "Enzo Gabriel Santos,+55 (11) 98774-1234,enzo.mae@outlook.com,Indicação de Aluno,Kids/Inglês,Luciana Santos (Mãe),São Paulo,987.654.321-11,Procurando turma após as 18h\n" +
+      "Rodrigo Mendes,+55 (11) 97744-8899,rodrigo@empresa.com.br,Parceria Corporativa (B2B),Business/Avançado,Autônomo,São Paulo,456.789.123-22,Inglês para apresentações corporativas";
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "modelo_importacao_leads_fluency_ai.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Modelo de planilha baixado com sucesso!");
+  };
+
+  const handleConfirmImport = () => {
+    if (previewLeads.length === 0) {
+      toast.error("Nenhum lead válido encontrado para importar.");
+      return;
+    }
+
+    const nextLeads = [...previewLeads, ...leads];
+    saveLeads(nextLeads);
+    setIsImportModalOpen(false);
+    setPreviewLeads([]);
+    setImportRawText("");
+    setImportFileName("");
+    toast.success(`${previewLeads.length} leads importados com sucesso!`, {
+      description: "Os novos contatos já estão disponíveis na sua base geral de leads.",
+    });
+  };
+
   const handleOpenCreateModal = () => {
-    // Reset form fields
     setNome("");
     setTagsInput("");
     setTelefone("+55 ");
@@ -358,12 +552,28 @@ function LeadsPage() {
           title="Base Geral de Leads"
           description="Acompanhe o funil inicial de prospects, origens de tráfego, contatos e testes de proficiência realizados."
         />
-        <button
-          onClick={handleOpenCreateModal}
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/95 transition-all cursor-pointer self-start sm:self-auto active:scale-[0.97]"
-        >
-          <Plus className="size-4" /> Cadastrar Lead
-        </button>
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          <button
+            onClick={() => {
+              setPreviewLeads([]);
+              setImportRawText("");
+              setImportFileName("");
+              setIsImportModalOpen(true);
+            }}
+            className="inline-flex items-center gap-2 rounded-xl border border-hairline bg-surface/80 px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-surface-elevated hover:border-primary transition-all cursor-pointer shadow-sm active:scale-[0.97]"
+          >
+            <FileSpreadsheet className="size-4 text-emerald-400" />
+            <span>Importar Planilha</span>
+          </button>
+
+          <button
+            onClick={handleOpenCreateModal}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/95 transition-all cursor-pointer active:scale-[0.97]"
+          >
+            <Plus className="size-4" />
+            <span>Cadastrar Lead</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -989,6 +1199,215 @@ function LeadsPage() {
                   );
                 })}
               </div>
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {/* MODAL: IMPORTAÇÃO DE LEADS VIA PLANILHA / GOOGLE SHEETS */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <GlassCard className="w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl relative border-primary/20">
+            <button
+              type="button"
+              onClick={() => setIsImportModalOpen(false)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+            >
+              <X className="size-5" />
+            </button>
+
+            {/* Header */}
+            <div className="flex items-center gap-3">
+              <span className="grid size-10 place-items-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <FileSpreadsheet className="size-5" />
+              </span>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Importação de Leads em Lote</h3>
+                <p className="text-xs text-muted-foreground">
+                  Suba arquivos CSV/Excel ou cole células copiadas do Google Planilhas.
+                </p>
+              </div>
+            </div>
+
+            {/* Tabs & Template Download */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-hairline pb-3">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setImportMode("file")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    importMode === "file"
+                      ? "bg-primary text-primary-foreground shadow"
+                      : "bg-surface/50 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Upload className="size-3.5" />
+                  <span>Subir Arquivo (CSV/Excel)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setImportMode("paste")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    importMode === "paste"
+                      ? "bg-primary text-primary-foreground shadow"
+                      : "bg-surface/50 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <FileText className="size-3.5" />
+                  <span>Colar do Google Sheets</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleDownloadTemplate}
+                className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-medium cursor-pointer"
+              >
+                <Download className="size-3.5" />
+                <span>Baixar Modelo Padrão (.csv)</span>
+              </button>
+            </div>
+
+            {/* Content Tab 1: File Upload */}
+            {importMode === "file" && (
+              <div className="space-y-3">
+                <input
+                  type="file"
+                  ref={importFileRef}
+                  accept=".csv,.tsv,.txt,.xlsx,.xls"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file);
+                  }}
+                />
+
+                <div
+                  onClick={() => importFileRef.current?.click()}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDragging(false);
+                    const file = e.dataTransfer.files?.[0];
+                    if (file) handleFileUpload(file);
+                  }}
+                  className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 ${
+                    isDragging
+                      ? "border-primary bg-primary/10"
+                      : "border-hairline bg-surface/30 hover:border-primary hover:bg-surface/50"
+                  }`}
+                >
+                  <span className="grid size-12 place-items-center rounded-full bg-surface-elevated border border-hairline text-primary">
+                    <Upload className="size-6" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      {importFileName ? (
+                        <span className="text-emerald-400 flex items-center justify-center gap-1.5">
+                          <Check className="size-4" /> Arquivo selecionado: {importFileName}
+                        </span>
+                      ) : (
+                        "Clique para selecionar ou arraste o arquivo aqui"
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Suporta arquivos .CSV, .TSV, .TXT delimitados por vírgula ou ponto-e-vírgula
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Content Tab 2: Paste Google Sheets Text */}
+            {importMode === "paste" && (
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+                  Cole as linhas da sua planilha abaixo (Ctrl+V / Cmd+V):
+                </label>
+                <textarea
+                  rows={6}
+                  value={importRawText}
+                  onChange={(e) => {
+                    setImportRawText(e.target.value);
+                    parseDelimitedText(e.target.value);
+                  }}
+                  placeholder="Nome	Telefone	Email	Origem	Nível&#10;Lucas Silva	(11) 99123-4567	lucas@gmail.com	Instagram	Iniciante&#10;Beatriz Santos	(11) 98774-1234	beatriz@outlook.com	Indicação	Intermediário"
+                  className="w-full rounded-xl border border-hairline bg-surface/50 p-3 text-xs text-foreground font-mono outline-none focus:border-primary leading-relaxed"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  * Você pode copiar células diretamente do Google Planilhas ou Excel e colar aqui.
+                </p>
+              </div>
+            )}
+
+            {/* Preview Section */}
+            {previewLeads.length > 0 && (
+              <div className="space-y-3 pt-2 border-t border-hairline">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Sparkles className="size-4 text-primary" />
+                    Pré-visualização ({previewLeads.length} leads identificados)
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">Mostrando os primeiros 4 registros</span>
+                </div>
+
+                <div className="rounded-xl border border-hairline overflow-hidden">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-surface-elevated/60 text-muted-foreground border-b border-hairline">
+                        <th className="px-3 py-2 font-semibold">Nome</th>
+                        <th className="px-3 py-2 font-semibold">Contato</th>
+                        <th className="px-3 py-2 font-semibold">Origem</th>
+                        <th className="px-3 py-2 font-semibold">Tags / Nível</th>
+                        <th className="px-3 py-2 font-semibold">Responsável</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-hairline">
+                      {previewLeads.slice(0, 4).map((l, idx) => (
+                        <tr key={idx} className="hover:bg-surface/30">
+                          <td className="px-3 py-2 font-medium text-foreground">{l.nome}</td>
+                          <td className="px-3 py-2 text-muted-foreground">
+                            {l.telefone || l.email || "—"}
+                          </td>
+                          <td className="px-3 py-2 text-muted-foreground">{l.origem}</td>
+                          <td className="px-3 py-2">
+                            <span className="rounded bg-primary/10 border border-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                              {l.tags.join(", ") || "Geral"}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-muted-foreground">{l.responsavel}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 pt-3 border-t border-hairline">
+              <button
+                type="button"
+                onClick={() => setIsImportModalOpen(false)}
+                className="rounded-lg border border-hairline px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                disabled={previewLeads.length === 0}
+                onClick={handleConfirmImport}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-xs font-bold text-primary-foreground shadow hover:bg-primary/95 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                <Check className="size-4 stroke-[3]" />
+                <span>Confirmar e Importar {previewLeads.length > 0 ? `(${previewLeads.length})` : ""}</span>
+              </button>
             </div>
           </GlassCard>
         </div>

@@ -49,12 +49,12 @@ export const upcomingClasses = [
 ];
 
 export const students = [
-  { nome: "Marina Rocha", nivel: "B2", turma: "Conversation Noite", inicio: "12/03/2026", status: "Ativo" },
-  { nome: "Caio Bertolli", nivel: "A2", turma: "Regular Noite", inicio: "04/05/2026", status: "Inadimplente" },
-  { nome: "Helena Prado", nivel: "C1", turma: "Advanced Manhã", inicio: "22/01/2026", status: "Ativo" },
-  { nome: "Bruno Salles", nivel: "A2", turma: "Regular Tarde", inicio: "18/06/2026", status: "Em risco" },
-  { nome: "Aline Ferraz", nivel: "B1", turma: "Teens", inicio: "09/07/2026", status: "Ativo" },
-  { nome: "Rafael Lima", nivel: "C1", turma: "Advanced Noite", inicio: "27/02/2026", status: "Em risco" },
+  { nome: "Marina Rocha", nivel: "B2", turma: "Conversation Noite", inicio: "12/03/2026", status: "Ativo", horasContratadas: 4 },
+  { nome: "Caio Bertolli", nivel: "A2", turma: "Regular Noite", inicio: "04/05/2026", status: "Inadimplente", horasContratadas: 4 },
+  { nome: "Helena Prado", nivel: "C1", turma: "Advanced Manhã", inicio: "22/01/2026", status: "Ativo", horasContratadas: 2 },
+  { nome: "Bruno Salles", nivel: "A2", turma: "Regular Tarde", inicio: "18/06/2026", status: "Em risco", horasContratadas: 4 },
+  { nome: "Aline Ferraz", nivel: "B1", turma: "Teens", inicio: "09/07/2026", status: "Ativo", horasContratadas: 2 },
+  { nome: "Rafael Lima", nivel: "C1", turma: "Advanced Noite", inicio: "27/02/2026", status: "Em risco", horasContratadas: 4 },
 ];
 
 export const classes = [

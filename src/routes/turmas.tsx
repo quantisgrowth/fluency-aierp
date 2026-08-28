@@ -1,6 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { Search, Calendar, Users, Plus, Pencil, Trash2, ArrowLeftRight, X, Sparkles, Clock, AlertTriangle, CalendarRange, CheckCircle2 } from "lucide-react";
+import {
+  Search,
+  Calendar,
+  Users,
+  Plus,
+  Pencil,
+  Trash2,
+  ArrowLeftRight,
+  X,
+  Sparkles,
+  Clock,
+  AlertTriangle,
+  CalendarRange,
+  CheckCircle2,
+  BookOpen,
+  ShieldAlert,
+  AlertCircle,
+  Check,
+  Info,
+  Ban,
+  GraduationCap,
+} from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import { useUser } from "@/modules/user-context";
@@ -631,6 +652,37 @@ function TurmasPage() {
     if (sourceClassName === transferTargetClass) {
       toast.error("A turma de destino não pode ser a mesma da origem.");
       return;
+    }
+
+    const studentObj = students.find((s) => s.nome === transferStudent);
+    const targetClassObj = classes.find((c) => c.nome === transferTargetClass);
+
+    if (studentObj && targetClassObj) {
+      const studentHoras = studentObj.horasContratadas || 4;
+      const daysCount = targetClassObj.diasSelecionados?.length || 2;
+      let durationHours = 2.0;
+      if (targetClassObj.horaSelecionada && targetClassObj.horaFimSelecionada) {
+        const [sh = 19, sm = 0] = targetClassObj.horaSelecionada.split(":").map(Number);
+        const [eh = 21, em = 0] = targetClassObj.horaFimSelecionada.split(":").map(Number);
+        const diff = (eh * 60 + em) - (sh * 60 + sm);
+        durationHours = diff > 0 ? Number((diff / 60).toFixed(1)) : 2.0;
+      }
+      const targetWeeklyHours = durationHours * daysCount;
+
+      // Check Hours Limit
+      if (targetWeeklyHours > studentHoras) {
+        toast.error("Transferência Bloqueada: Carga Horária Excedida!", {
+          description: `O aluno ${studentObj.nome} contratou ${studentHoras}h/semana, mas a turma de destino exige ${targetWeeklyHours}h/semana.`,
+        });
+        return;
+      }
+
+      // Check Level Mismatch
+      if (studentObj.nivel !== targetClassObj.nivel) {
+        toast.warning("Atenção: Inconsistência Pedagógica na Transferência", {
+          description: `O aluno ${studentObj.nome} (${studentObj.nivel}) foi transferido para a turma de nível ${targetClassObj.nivel} como exceção pedagógica.`,
+        });
+      }
     }
 
     setClasses(
@@ -1863,246 +1915,466 @@ function TurmasPage() {
         </div>
       )}
 
-      {/* Modal: Editar Turma */}
+      {/* Modal: Editar Turma (Layout Amplo e Gestão Pedagógica Avançada) */}
       {isEditOpen && selectedClass && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <GlassCard className="w-full max-w-md p-6 space-y-4 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <GlassCard className="w-full max-w-5xl max-h-[92vh] overflow-y-auto p-6 md:p-8 space-y-6 shadow-2xl relative border-primary/20">
             <button
               onClick={() => setIsEditOpen(false)}
-              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0"
+              className="absolute top-5 right-5 text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors"
             >
-              <X className="size-4" />
+              <X className="size-5" />
             </button>
-            <div>
-              <h3 className="text-base font-bold text-foreground">Editar Configurações da Turma</h3>
-              <p className="text-xs text-muted-foreground">Altere o professor, vagas, dias ou horário.</p>
+
+            {/* Header */}
+            <div className="flex items-center gap-3 border-b border-hairline pb-4">
+              <span className="grid size-10 place-items-center rounded-xl bg-primary/10 border border-primary/20 text-primary">
+                <BookOpen className="size-5" />
+              </span>
+              <div>
+                <h3 className="text-lg font-bold text-foreground">Editar Configurações da Turma</h3>
+                <p className="text-xs text-muted-foreground">
+                  Ajuste parâmetros didáticos, horários, cálculo de horas semanais e alocação de alunos com validação pedagógica.
+                </p>
+              </div>
             </div>
-            
-            <form onSubmit={handleEdit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nome da Turma</label>
-                <input
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary"
-                  required
-                />
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nível CEFR</label>
-                  <select
-                    value={formNivel}
-                    onChange={(e) => setFormNivel(e.target.value)}
-                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary cursor-pointer"
-                  >
-                    <option value="A1">A1</option>
-                    <option value="A2">A2</option>
-                    <option value="B1">B1</option>
-                    <option value="B2">B2</option>
-                    <option value="C1">C1</option>
-                    <option value="C2">C2</option>
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vagas Max.</label>
-                  <input
-                    type="number"
-                    value={formVagas}
-                    onChange={(e) => setFormVagas(Number(e.target.value))}
-                    min={selectedClass.alunos}
-                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary"
-                    required
-                  />
-                </div>
-              </div>
+            {(() => {
+              // Duration and weekly hours calculation
+              const getDurationHours = (startStr: string, endStr: string): number => {
+                try {
+                  const [startH = 19, startM = 0] = startStr.split(":").map(Number);
+                  const [endH = 21, endM = 0] = endStr.split(":").map(Number);
+                  const startMin = (startH * 60) + startM;
+                  const endMin = (endH * 60) + endM;
+                  const diffMin = endMin > startMin ? endMin - startMin : 120;
+                  return Number((diffMin / 60).toFixed(1));
+                } catch {
+                  return 2.0;
+                }
+              };
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Professor Responsável</label>
-                <select
-                  value={formProfessor}
-                  onChange={(e) => setFormProfessor(e.target.value)}
-                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary cursor-pointer"
-                >
-                  <option value="Marcos Vidal">Marcos Vidal</option>
-                  <option value="Julia Kern">Julia Kern</option>
-                  <option value="Ana Beatriz">Ana Beatriz</option>
-                  <option value="Peter Hall">Peter Hall</option>
-                </select>
-              </div>
+              const classDuration = getDurationHours(formHora, formHoraFim);
+              const weeklyHours = Number((classDuration * Math.max(1, formDias.length)).toFixed(1));
+              const monthlyHours = Number((weeklyHours * 4).toFixed(0));
 
-              {/* Day selection checkmarks */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dias da Semana</label>
-                <div className="flex flex-wrap gap-2">
-                  {CALENDAR_DAYS.map((d) => {
-                    const isSelected = formDias.includes(d.key);
-                    return (
-                      <button
-                        key={d.key}
-                        type="button"
-                        onClick={() => {
-                          if (isSelected) {
-                            setFormDias(formDias.filter((day) => day !== d.key));
-                          } else {
-                            setFormDias([...formDias, d.key]);
-                          }
-                        }}
-                        className={`h-9 px-3 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
-                          isSelected
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-hairline bg-surface/50 text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        {d.key}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              // Selected book info
+              const selectedBook = livrosTrilhas.find(b => b.id === formLivroId);
 
-              {/* Time selection slot */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Horário de Início</label>
-                  <select
-                    value={formHora}
-                    onChange={(e) => setFormHora(e.target.value)}
-                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary cursor-pointer"
-                  >
-                    {calendarTimes.map((time) => (
-                      <option key={time} value={time}>{time}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Horário de Fim</label>
-                  <input
-                    type="text"
-                    placeholder="Ex: 09:00"
-                    value={formHoraFim}
-                    onChange={(e) => setFormHoraFim(e.target.value)}
-                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary"
-                    required
-                  />
-                </div>
-              </div>
+              // Students list for this class
+              const classNomeLower = selectedClass.nome.toLowerCase();
+              const enrolledStudents = students.filter(s => {
+                const studentTurma = s.turma.toLowerCase();
+                return studentTurma === classNomeLower || studentTurma.includes(classNomeLower) || classNomeLower.includes(studentTurma);
+              });
 
-              {/* Book trail selection */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Livro / Trilha Didática</label>
-                <select
-                  value={formLivroId}
-                  onChange={(e) => setFormLivroId(e.target.value)}
-                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary cursor-pointer"
-                >
-                  {livrosTrilhas.map((book) => (
-                    <option key={book.id} value={book.id}>
-                      {book.titulo} (CEFR {book.nivel})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              const availableStudents = students.filter(s => {
+                const studentTurma = s.turma.toLowerCase();
+                return studentTurma !== classNomeLower && !studentTurma.includes(classNomeLower) && !classNomeLower.includes(studentTurma);
+              });
 
-              {/* Roster / Students management inside edit modal */}
-              <div className="border-t border-hairline/60 pt-4 space-y-3">
-                {(() => {
-                  const classNomeLower = selectedClass.nome.toLowerCase();
-                  const enrolledStudents = students.filter(s => {
-                    const studentTurma = s.turma.toLowerCase();
-                    return studentTurma === classNomeLower || studentTurma.includes(classNomeLower) || classNomeLower.includes(studentTurma);
-                  });
+              const isFull = enrolledStudents.length >= formVagas;
+              const occupancyPct = Math.min(100, Math.round((enrolledStudents.length / formVagas) * 100));
 
-                  const availableStudents = students.filter(s => {
-                    const studentTurma = s.turma.toLowerCase();
-                    return studentTurma !== classNomeLower && !studentTurma.includes(classNomeLower) && !classNomeLower.includes(studentTurma);
-                  });
+              // Currently selected student in allocation dropdown
+              const candidateStudent = students.find(s => s.nome === allocateStudentName);
+              const candidateHorasContratadas = candidateStudent?.horasContratadas || 4;
+              const isHoursExceeded = candidateStudent ? weeklyHours > candidateHorasContratadas : false;
+              const isLevelMismatch = candidateStudent ? candidateStudent.nivel !== formNivel : false;
 
-                  const isFull = enrolledStudents.length >= formVagas;
+              return (
+                <div className="grid lg:grid-cols-2 gap-8 items-start">
+                  
+                  {/* COLUMN 1: CLASS CONFIGURATIONS */}
+                  <form onSubmit={handleEdit} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nome da Turma</label>
+                      <input
+                        value={formName}
+                        onChange={(e) => setFormName(e.target.value)}
+                        className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary transition-colors"
+                        required
+                      />
+                    </div>
 
-                  return (
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        <span>Gerenciar Alunos ({enrolledStudents.length} / {formVagas})</span>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nível CEFR da Turma</label>
+                        <select
+                          value={formNivel}
+                          onChange={(e) => setFormNivel(e.target.value)}
+                          className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary cursor-pointer transition-colors"
+                        >
+                          <option value="A1">A1 (Iniciante)</option>
+                          <option value="A2">A2 (Elementar)</option>
+                          <option value="B1">B1 (Intermediário)</option>
+                          <option value="B2">B2 (Intermediário Superior)</option>
+                          <option value="C1">C1 (Avançado)</option>
+                          <option value="C2">C2 (Fluente / Domínio)</option>
+                        </select>
                       </div>
 
-                      {/* Enrolled students badges */}
-                      {enrolledStudents.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5 p-2 rounded-lg border border-hairline bg-surface/30 max-h-24 overflow-y-auto">
-                          {enrolledStudents.map(student => (
-                            <span
-                              key={student.nome}
-                              className="inline-flex items-center gap-1.5 rounded-md bg-white/[0.04] border border-hairline px-2.5 py-0.5 text-xs text-foreground font-medium"
-                            >
-                              {student.nome}
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveStudentFromClass(student.nome, selectedClass.nome)}
-                                className="text-rose-400 hover:text-rose-300 font-bold bg-transparent border-0 cursor-pointer text-xs p-0 leading-none"
-                                title="Desvincular Aluno"
-                              >
-                                ×
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground italic bg-surface/30 border border-hairline p-2 rounded-lg">Nenhum aluno matriculado nesta turma.</p>
-                      )}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vagas Máximas</label>
+                        <input
+                          type="number"
+                          value={formVagas}
+                          onChange={(e) => setFormVagas(Number(e.target.value))}
+                          min={enrolledStudents.length}
+                          className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary"
+                          required
+                        />
+                      </div>
+                    </div>
 
-                      {/* Quick allocate select inline */}
-                      {!isFull && availableStudents.length > 0 && (
-                        <div className="flex gap-2 items-center pt-1.5">
-                          <select
-                            value={allocateStudentName}
-                            onChange={(e) => setAllocateStudentName(e.target.value)}
-                            className="h-9 flex-1 rounded-lg border border-hairline bg-surface/50 px-2 text-xs text-foreground outline-none focus:border-primary cursor-pointer"
-                          >
-                            <option value="">-- Alocar Novo Aluno --</option>
-                            {availableStudents.map(s => (
-                              <option key={s.nome} value={s.nome}>{s.nome} ({s.nivel})</option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!allocateStudentName) return;
-                              setClasses(classes.map(item => item.nome === selectedClass.nome ? { ...item, alunos: item.alunos + 1 } : item));
-                              setStudents(students.map(s => s.nome === allocateStudentName ? { ...s, turma: selectedClass.nome } : s));
-                              
-                              try {
-                                const storedDetails = window.localStorage.getItem("fluency-ai:students:details");
-                                if (storedDetails) {
-                                  const parsed = JSON.parse(storedDetails);
-                                  if (parsed[allocateStudentName]) {
-                                    parsed[allocateStudentName].turma = selectedClass.nome;
-                                    window.localStorage.setItem("fluency-ai:students:details", JSON.stringify(parsed));
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Professor Responsável</label>
+                      <select
+                        value={formProfessor}
+                        onChange={(e) => setFormProfessor(e.target.value)}
+                        className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary cursor-pointer transition-colors"
+                      >
+                        <option value="Marcos Vidal">Marcos Vidal</option>
+                        <option value="Julia Kern">Julia Kern</option>
+                        <option value="Ana Beatriz">Ana Beatriz</option>
+                        <option value="Peter Hall">Peter Hall</option>
+                      </select>
+                    </div>
+
+                    {/* Day selection checkmarks */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dias da Semana ({formDias.length} selecionados)</label>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {CALENDAR_DAYS.map((d) => {
+                          const isSelected = formDias.includes(d.key);
+                          return (
+                            <button
+                              key={d.key}
+                              type="button"
+                              onClick={() => {
+                                if (isSelected) {
+                                  if (formDias.length > 1) {
+                                    setFormDias(formDias.filter((day) => day !== d.key));
+                                  } else {
+                                    toast.error("A turma precisa ter pelo menos 1 dia na semana.");
                                   }
+                                } else {
+                                  setFormDias([...formDias, d.key]);
                                 }
-                              } catch {}
+                              }}
+                              className={`h-9 px-3 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                                isSelected
+                                  ? "border-primary bg-primary/10 text-primary shadow-sm"
+                                  : "border-hairline bg-surface/50 text-muted-foreground hover:text-foreground hover:bg-surface"
+                              }`}
+                            >
+                              {d.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-                              toast.success(`Aluno "${allocateStudentName}" alocado com sucesso!`);
-                              setAllocateStudentName("");
-                            }}
-                            className="h-9 px-3 rounded-lg bg-primary/10 hover:bg-primary/20 text-xs font-bold text-primary cursor-pointer border-0 transition-colors"
-                          >
-                            Alocar
-                          </button>
+                    {/* Time selection slot */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Horário de Início</label>
+                        <select
+                          value={formHora}
+                          onChange={(e) => setFormHora(e.target.value)}
+                          className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary cursor-pointer"
+                        >
+                          {calendarTimes.map((time) => (
+                            <option key={time} value={time}>{time}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Horário de Término</label>
+                        <input
+                          type="text"
+                          placeholder="Ex: 21:00"
+                          value={formHoraFim}
+                          onChange={(e) => setFormHoraFim(e.target.value)}
+                          className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Calculated Hours Banner */}
+                    <div className="rounded-xl border border-hairline bg-surface-elevated/40 p-3.5 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2.5">
+                        <span className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
+                          <Clock className="size-4" />
+                        </span>
+                        <div>
+                          <p className="font-bold text-foreground">Carga Horária da Turma</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {classDuration}h por encontro × {formDias.length} dia(s)
+                          </p>
                         </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="inline-flex rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-xs font-bold text-primary">
+                          {weeklyHours}h / semana
+                        </span>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">~{monthlyHours}h / mês</p>
+                      </div>
+                    </div>
+
+                    {/* Book trail selection */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <BookOpen className="size-3.5 text-primary" /> Livro / Trilha Didática
+                      </label>
+                      <select
+                        value={formLivroId}
+                        onChange={(e) => setFormLivroId(e.target.value)}
+                        className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary cursor-pointer transition-colors"
+                      >
+                        {livrosTrilhas.map((book) => (
+                          <option key={book.id} value={book.id}>
+                            {book.titulo} (Nível CEFR: {book.nivel})
+                          </option>
+                        ))}
+                      </select>
+                      {selectedBook && (
+                        <p className="text-[11px] text-muted-foreground">
+                          * Este material possui <strong>{selectedBook.aulas.length} aulas estruturadas</strong> voltadas para proficiência <strong>{selectedBook.nivel}</strong>.
+                        </p>
                       )}
                     </div>
-                  );
-                })()}
-              </div>
 
-              <button
-                type="submit"
-                className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center border-0"
-              >
-                Salvar Alterações
-              </button>
-            </form>
+                    <button
+                      type="submit"
+                      className="w-full rounded-lg bg-primary py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center border-0 active:scale-[0.98]"
+                    >
+                      Salvar Alterações da Turma
+                    </button>
+                  </form>
+
+                  {/* COLUMN 2: STUDENTS ROSTER & PEDAGOGICAL ALLOCATION */}
+                  <div className="space-y-5 rounded-xl border border-hairline bg-surface/20 p-5">
+                    
+                    {/* Capacity & Occupancy Bar */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-bold text-foreground flex items-center gap-1.5">
+                          <Users className="size-4 text-primary" /> Alunos Matriculados
+                        </span>
+                        <span className="font-semibold text-muted-foreground">
+                          {enrolledStudents.length} de {formVagas} vagas ({occupancyPct}%)
+                        </span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-surface-elevated overflow-hidden border border-hairline">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${
+                            isFull ? "bg-rose-500" : occupancyPct > 80 ? "bg-amber-500" : "bg-primary"
+                          }`}
+                          style={{ width: `${occupancyPct}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Enrolled Students List */}
+                    <div className="space-y-2">
+                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Roster de Alunos da Turma
+                      </p>
+
+                      {enrolledStudents.length > 0 ? (
+                        <div className="divide-y divide-hairline rounded-lg border border-hairline bg-surface/40 max-h-56 overflow-y-auto">
+                          {enrolledStudents.map((student) => {
+                            const isMatch = student.nivel === formNivel;
+                            const studentHoras = student.horasContratadas || 4;
+
+                            return (
+                              <div
+                                key={student.nome}
+                                className="flex items-center justify-between p-2.5 text-xs hover:bg-surface/60 transition-colors"
+                              >
+                                <div className="space-y-0.5">
+                                  <p className="font-semibold text-foreground">{student.nome}</p>
+                                  <div className="flex items-center gap-2 text-[10px]">
+                                    <span className="rounded bg-surface-elevated border border-hairline px-1.5 py-0.2 font-medium text-foreground">
+                                      Nível: {student.nivel}
+                                    </span>
+                                    <span className="text-muted-foreground">
+                                      Plano: {studentHoras}h/sem
+                                    </span>
+                                    {isMatch ? (
+                                      <span className="text-emerald-400 font-semibold flex items-center gap-0.5">
+                                        <Check className="size-3" /> Nível OK
+                                      </span>
+                                    ) : (
+                                      <span className="text-amber-400 font-semibold flex items-center gap-0.5" title={`Aluno está no nível ${student.nivel}, enquanto a turma exige ${formNivel}`}>
+                                        <AlertTriangle className="size-3" /> Divergência ({student.nivel})
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveStudentFromClass(student.nome, selectedClass.nome)}
+                                  className="rounded-lg border border-hairline px-2 py-1 text-[11px] font-semibold text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/30 transition-colors cursor-pointer"
+                                  title="Desvincular da turma"
+                                >
+                                  Desvincular
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic bg-surface/30 border border-hairline p-3 rounded-lg text-center">
+                          Nenhum aluno matriculado nesta turma no momento.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* ALLOCATE NEW STUDENT SECTION */}
+                    <div className="space-y-3 pt-3 border-t border-hairline">
+                      <div>
+                        <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
+                          <GraduationCap className="size-4 text-primary" /> Alocar Aluno na Turma
+                        </h4>
+                        <p className="text-[11px] text-muted-foreground">
+                          O sistema valida a compatibilidade de nível CEFR e limite de horas semanais contratadas.
+                        </p>
+                      </div>
+
+                      {!isFull ? (
+                        <div className="space-y-3">
+                          <div className="flex gap-2">
+                            <select
+                              value={allocateStudentName}
+                              onChange={(e) => setAllocateStudentName(e.target.value)}
+                              className="h-10 flex-1 rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary cursor-pointer transition-colors"
+                            >
+                              <option value="">-- Selecione o Aluno para Alocação --</option>
+                              {availableStudents.map((s) => {
+                                const sHoras = s.horasContratadas || 4;
+                                const isLevelOk = s.nivel === formNivel;
+                                const isHorasOk = weeklyHours <= sHoras;
+                                
+                                return (
+                                  <option key={s.nome} value={s.nome}>
+                                    {s.nome} · Nível {s.nivel} {isLevelOk ? "✓" : "(!)"} · {sHoras}h/sem {isHorasOk ? "" : "(Excede horas)"}
+                                  </option>
+                                );
+                              })}
+                            </select>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!allocateStudentName) {
+                                  toast.error("Por favor, selecione um aluno na lista.");
+                                  return;
+                                }
+
+                                const studentObj = students.find(s => s.nome === allocateStudentName);
+                                if (!studentObj) return;
+
+                                const studentHoras = studentObj.horasContratadas || 4;
+
+                                // 1. Check Hours limit
+                                if (weeklyHours > studentHoras) {
+                                  toast.error("Limite de Horas Semanais Excedido!", {
+                                    description: `O aluno ${studentObj.nome} contratou ${studentHoras}h semanais, mas esta turma exige ${weeklyHours}h semanais. Alocação bloqueada para não ultrapassar a contratação.`,
+                                  });
+                                  return;
+                                }
+
+                                // 2. Check Level Pedagogical Match
+                                if (studentObj.nivel !== formNivel) {
+                                  toast.warning("Atenção: Inconsistência Pedagógica Registrada", {
+                                    description: `O aluno ${studentObj.nome} (${studentObj.nivel}) foi alocado na turma de nível ${formNivel} como exceção.`,
+                                  });
+                                }
+
+                                setClasses(classes.map(item => item.nome === selectedClass.nome ? { ...item, alunos: item.alunos + 1 } : item));
+                                setStudents(students.map(s => s.nome === allocateStudentName ? { ...s, turma: selectedClass.nome } : s));
+                                
+                                try {
+                                  const storedDetails = window.localStorage.getItem("fluency-ai:students:details");
+                                  if (storedDetails) {
+                                    const parsed = JSON.parse(storedDetails);
+                                    if (parsed[allocateStudentName]) {
+                                      parsed[allocateStudentName].turma = selectedClass.nome;
+                                      window.localStorage.setItem("fluency-ai:students:details", JSON.stringify(parsed));
+                                    }
+                                  }
+                                } catch {}
+
+                                toast.success(`Aluno "${allocateStudentName}" matriculado com sucesso na turma "${selectedClass.nome}"!`);
+                                setAllocateStudentName("");
+                              }}
+                              className="h-10 px-4 rounded-lg bg-primary text-xs font-bold text-primary-foreground shadow hover:bg-primary/95 cursor-pointer border-0 transition-all active:scale-95"
+                            >
+                              Alocar
+                            </button>
+                          </div>
+
+                          {/* Dynamic Validation Feedback Card for Selected Student */}
+                          {candidateStudent && (
+                            <div className="space-y-2 p-3 rounded-lg border bg-surface-elevated/20 text-xs">
+                              <p className="font-bold text-foreground">Diagnóstico de Alocação para {candidateStudent.nome}:</p>
+                              
+                              {/* Hours verification */}
+                              {isHoursExceeded ? (
+                                <div className="flex items-start gap-2 text-rose-400 bg-rose-500/10 border border-rose-500/20 p-2 rounded-md">
+                                  <Ban className="size-4 shrink-0 mt-0.5" />
+                                  <div>
+                                    <p className="font-semibold">Bloqueio: Carga Horária Excedida</p>
+                                    <p className="text-[11px] text-rose-300">
+                                      O aluno contratou <strong>{candidateHorasContratadas}h/semana</strong>, mas esta turma exige <strong>{weeklyHours}h/semana</strong>. Não é permitido alocar.
+                                    </p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 p-2 rounded-md">
+                                  <Check className="size-4 shrink-0" />
+                                  <span>Carga horária compatível ({weeklyHours}h da turma ≤ {candidateHorasContratadas}h contratadas).</span>
+                                </div>
+                              )}
+
+                              {/* Level verification */}
+                              {isLevelMismatch ? (
+                                <div className="flex items-start gap-2 text-amber-400 bg-amber-500/10 border border-amber-500/20 p-2 rounded-md">
+                                  <ShieldAlert className="size-4 shrink-0 mt-0.5" />
+                                  <div>
+                                    <p className="font-semibold">Aviso: Inconsistência de Nível Pedagógico</p>
+                                    <p className="text-[11px] text-amber-300">
+                                      O aluno está classificado no <strong>Nível {candidateStudent.nivel}</strong>, enquanto a turma e o livro didático exigem <strong>Nível {formNivel}</strong>.
+                                    </p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 p-2 rounded-md">
+                                  <Check className="size-4 shrink-0" />
+                                  <span>Nível pedagógico 100% compatível (CEFR {formNivel}).</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-3 rounded-lg text-center font-semibold">
+                          Turma com lotação máxima atingida ({formVagas} vagas). Para alocar mais alunos, aumente o número de vagas máximas.
+                        </p>
+                      )}
+                    </div>
+
+                  </div>
+                </div>
+              );
+            })()}
+
           </GlassCard>
         </div>
       )}
@@ -2155,20 +2427,21 @@ function TurmasPage() {
       {/* Modal: Transferir Aluno */}
       {isTransferOpen && selectedClass && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <GlassCard className="w-full max-w-md p-6 space-y-4 shadow-2xl relative">
+          <GlassCard className="w-full max-w-lg p-6 space-y-5 shadow-2xl relative border-primary/20">
             <button
               onClick={() => setIsTransferOpen(false)}
-              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0"
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors"
             >
               <X className="size-4" />
             </button>
             <div>
-              <h3 className="text-base font-bold text-foreground">Transferência de Aluno</h3>
+              <h3 className="text-base font-bold text-foreground">Transferência Pedagógica de Aluno</h3>
               <p className="text-xs text-muted-foreground">Selecione o aluno e escolha a turma de destino compatível.</p>
             </div>
 
-            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-[11px] text-primary">
-              Turma de Origem: <strong>{selectedClass.nome} (CEFR {selectedClass.nivel})</strong>
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-primary flex items-center justify-between">
+              <span>Turma de Origem: <strong>{selectedClass.nome} (CEFR {selectedClass.nivel})</strong></span>
+              <span className="text-[10px] font-semibold opacity-80">{selectedClass.alunos}/{selectedClass.vagas} alunos</span>
             </div>
 
             <form onSubmit={handleTransfer} className="space-y-4">
@@ -2181,7 +2454,7 @@ function TurmasPage() {
                 >
                   {students.map((s) => (
                     <option key={s.nome} value={s.nome}>
-                      {s.nome} ({s.nivel} - {s.status})
+                      {s.nome} · Nível {s.nivel} · {s.horasContratadas || 4}h/sem ({s.status})
                     </option>
                   ))}
                 </select>
@@ -2198,15 +2471,64 @@ function TurmasPage() {
                     .filter((item) => item.nome !== selectedClass.nome)
                     .map((item) => (
                       <option key={item.nome} value={item.nome}>
-                        {item.nome} (CEFR {item.nivel}) - {item.alunos}/{item.vagas} vagas
+                        {item.nome} (CEFR {item.nivel}) — {item.alunos}/{item.vagas} vagas
                       </option>
                     ))}
                 </select>
               </div>
 
+              {/* Real time diagnostic for transfer */}
+              {(() => {
+                const sObj = students.find((s) => s.nome === transferStudent);
+                const tObj = classes.find((c) => c.nome === transferTargetClass);
+                if (!sObj || !tObj) return null;
+
+                const sHoras = sObj.horasContratadas || 4;
+                const daysCount = tObj.diasSelecionados?.length || 2;
+                let durationHours = 2.0;
+                if (tObj.horaSelecionada && tObj.horaFimSelecionada) {
+                  const [sh = 19, sm = 0] = tObj.horaSelecionada.split(":").map(Number);
+                  const [eh = 21, em = 0] = tObj.horaFimSelecionada.split(":").map(Number);
+                  const diff = (eh * 60 + em) - (sh * 60 + sm);
+                  durationHours = diff > 0 ? Number((diff / 60).toFixed(1)) : 2.0;
+                }
+                const targetWeekly = durationHours * daysCount;
+                const isOver = targetWeekly > sHoras;
+                const isDiffLevel = sObj.nivel !== tObj.nivel;
+
+                return (
+                  <div className="p-3 rounded-lg border bg-surface-elevated/20 space-y-1.5 text-xs">
+                    <p className="font-bold text-foreground">Diagnóstico de Transferência:</p>
+                    {isOver ? (
+                      <p className="text-rose-400 font-semibold flex items-center gap-1.5">
+                        <Ban className="size-3.5 shrink-0" />
+                        Bloqueio: Turma de destino exige {targetWeekly}h/sem (Aluno contratou {sHoras}h/sem).
+                      </p>
+                    ) : (
+                      <p className="text-emerald-400 flex items-center gap-1.5">
+                        <Check className="size-3.5 shrink-0" />
+                        Carga horária compatível ({targetWeekly}h ≤ {sHoras}h).
+                      </p>
+                    )}
+
+                    {isDiffLevel ? (
+                      <p className="text-amber-400 flex items-center gap-1.5">
+                        <ShieldAlert className="size-3.5 shrink-0" />
+                        Aviso: Aluno é nível {sObj.nivel} e destino é nível {tObj.nivel}.
+                      </p>
+                    ) : (
+                      <p className="text-emerald-400 flex items-center gap-1.5">
+                        <Check className="size-3.5 shrink-0" />
+                        Nível compatível (CEFR {tObj.nivel}).
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
+
               <button
                 type="submit"
-                className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center border-0"
+                className="w-full rounded-lg bg-primary py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center border-0"
               >
                 Confirmar Transferência
               </button>

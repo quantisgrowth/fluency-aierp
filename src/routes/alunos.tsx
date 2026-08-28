@@ -23,6 +23,7 @@ type Student = {
   turma: string;
   inicio: string;
   status: string;
+  horasContratadas?: number;
 };
 
 type AcademicNote = {
