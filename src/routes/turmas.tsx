@@ -32,7 +32,9 @@ import {
   classes as initialClasses,
   students as initialStudents,
   classrooms as initialClassrooms,
+  CLASS_COLOR_THEMES,
   type Classroom,
+  type ClassColorTheme,
 } from "@/data/mock";
 import { toast } from "sonner";
 
@@ -60,6 +62,7 @@ type ClassItem = {
   aulaAtual?: number;
   salaId?: string;
   salaNome?: string;
+  corTheme?: string;
 };
 
 type Lesson = {
@@ -386,23 +389,19 @@ function TurmasPage() {
 
     setCronogramas((prev) => ({
       ...prev,
-      [selectedCronogramaClass]: updated
+      [selectedCronogramaClass]: updated,
     }));
     toast.success("Aula atualizada com sucesso!");
   };
 
-  // Delete Lesson
   const handleDeleteLesson = (lessonId: string) => {
-    const lessons = cronogramas[selectedCronogramaClass] || [];
-    const filtered = lessons.filter(l => l.id !== lessonId);
-    const rescaled = filtered.map((l, idx) => ({
-      ...l,
-      aula: idx + 1
-    }));
+    const currentLessons = cronogramas[selectedCronogramaClass] || [];
+    const filtered = currentLessons.filter((l) => l.id !== lessonId);
+    const rescaled = filtered.map((l, idx) => ({ ...l, aula: idx + 1 }));
 
     setCronogramas((prev) => ({
       ...prev,
-      [selectedCronogramaClass]: rescaled
+      [selectedCronogramaClass]: rescaled,
     }));
     toast.success("Aula removida da trilha.");
   };
@@ -427,6 +426,55 @@ function TurmasPage() {
   const [formHoraFim, setFormHoraFim] = useState("20:30");
   const [formLivroId, setFormLivroId] = useState("livro-1");
   const [formSalaId, setFormSalaId] = useState("sala-1");
+  const [formCorTheme, setFormCorTheme] = useState("emerald");
+
+  // Room & Time Conflict Checker Function
+  const checkRoomConflict = (
+    targetSalaId: string,
+    targetDias: string[],
+    targetHoraInicio: string,
+    targetHoraFim: string,
+    excludeClassName?: string
+  ) => {
+    if (!targetSalaId || !targetDias || targetDias.length === 0 || !targetHoraInicio) return null;
+
+    const toMinutes = (timeStr: string) => {
+      try {
+        const [h = 0, m = 0] = timeStr.split(":").map(Number);
+        return h * 60 + m;
+      } catch {
+        return 0;
+      }
+    };
+
+    const startMin = toMinutes(targetHoraInicio);
+    const endMin = toMinutes(targetHoraFim) || startMin + 90;
+
+    for (const c of classes) {
+      if (excludeClassName && c.nome.toLowerCase() === excludeClassName.toLowerCase()) continue;
+      if (c.salaId !== targetSalaId) continue;
+
+      const cDias = c.diasSelecionados || [];
+      const hasDayOverlap = targetDias.some((d) => cDias.includes(d));
+      if (!hasDayOverlap) continue;
+
+      const cStartMin = toMinutes(c.horaSelecionada || "19:00");
+      const cEndMin = toMinutes(c.horaFimSelecionada || "20:30");
+
+      // Check overlap: (startA < endB) and (endA > startB)
+      const hasTimeOverlap = startMin < cEndMin && endMin > cStartMin;
+
+      if (hasTimeOverlap) {
+        return {
+          conflictingClass: c.nome,
+          professor: c.professor,
+          horario: c.horario,
+          salaNome: c.salaNome || "Sala Selecionada",
+        };
+      }
+    }
+    return null;
+  };
 
   // Dynamic Grade Horaria / Calendar Times
   const [calendarTimes, setCalendarTimes] = useState<string[]>(() => {
@@ -496,6 +544,13 @@ function TurmasPage() {
       window.localStorage.setItem("fluency-ai:classes:list", JSON.stringify(classes));
     } catch {}
   }, [classes]);
+
+  // Sync students to localStorage
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("fluency-ai:students:list", JSON.stringify(students));
+    } catch {}
+  }, [students]);
 
   // Synchronize class student count with students list dynamically
   useEffect(() => {
@@ -578,12 +633,25 @@ function TurmasPage() {
     setFormHoraFim("20:30");
     setFormLivroId("livro-1");
     setFormSalaId(rooms[0]?.id || "sala-1");
+
+    // Choose first free color not in use by other classes
+    const usedColors = classes.map((c) => c.corTheme).filter(Boolean);
+    const firstFree = CLASS_COLOR_THEMES.find((t) => !usedColors.includes(t.id))?.id || "emerald";
+    setFormCorTheme(firstFree);
+
     setIsCreateOpen(true);
   };
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName) return;
+
+    // Room Conflict Validation
+    const conflict = checkRoomConflict(formSalaId, formDias, formHora, formHoraFim);
+    if (conflict) {
+      toast.error(`Conflito de Sala: A ${conflict.salaNome} já está ocupada pela turma "${conflict.conflictingClass}" (${conflict.horario}).`);
+      return;
+    }
 
     const daysPart = formDias.join("/");
     const combinedHorario = `${daysPart} ${formHora}-${formHoraFim}`;
@@ -604,6 +672,7 @@ function TurmasPage() {
       aulaAtual: 1,
       salaId: formSalaId,
       salaNome,
+      corTheme: formCorTheme,
     };
 
     setClasses([...classes, newClass]);
@@ -623,12 +692,20 @@ function TurmasPage() {
     setFormHoraFim(c.horaFimSelecionada || "20:30");
     setFormLivroId(c.livroId || "livro-1");
     setFormSalaId(c.salaId || "sala-1");
+    setFormCorTheme(c.corTheme || "emerald");
     setIsEditOpen(true);
   };
 
   const handleEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedClass || !formName) return;
+
+    // Room Conflict Validation
+    const conflict = checkRoomConflict(formSalaId, formDias, formHora, formHoraFim, selectedClass.nome);
+    if (conflict) {
+      toast.error(`Conflito de Sala: A ${conflict.salaNome} já está ocupada pela turma "${conflict.conflictingClass}" (${conflict.horario}).`);
+      return;
+    }
 
     const daysPart = formDias.join("/");
     const combinedHorario = `${daysPart} ${formHora}-${formHoraFim}`;
@@ -651,6 +728,7 @@ function TurmasPage() {
               livroId: formLivroId,
               salaId: formSalaId,
               salaNome,
+              corTheme: formCorTheme,
             }
           : c
       )
@@ -943,6 +1021,7 @@ function TurmasPage() {
               filteredClasses.map((c) => {
                 const percentage = (c.alunos / c.vagas) * 100;
                 const isFull = c.alunos >= c.vagas;
+                const themeObj = CLASS_COLOR_THEMES.find((t) => t.id === c.corTheme) || CLASS_COLOR_THEMES[0];
 
                 return (
                   <GlassCard key={c.nome} className="p-6 flex flex-col justify-between hover:border-white/10 hover:shadow-lg transition-all duration-300 relative group/card">
@@ -977,9 +1056,12 @@ function TurmasPage() {
                     <div className="space-y-4">
                       {/* Top Level badge and name */}
                       <div className="flex items-start justify-between">
-                        <span className="rounded-md border border-hairline bg-surface-elevated/80 px-2.5 py-1 text-xs font-bold text-primary tracking-wider uppercase">
-                          CEFR {c.nivel}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`rounded-md border px-2.5 py-1 text-xs font-bold tracking-wider uppercase ${themeObj.badgeBg} ${themeObj.border} ${themeObj.text}`}>
+                            CEFR {c.nivel}
+                          </span>
+                          <span className={`size-2 rounded-full ${themeObj.dot}`} title={`Tema: ${themeObj.label}`} />
+                        </div>
                         <span className="flex items-center gap-1.5 text-xs text-muted-foreground pr-16 group-hover/card:pr-24 transition-all">
                           <Calendar className="size-3.5" /> {c.horario}
                         </span>
@@ -1986,9 +2068,66 @@ function TurmasPage() {
                 })()}
               </div>
 
+              {/* Color Theme Selector */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+                  <span>Cor de Identificação da Turma</span>
+                  <span className="text-[10px] text-muted-foreground font-normal">Cor exclusiva no mapa</span>
+                </label>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {CLASS_COLOR_THEMES.map((theme) => {
+                    const isSelected = formCorTheme === theme.id;
+                    const usedByClass = classes.find((c) => c.corTheme === theme.id);
+                    const isOccupied = !!usedByClass;
+
+                    return (
+                      <button
+                        key={theme.id}
+                        type="button"
+                        disabled={isOccupied}
+                        onClick={() => setFormCorTheme(theme.id)}
+                        title={isOccupied ? `Em uso por: ${usedByClass.nome}` : theme.label}
+                        className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border text-left text-[11px] font-semibold transition-all ${
+                          isOccupied
+                            ? "opacity-35 cursor-not-allowed border-hairline bg-surface/30 text-muted-foreground"
+                            : isSelected
+                            ? `${theme.badgeBg} ${theme.border} ${theme.text} shadow-sm ring-1 ring-primary/40 cursor-pointer`
+                            : "border-hairline bg-surface/50 text-muted-foreground hover:text-foreground cursor-pointer hover:border-white/10"
+                        }`}
+                      >
+                        <span className={`size-2.5 rounded-full ${theme.dot} shrink-0`} />
+                        <span className="truncate">{theme.label.split(" ")[0]}</span>
+                        {isSelected && <Check className="size-3 ml-auto text-primary shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Room Conflict Alert */}
+              {(() => {
+                const roomConflict = checkRoomConflict(formSalaId, formDias, formHora, formHoraFim);
+                if (!roomConflict) return null;
+                return (
+                  <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 space-y-1 text-xs text-rose-300 animate-in fade-in">
+                    <div className="flex items-center gap-2 font-bold text-rose-400">
+                      <AlertTriangle className="size-4 shrink-0" />
+                      <span>Choque de Horário na Sala</span>
+                    </div>
+                    <p className="text-[11px] text-rose-200/90 leading-tight">
+                      A <strong>{roomConflict.salaNome}</strong> já está ocupada pela turma <strong>"{roomConflict.conflictingClass}"</strong> ({roomConflict.professor}) no horário <strong>{roomConflict.horario}</strong>.
+                    </p>
+                    <p className="text-[10px] text-rose-400 font-bold">
+                      ⛔ Bloqueado: Escolha outro horário, dia ou sala para prosseguir.
+                    </p>
+                  </div>
+                );
+              })()}
+
               <button
                 type="submit"
-                className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center border-0"
+                disabled={!!checkRoomConflict(formSalaId, formDias, formHora, formHoraFim)}
+                className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow cursor-pointer text-center border-0"
               >
                 Confirmar Criação
               </button>
@@ -2270,9 +2409,68 @@ function TurmasPage() {
                       })()}
                     </div>
 
+                    {/* Color Theme Selector */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+                        <span>Cor de Identificação da Turma</span>
+                        <span className="text-[10px] text-muted-foreground font-normal">Cor exclusiva no mapa</span>
+                      </label>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        {CLASS_COLOR_THEMES.map((theme) => {
+                          const isSelected = formCorTheme === theme.id;
+                          const usedByClass = classes.find(
+                            (c) => c.nome !== selectedClass.nome && c.corTheme === theme.id
+                          );
+                          const isOccupied = !!usedByClass;
+
+                          return (
+                            <button
+                              key={theme.id}
+                              type="button"
+                              disabled={isOccupied}
+                              onClick={() => setFormCorTheme(theme.id)}
+                              title={isOccupied ? `Em uso por: ${usedByClass.nome}` : theme.label}
+                              className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border text-left text-[11px] font-semibold transition-all ${
+                                isOccupied
+                                  ? "opacity-35 cursor-not-allowed border-hairline bg-surface/30 text-muted-foreground"
+                                  : isSelected
+                                  ? `${theme.badgeBg} ${theme.border} ${theme.text} shadow-sm ring-1 ring-primary/40 cursor-pointer`
+                                  : "border-hairline bg-surface/50 text-muted-foreground hover:text-foreground cursor-pointer hover:border-white/10"
+                              }`}
+                            >
+                              <span className={`size-2.5 rounded-full ${theme.dot} shrink-0`} />
+                              <span className="truncate">{theme.label.split(" ")[0]}</span>
+                              {isSelected && <Check className="size-3 ml-auto text-primary shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Room Conflict Alert */}
+                    {(() => {
+                      const roomConflict = checkRoomConflict(formSalaId, formDias, formHora, formHoraFim, selectedClass.nome);
+                      if (!roomConflict) return null;
+                      return (
+                        <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 space-y-1 text-xs text-rose-300 animate-in fade-in">
+                          <div className="flex items-center gap-2 font-bold text-rose-400">
+                            <AlertTriangle className="size-4 shrink-0" />
+                            <span>Choque de Horário na Sala</span>
+                          </div>
+                          <p className="text-[11px] text-rose-200/90 leading-tight">
+                            A <strong>{roomConflict.salaNome}</strong> já está ocupada pela turma <strong>"{roomConflict.conflictingClass}"</strong> ({roomConflict.professor}) no horário <strong>{roomConflict.horario}</strong>.
+                          </p>
+                          <p className="text-[10px] text-rose-400 font-bold">
+                            ⛔ Bloqueado: Escolha outro horário, dia ou sala para prosseguir.
+                          </p>
+                        </div>
+                      );
+                    })()}
+
                     <button
                       type="submit"
-                      className="w-full rounded-lg bg-primary py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center border-0 active:scale-[0.98]"
+                      disabled={!!checkRoomConflict(formSalaId, formDias, formHora, formHoraFim, selectedClass.nome)}
+                      className="w-full rounded-lg bg-primary py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/95 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow cursor-pointer text-center border-0 active:scale-[0.98]"
                     >
                       Salvar Alterações da Turma
                     </button>

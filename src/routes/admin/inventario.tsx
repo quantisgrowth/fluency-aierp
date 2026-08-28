@@ -39,11 +39,15 @@ import {
   classrooms as initialClassrooms,
   inventoryItems as initialInventory,
   classes as initialClasses,
+  students as initialStudents,
+  CLASS_COLOR_THEMES,
   type Classroom,
   type InventoryItem,
   type InventorySegment,
+  type ClassColorTheme,
 } from "@/data/mock";
 import { toast } from "sonner";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/admin/inventario")({
   head: () => ({
@@ -106,6 +110,16 @@ function InventarioPage() {
     }
   });
 
+  // LocalStorage state for Students (for displaying students inside class detail modal)
+  const [studentsList, setStudentsList] = useState(() => {
+    try {
+      const stored = window.localStorage.getItem("fluency-ai:students:list");
+      return stored ? JSON.parse(stored) : initialStudents;
+    } catch {
+      return initialStudents;
+    }
+  });
+
   // Sync to local storage
   useEffect(() => {
     try {
@@ -124,6 +138,12 @@ function InventarioPage() {
   const [segmentFilter, setSegmentFilter] = useState<string>("todos");
   const [roomFilter, setRoomFilter] = useState<string>("todos");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
+
+  // Occupancy Map Filters & Modal State
+  const [mapShiftFilter, setMapShiftFilter] = useState<string>("todos");
+  const [mapTeacherFilter, setMapTeacherFilter] = useState<string>("todos");
+  const [selectedMapClass, setSelectedMapClass] = useState<any | null>(null);
+  const [isMapClassDetailOpen, setIsMapClassDetailOpen] = useState(false);
 
   // Modals state
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
@@ -824,11 +844,40 @@ function InventarioPage() {
       {activeTab === "ocupacao" && (
         <div className="space-y-6">
           <GlassCard className="p-6 space-y-4">
-            <div>
-              <h3 className="text-base font-bold text-foreground">Grade de Agendamento e Ocupação por Sala</h3>
-              <p className="text-xs text-muted-foreground">
-                Acompanhe o uso físico das salas em cada dia e horário para evitar choque de horários e planejar novas turmas.
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-hairline pb-4">
+              <div>
+                <h3 className="text-base font-bold text-foreground">Grade de Agendamento e Ocupação por Sala</h3>
+                <p className="text-xs text-muted-foreground">
+                  Acompanhe o uso físico das salas em cada dia e clique na turma para abrir seus detalhes pedagógicos.
+                </p>
+              </div>
+
+              {/* Map Quick Filters */}
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={mapShiftFilter}
+                  onChange={(e) => setMapShiftFilter(e.target.value)}
+                  className="h-9 rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary cursor-pointer"
+                >
+                  <option value="todos">Turno: Todos</option>
+                  <option value="manha">Manhã (07:00 - 12:00)</option>
+                  <option value="tarde">Tarde (12:00 - 18:00)</option>
+                  <option value="noite">Noite (18:00 - 22:00)</option>
+                </select>
+
+                <select
+                  value={mapTeacherFilter}
+                  onChange={(e) => setMapTeacherFilter(e.target.value)}
+                  className="h-9 rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary cursor-pointer"
+                >
+                  <option value="todos">Professor: Todos</option>
+                  {Array.from(new Set(classesList.map((c: any) => c.professor))).map((prof: any) => (
+                    <option key={prof} value={prof}>
+                      {prof}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -846,9 +895,24 @@ function InventarioPage() {
                 </thead>
                 <tbody className="divide-y divide-hairline">
                   {rooms.map((room) => {
-                    const roomClasses = classesList.filter(
-                      (c: any) => c.salaId === room.id || c.salaNome?.toLowerCase().includes(room.nome.toLowerCase())
-                    );
+                    const roomClasses = classesList.filter((c: any) => {
+                      const matchesRoom =
+                        c.salaId === room.id ||
+                        c.salaNome?.toLowerCase().includes(room.nome.toLowerCase());
+                      const matchesTeacher =
+                        mapTeacherFilter === "todos" || c.professor === mapTeacherFilter;
+
+                      // Shift filtering
+                      let matchesShift = true;
+                      if (mapShiftFilter !== "todos") {
+                        const startH = parseInt(c.horaSelecionada || c.horario?.split(" ")[1] || "19", 10);
+                        if (mapShiftFilter === "manha") matchesShift = startH < 12;
+                        else if (mapShiftFilter === "tarde") matchesShift = startH >= 12 && startH < 18;
+                        else if (mapShiftFilter === "noite") matchesShift = startH >= 18;
+                      }
+
+                      return matchesRoom && matchesTeacher && matchesShift;
+                    });
 
                     const getClassesForDay = (dayKey: string) => {
                       return roomClasses.filter((c: any) => {
@@ -863,8 +927,13 @@ function InventarioPage() {
                       <tr key={room.id} className="hover:bg-surface/20">
                         <td className="px-4 py-3 font-bold text-foreground whitespace-nowrap bg-surface-elevated/20">
                           <div>
-                            <p>{room.nome}</p>
-                            <p className="text-[10px] text-muted-foreground font-normal">{room.capacidade} lugares · {room.blocoOuAndar}</p>
+                            <p className="flex items-center gap-1.5">
+                              <Building2 className="size-3.5 text-primary shrink-0" />
+                              {room.nome}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground font-normal">
+                              {room.capacidade} lugares · {room.blocoOuAndar}
+                            </p>
                           </div>
                         </td>
 
@@ -872,22 +941,43 @@ function InventarioPage() {
                           const dailyClasses = getClassesForDay(day);
 
                           return (
-                            <td key={day} className="px-4 py-3 align-top min-w-[150px]">
+                            <td key={day} className="px-4 py-3 align-top min-w-[160px]">
                               {dailyClasses.length > 0 ? (
-                                <div className="space-y-1.5">
-                                  {dailyClasses.map((c: any) => (
-                                    <div
-                                      key={c.nome}
-                                      className="p-2 rounded-lg bg-primary/10 border border-primary/20 text-[11px] space-y-0.5"
-                                    >
-                                      <p className="font-bold text-primary">{c.nome}</p>
-                                      <p className="text-[10px] text-foreground/80">{c.professor}</p>
-                                      <p className="text-[9px] text-muted-foreground font-mono">{c.horario?.split(" ")[1] || "19:00"}</p>
-                                    </div>
-                                  ))}
+                                <div className="space-y-2">
+                                  {dailyClasses.map((c: any) => {
+                                    const themeObj =
+                                      CLASS_COLOR_THEMES.find((t) => t.id === c.corTheme) ||
+                                      CLASS_COLOR_THEMES[0];
+
+                                    return (
+                                      <button
+                                        key={c.nome}
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedMapClass(c);
+                                          setIsMapClassDetailOpen(true);
+                                        }}
+                                        className={`w-full text-left p-2.5 rounded-lg border text-[11px] space-y-1 transition-all duration-200 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-[0.98] ${themeObj.badgeBg} ${themeObj.border} ${themeObj.bgHover}`}
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <span className={`font-bold ${themeObj.text}`}>{c.nome}</span>
+                                          <span className={`size-2 rounded-full ${themeObj.dot}`} />
+                                        </div>
+                                        <p className="text-[10px] text-foreground/80 font-medium truncate">
+                                          Prof. {c.professor}
+                                        </p>
+                                        <div className="flex items-center justify-between text-[9px] text-muted-foreground font-mono">
+                                          <span>{c.horario?.split(" ")[1] || "19:00"}</span>
+                                          <span className="font-semibold text-foreground/70">
+                                            {c.alunos || 0}/{c.vagas || 12} vagas
+                                          </span>
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
                                 </div>
                               ) : (
-                                <span className="text-[10px] text-muted-foreground/60 italic">Livre</span>
+                                <span className="text-[10px] text-muted-foreground/50 italic">Livre</span>
                               )}
                             </td>
                           );
@@ -1408,6 +1498,177 @@ function InventarioPage() {
           </GlassCard>
         </div>
       )}
+
+      {/* MODAL: DETALHES RÁPIDOS DA TURMA NO MAPA DE OCUPAÇÃO */}
+      {isMapClassDetailOpen && selectedMapClass && (() => {
+        const themeObj = CLASS_COLOR_THEMES.find((t) => t.id === selectedMapClass.corTheme) || CLASS_COLOR_THEMES[0];
+        const assignedRoom = rooms.find((r) => r.id === selectedMapClass.salaId || r.nome === selectedMapClass.salaNome);
+        const enrolledStudents = studentsList.filter((s: any) => {
+          const sTurma = (s.turma || "").toLowerCase();
+          const cNome = (selectedMapClass.nome || "").toLowerCase();
+          return sTurma === cNome || sTurma.includes(cNome) || cNome.includes(sTurma);
+        });
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-200">
+            <GlassCard className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 md:p-8 space-y-6 shadow-2xl relative border-primary/20">
+              <button
+                onClick={() => setIsMapClassDetailOpen(false)}
+                className="absolute top-5 right-5 text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors"
+              >
+                <X className="size-5" />
+              </button>
+
+              {/* Header */}
+              <div className="flex items-start gap-4 border-b border-hairline pb-4">
+                <span className={`grid size-12 place-items-center rounded-2xl ${themeObj.badgeBg} ${themeObj.border} border text-foreground shrink-0`}>
+                  <BookOpen className={`size-6 ${themeObj.text}`} />
+                </span>
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-xl font-bold text-foreground">{selectedMapClass.nome}</h3>
+                    <span className={`rounded-md border px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider ${themeObj.badgeBg} ${themeObj.border} ${themeObj.text}`}>
+                      CEFR {selectedMapClass.nivel}
+                    </span>
+                    <span className="flex items-center gap-1 rounded-md bg-surface-elevated border border-hairline px-2 py-0.5 text-xs font-medium text-foreground">
+                      <span className={`size-2 rounded-full ${themeObj.dot}`} />
+                      {themeObj.label}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Informações pedagógicas, ocupação da sala física e quadro de alunos matriculados.
+                  </p>
+                </div>
+              </div>
+
+              {/* 4 Info Badges */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-3 rounded-xl border border-hairline bg-surface/40 space-y-1">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                    <Users className="size-3 text-primary" /> Professor Responsável
+                  </span>
+                  <p className="text-sm font-bold text-foreground">{selectedMapClass.professor}</p>
+                </div>
+
+                <div className="p-3 rounded-xl border border-hairline bg-surface/40 space-y-1">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                    <Clock className="size-3 text-primary" /> Horários & Frequência
+                  </span>
+                  <p className="text-sm font-bold text-foreground">{selectedMapClass.horario}</p>
+                </div>
+
+                <div className="p-3 rounded-xl border border-hairline bg-surface/40 space-y-1">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                    <Building2 className="size-3 text-primary" /> Sala Física Alocada
+                  </span>
+                  <p className="text-sm font-bold text-foreground">
+                    {selectedMapClass.salaNome || assignedRoom?.nome || "Sala 01 - London"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Capacidade: {assignedRoom?.capacidade || 14} lugares · {assignedRoom?.blocoOuAndar || "Térreo"}
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl border border-hairline bg-surface/40 space-y-1">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                    <BookOpen className="size-3 text-primary" /> Livro & Trilha Didática
+                  </span>
+                  <p className="text-sm font-bold text-foreground">
+                    {selectedMapClass.livroId === "livro-1"
+                      ? "Fluency Starter (A1)"
+                      : selectedMapClass.livroId === "livro-2"
+                      ? "Global Communicator (A2)"
+                      : selectedMapClass.livroId === "livro-3"
+                      ? "Business Immersion (B1)"
+                      : "Mastery Express (C1)"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">Aula Atual: {selectedMapClass.aulaAtual || 1}</p>
+                </div>
+              </div>
+
+              {/* Room Equipment List */}
+              {assignedRoom && assignedRoom.recursos && assignedRoom.recursos.length > 0 && (
+                <div className="space-y-1.5 p-3 rounded-xl border border-hairline bg-surface/20">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Recursos Disponíveis nesta Sala:
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {assignedRoom.recursos.map((rec, i) => (
+                      <span key={i} className="rounded bg-surface-elevated border border-hairline px-2 py-0.5 text-[10px] text-foreground font-medium">
+                        {rec}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Enrolled Students Roster */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Users className="size-3.5 text-primary" /> Alunos Matriculados ({enrolledStudents.length} de {selectedMapClass.vagas || 12} vagas)
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    Taxa: {Math.round((enrolledStudents.length / (selectedMapClass.vagas || 12)) * 100)}%
+                  </span>
+                </div>
+
+                <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
+                  {enrolledStudents.length > 0 ? (
+                    enrolledStudents.map((st: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between p-2.5 rounded-lg border border-hairline bg-surface/40 hover:bg-surface-elevated transition-colors text-xs"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="grid size-7 place-items-center rounded-full bg-primary/10 text-primary font-bold text-[10px]">
+                            {st.nome.substring(0, 2).toUpperCase()}
+                          </span>
+                          <div>
+                            <p className="font-bold text-foreground">{st.nome}</p>
+                            <p className="text-[10px] text-muted-foreground">Nível Aluno: {st.nivel} · Pacote: {st.horasContratadas || 4}h/sem</p>
+                          </div>
+                        </div>
+
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            st.status === "Ativo"
+                              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                              : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                          }`}
+                        >
+                          {st.status}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-xs text-muted-foreground italic border border-dashed border-hairline rounded-lg">
+                      Nenhum aluno matriculado diretamente nesta turma ainda.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-between pt-4 border-t border-hairline">
+                <button
+                  type="button"
+                  onClick={() => setIsMapClassDetailOpen(false)}
+                  className="rounded-lg border border-hairline px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                >
+                  Fechar
+                </button>
+                <Link
+                  to="/turmas"
+                  className="rounded-lg bg-primary px-5 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/95 shadow cursor-pointer transition-all flex items-center gap-1.5"
+                >
+                  Gerenciar no Módulo de Turmas ➜
+                </Link>
+              </div>
+            </GlassCard>
+          </div>
+        );
+      })()}
 
     </div>
   );

@@ -57,13 +57,39 @@ export const students = [
   { nome: "Rafael Lima", nivel: "C1", turma: "Advanced Noite", inicio: "27/02/2026", status: "Em risco", horasContratadas: 4 },
 ];
 
+export type ClassColorTheme = {
+  id: string;
+  label: string;
+  badgeBg: string;
+  border: string;
+  text: string;
+  bgHover: string;
+  dot: string;
+  lightBg: string;
+};
+
+export const CLASS_COLOR_THEMES: ClassColorTheme[] = [
+  { id: "emerald", label: "Verde Esmeralda", badgeBg: "bg-emerald-500/15", border: "border-emerald-500/30", text: "text-emerald-400", bgHover: "hover:border-emerald-500/50", dot: "bg-emerald-500", lightBg: "bg-emerald-500/10" },
+  { id: "blue", label: "Azul Oceano", badgeBg: "bg-blue-500/15", border: "border-blue-500/30", text: "text-blue-400", bgHover: "hover:border-blue-500/50", dot: "bg-blue-500", lightBg: "bg-blue-500/10" },
+  { id: "purple", label: "Roxo Real", badgeBg: "bg-purple-500/15", border: "border-purple-500/30", text: "text-purple-400", bgHover: "hover:border-purple-500/50", dot: "bg-purple-500", lightBg: "bg-purple-500/10" },
+  { id: "amber", label: "Âmbar Dourado", badgeBg: "bg-amber-500/15", border: "border-amber-500/30", text: "text-amber-400", bgHover: "hover:border-amber-500/50", dot: "bg-amber-500", lightBg: "bg-amber-500/10" },
+  { id: "rose", label: "Rosa Coral", badgeBg: "bg-rose-500/15", border: "border-rose-500/30", text: "text-rose-400", bgHover: "hover:border-rose-500/50", dot: "bg-rose-500", lightBg: "bg-rose-500/10" },
+  { id: "cyan", label: "Ciano Tech", badgeBg: "bg-cyan-500/15", border: "border-cyan-500/30", text: "text-cyan-400", bgHover: "hover:border-cyan-500/50", dot: "bg-cyan-500", lightBg: "bg-cyan-500/10" },
+  { id: "orange", label: "Laranja Solar", badgeBg: "bg-orange-500/15", border: "border-orange-500/30", text: "text-orange-400", bgHover: "hover:border-orange-500/50", dot: "bg-orange-500", lightBg: "bg-orange-500/10" },
+  { id: "indigo", label: "Índigo Neon", badgeBg: "bg-indigo-500/15", border: "border-indigo-500/30", text: "text-indigo-400", bgHover: "hover:border-indigo-500/50", dot: "bg-indigo-500", lightBg: "bg-indigo-500/10" },
+  { id: "pink", label: "Fúcsia Pink", badgeBg: "bg-pink-500/15", border: "border-pink-500/30", text: "text-pink-400", bgHover: "hover:border-pink-500/50", dot: "bg-pink-500", lightBg: "bg-pink-500/10" },
+  { id: "teal", label: "Menta Teal", badgeBg: "bg-teal-500/15", border: "border-teal-500/30", text: "text-teal-400", bgHover: "hover:border-teal-500/50", dot: "bg-teal-500", lightBg: "bg-teal-500/10" },
+  { id: "lime", label: "Lima Elétrico", badgeBg: "bg-lime-500/15", border: "border-lime-500/30", text: "text-lime-400", bgHover: "hover:border-lime-500/50", dot: "bg-lime-500", lightBg: "bg-lime-500/10" },
+  { id: "violet", label: "Violeta Intenso", badgeBg: "bg-violet-500/15", border: "border-violet-500/30", text: "text-violet-400", bgHover: "hover:border-violet-500/50", dot: "bg-violet-500", lightBg: "bg-violet-500/10" },
+];
+
 export const classes = [
-  { nome: "Kids Playgroup", nivel: "A1", professor: "Marcos Vidal", alunos: 9, vagas: 12, horario: "Seg/Qua 19:00", salaId: "sala-5", salaNome: "Espaço Kids - Disney" },
-  { nome: "Regular Noite", nivel: "A2", professor: "Julia Kern", alunos: 14, vagas: 14, horario: "Ter/Qui 18:30", salaId: "sala-2", salaNome: "Sala 02 - New York" },
-  { nome: "Business English", nivel: "B1", professor: "Ana Beatriz", alunos: 8, vagas: 12, horario: "Seg/Qua 07:30", salaId: "sala-1", salaNome: "Sala 01 - London" },
-  { nome: "Conversation", nivel: "B2", professor: "Julia Kern", alunos: 11, vagas: 12, horario: "Ter/Qui 20:00", salaId: "sala-3", salaNome: "Sala 03 - Dublin" },
-  { nome: "Advanced Manhã", nivel: "C1", professor: "Ana Beatriz", alunos: 6, vagas: 10, horario: "Sex 09:00", salaId: "sala-4", salaNome: "Lab Tech - Silicon Valley" },
-  { nome: "Proficiency Lab", nivel: "C2", professor: "Peter Hall", alunos: 4, vagas: 8, horario: "Sáb 10:00", salaId: "sala-6", salaNome: "Auditório Oxford" },
+  { nome: "Kids Playgroup", nivel: "A1", professor: "Marcos Vidal", alunos: 9, vagas: 12, horario: "Seg/Qua 19:00", salaId: "sala-5", salaNome: "Espaço Kids - Disney", corTheme: "emerald" },
+  { nome: "Regular Noite", nivel: "A2", professor: "Julia Kern", alunos: 14, vagas: 14, horario: "Ter/Qui 18:30", salaId: "sala-2", salaNome: "Sala 02 - New York", corTheme: "blue" },
+  { nome: "Business English", nivel: "B1", professor: "Ana Beatriz", alunos: 8, vagas: 12, horario: "Seg/Qua 07:30", salaId: "sala-1", salaNome: "Sala 01 - London", corTheme: "purple" },
+  { nome: "Conversation", nivel: "B2", professor: "Julia Kern", alunos: 11, vagas: 12, horario: "Ter/Qui 20:00", salaId: "sala-3", salaNome: "Sala 03 - Dublin", corTheme: "amber" },
+  { nome: "Advanced Manhã", nivel: "C1", professor: "Ana Beatriz", alunos: 6, vagas: 10, horario: "Sex 09:00", salaId: "sala-4", salaNome: "Lab Tech - Silicon Valley", corTheme: "rose" },
+  { nome: "Proficiency Lab", nivel: "C2", professor: "Peter Hall", alunos: 4, vagas: 8, horario: "Sáb 10:00", salaId: "sala-6", salaNome: "Auditório Oxford", corTheme: "cyan" },
 ];
 
 export type Classroom = {
