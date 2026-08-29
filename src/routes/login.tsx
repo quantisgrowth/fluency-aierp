@@ -14,6 +14,10 @@ import {
   Moon,
   ChevronRight,
   GraduationCap,
+  Building2,
+  User,
+  Sparkles,
+  Trophy,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -22,8 +26,8 @@ import { Label } from "@/components/ui/label";
 
 // Form validation schema
 const loginSchema = z.object({
-  email: z.string().email("E-mail inválido"),
-  password: z.string().min(4, "Informe sua senha de acesso"),
+  email: z.string().min(1, "Informe seu e-mail ou usuário"),
+  password: z.string().min(1, "Informe sua senha de acesso"),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -31,8 +35,8 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Login — Fluency AI ERP" },
-      { name: "description", content: "Acesse o painel do Fluency AI ERP para escolas de idiomas." },
+      { title: "Acesso ao Sistema — Fluency AI" },
+      { name: "description", content: "Acesso para equipe escolar e portal gamificado do aluno." },
     ],
   }),
   component: LoginPage,
@@ -45,6 +49,7 @@ function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModule, setSelectedModule] = useState<ModuleId>("core");
   const [isDark, setIsDark] = useState(true);
+  const [portalType, setPortalType] = useState<"escola" | "aluno">("escola");
 
   useEffect(() => {
     const isCurrentlyDark = document.documentElement.classList.contains("dark");
@@ -71,17 +76,28 @@ function LoginPage() {
     },
   });
 
+  const handlePortalSwitch = (type: "escola" | "aluno") => {
+    setPortalType(type);
+    if (type === "aluno") {
+      setValue("email", "aluno@fluency.ai");
+      setValue("password", "••••••••");
+    } else {
+      setValue("email", "gestor@fluency.ai");
+      setValue("password", "••••••••");
+    }
+  };
+
   const onSubmit = (data: LoginFormValues) => {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      const isAluno = data.email.toLowerCase().includes("aluno");
+      const isAluno = portalType === "aluno" || data.email.toLowerCase().includes("aluno");
 
       window.localStorage.setItem("fluency-ai:active-role", isAluno ? "aluno" : "admin");
       window.localStorage.setItem("fluency-ai:active-company", "Unidade Pinheiros");
 
       toast.success("Login efetuado com sucesso!", {
-        description: `Bem-vindo de volta ao Fluency AI como ${isAluno ? "Aluno" : "Gestor da Escola"}.`,
+        description: `Conectado como ${isAluno ? "Aluno (Espaço Gamificado)" : "Equipe Escolar (Painel ERP)"}.`,
       });
 
       if (isAluno) {
@@ -137,8 +153,8 @@ function LoginPage() {
             <GraduationCap className="size-5 text-primary" />
           </span>
           <div>
-            <h1 className="text-base font-bold tracking-tight text-white">Fluency AI ERP</h1>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 font-semibold">Sistema de Gestão para Escolas de Idiomas</p>
+            <h1 className="text-base font-bold tracking-tight text-white">Fluency AI</h1>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 font-semibold">Sistema de Gestão & Portal Escolar</p>
           </div>
         </div>
 
@@ -202,7 +218,7 @@ function LoginPage() {
         </div>
       </div>
 
-      {/* RIGHT PANEL: Clean Institutional Authentication Form */}
+      {/* RIGHT PANEL: Authentication Form with 2-Way Switcher */}
       <div className="relative flex w-full flex-col justify-between p-6 sm:p-12 md:p-16 lg:w-1/2 overflow-y-auto">
         {/* Top bar with theme toggle */}
         <div className="relative z-10 flex items-center justify-between">
@@ -224,14 +240,46 @@ function LoginPage() {
         </div>
 
         {/* Center card form */}
-        <div className="relative z-10 mx-auto w-full max-w-[420px] py-12">
+        <div className="relative z-10 mx-auto w-full max-w-[440px] py-10">
           <div className="rounded-2xl border border-white/10 bg-neutral-900/70 p-8 shadow-2xl backdrop-blur-xl space-y-6">
+            
+            {/* 2-Way Portal Switcher: Equipe da Escola vs Área do Aluno */}
+            <div className="grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-white/5 p-1 shadow-inner text-center">
+              <button
+                type="button"
+                onClick={() => handlePortalSwitch("escola")}
+                className={`rounded-lg py-2.5 px-2 text-xs font-bold tracking-wide transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                  portalType === "escola"
+                    ? "bg-primary text-primary-foreground shadow-lg"
+                    : "text-neutral-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <Building2 className="size-4" />
+                <span>Equipe Escolar</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handlePortalSwitch("aluno")}
+                className={`rounded-lg py-2.5 px-2 text-xs font-bold tracking-wide transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                  portalType === "aluno"
+                    ? "bg-primary text-primary-foreground shadow-lg"
+                    : "text-neutral-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <Trophy className="size-4 text-yellow-400" />
+                <span>Área do Aluno</span>
+              </button>
+            </div>
+
             <div className="space-y-1.5 text-center sm:text-left">
               <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl bg-gradient-to-r from-white to-neutral-300 bg-clip-text text-transparent">
-                Acesse sua Conta
+                {portalType === "escola" ? "Painel da Escola" : "Espaço do Aluno"}
               </h2>
               <p className="text-xs text-neutral-400 leading-relaxed">
-                Informe suas credenciais institucionais para entrar no painel da sua escola.
+                {portalType === "escola"
+                  ? "Acesse a gestão de turmas, alunos, matrículas e finanças da sua escola."
+                  : "Acesse suas missões, saldo de Fluency Coins, notas e frequência escolar."}
               </p>
             </div>
 
@@ -239,13 +287,12 @@ function LoginPage() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="email" className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-                  E-mail institucional
+                  {portalType === "escola" ? "E-mail Institucional" : "E-mail ou Matrícula do Aluno"}
                 </Label>
                 <Input
                   id="email"
-                  type="email"
-                  placeholder="nome@escola.com.br"
-                  className="h-11 border-white/10 bg-white/5 px-3.5 text-white placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary text-xs"
+                  placeholder={portalType === "escola" ? "nome@escola.com.br" : "aluno@escola.com.br"}
+                  className="h-11 border-white/10 bg-white/5 px-3.5 text-white placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary text-xs font-medium"
                   disabled={isLoading}
                   {...register("email")}
                 />
@@ -264,7 +311,7 @@ function LoginPage() {
                     className="text-xs font-semibold text-primary hover:underline"
                     onClick={(e) => {
                       e.preventDefault();
-                      toast.info("Por favor, contate o coordenador da sua unidade escolar.");
+                      toast.info("Por favor, solicite a redefinição de senha na secretaria da sua escola.");
                     }}
                   >
                     Esqueceu a senha?
@@ -297,7 +344,11 @@ function LoginPage() {
                 className="mt-2 w-full h-11 bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/95 shadow-lg active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-2"
                 disabled={isLoading}
               >
-                {isLoading ? "Autenticando..." : "Entrar no Sistema"}
+                {isLoading
+                  ? "Autenticando..."
+                  : portalType === "escola"
+                  ? "Entrar no Painel da Escola"
+                  : "Entrar no Espaço do Aluno"}
               </Button>
             </form>
           </div>
