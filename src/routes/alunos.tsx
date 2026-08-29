@@ -28,6 +28,7 @@ import {
   QrCode,
   Building2,
   Award,
+  UserPlus,
 } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
@@ -385,7 +386,7 @@ function AlunosPage() {
     } catch {}
   }, [studentDetails]);
 
-  // Levels from localStorage or default
+  // Educational Levels
   const [levels] = useState<EducationalLevel[]>(() => {
     try {
       const stored = window.localStorage.getItem("fluency-ai:academic:levels");
@@ -395,6 +396,35 @@ function AlunosPage() {
     }
   });
 
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("todos");
+  const [modalityFilter, setModalityFilter] = useState<string>("todos");
+
+  // Drawer & Modals states
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isNewStudentOpen, setIsNewStudentOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+
+  // Drawer Active Tab
+  const [activeTab, setActiveTab] = useState<"contrato" | "financeiro" | "frequencia" | "pedagogico" | "ocorrencias">(
+    "contrato"
+  );
+
+  // Form states (Novo & Editar Aluno)
+  const [formNome, setFormNome] = useState("");
+  const [formNivel, setFormNivel] = useState("Beginner / Kids");
+  const [formTurma, setFormTurma] = useState("Regular Noite");
+  const [formStatus, setFormStatus] = useState("Ativo");
+  const [formProdutoId, setFormProdutoId] = useState(initialEducationalProducts[0]?.id || "prod-regular");
+  const [formValor, setFormValor] = useState(450);
+  const [formVencimento, setFormVencimento] = useState(10);
+  const [formHoras, setFormHoras] = useState(3);
+  const [formWhats, setFormWhats] = useState("5511999998888");
+
+  // Observação Pedagógica
+  const [newNoteText, setNewNoteText] = useState("");
+
   // Safe fallback ensuring 360 dossier ALWAYS opens instantly for ANY student
   const getSafeStudentDetails = (student: Student): StudentDetail => {
     if (studentDetails[student.nome]) {
@@ -402,13 +432,13 @@ function AlunosPage() {
     }
 
     return {
-      presenca: 90,
-      tarefas: 85,
-      streak: 5,
-      coins: 150,
-      xp: 850,
+      presenca: 92,
+      tarefas: 88,
+      streak: 4,
+      coins: 140,
+      xp: 820,
       liga: "Prata",
-      whats: "5511999998888",
+      whats: formWhats || "5511999998888",
       historico: [
         {
           data: student.inicio || new Date().toLocaleDateString("pt-BR"),
@@ -419,7 +449,7 @@ function AlunosPage() {
       financeiro: [
         {
           id: `f-${Date.now()}-1`,
-          descricao: `Mensalidade Atual (${student.nivel})`,
+          descricao: `Mensalidade Vigente (${student.nivel})`,
           valor: student.valorMensalidade || 450,
           vencimento: `${student.diaVencimento || 10}/08/2026`,
           situacao: student.status === "Inadimplente" ? "atrasado" : "pago",
@@ -464,6 +494,7 @@ function AlunosPage() {
 
   const selectedDetails = selectedStudent ? getSafeStudentDetails(selectedStudent) : null;
 
+  // Open Drawer / Modal Handlers
   const handleOpenDrawer = (s: Student) => {
     setSelectedStudent(s);
     setActiveTab("contrato");
@@ -483,6 +514,98 @@ function AlunosPage() {
     setIsEditOpen(true);
   };
 
+  const handleOpenNewStudent = () => {
+    const defaultProduct = initialEducationalProducts[0];
+    setFormNome("");
+    setFormNivel(levels[0]?.nome || "Beginner / Kids");
+    setFormTurma(initialClasses[0]?.nome || "Regular Noite");
+    setFormStatus("Ativo");
+    setFormProdutoId(defaultProduct?.id || "prod-regular");
+    setFormValor(defaultProduct?.valorBase || 450);
+    setFormVencimento(10);
+    setFormHoras(defaultProduct?.cargaHorariaSemanal || 3);
+    setFormWhats("5511999998888");
+    setIsNewStudentOpen(true);
+  };
+
+  const handleCreateStudentSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formNome.trim()) {
+      toast.error("Informe o nome do aluno.");
+      return;
+    }
+
+    const chosenProduct = initialEducationalProducts.find((p) => p.id === formProdutoId);
+
+    const newStudent: Student = {
+      nome: formNome.trim(),
+      nivel: formNivel,
+      turma: formTurma,
+      inicio: new Date().toLocaleDateString("pt-BR"),
+      status: formStatus,
+      produtoId: formProdutoId,
+      produtoNome: chosenProduct?.nome || "Curso de Idiomas",
+      tipoContrato:
+        chosenProduct?.modalidade === "hora_aula"
+          ? "hora_aula"
+          : chosenProduct?.modalidade === "pacote_fechado"
+          ? "pacote_fechado"
+          : "turma",
+      valorMensalidade: Number(formValor),
+      diaVencimento: Number(formVencimento),
+      horasContratadas: Number(formHoras),
+      livroEmUso: chosenProduct?.livroPadraoNome || "Material Didático",
+    };
+
+    setStudents([newStudent, ...students]);
+
+    // Criar ficha no details
+    const newDetails: StudentDetail = {
+      presenca: 100,
+      tarefas: 100,
+      streak: 1,
+      coins: 100,
+      xp: 500,
+      liga: "Bronze",
+      whats: formWhats,
+      historico: [
+        {
+          data: new Date().toLocaleDateString("pt-BR"),
+          texto: `Matrícula confirmada no plano ${newStudent.produtoNome}.`,
+          autor: currentUser?.nome || "Secretaria",
+        },
+      ],
+      financeiro: [
+        {
+          id: `f-${Date.now()}`,
+          descricao: `Mensalidade Inicial (${newStudent.nivel})`,
+          valor: Number(formValor),
+          vencimento: `${formVencimento}/09/2026`,
+          situacao: "aberto",
+        },
+      ],
+      frequencias: [],
+      avaliacoes: [],
+      ocorrencias: [
+        {
+          id: `oc-${Date.now()}`,
+          data: new Date().toLocaleDateString("pt-BR"),
+          tipo: "matricula",
+          descricao: `Matrícula efetuada no curso ${newStudent.produtoNome} (Turma: ${newStudent.turma}).`,
+          autor: currentUser?.nome || "Secretaria",
+        },
+      ],
+    };
+
+    setStudentDetails({
+      ...studentDetails,
+      [newStudent.nome]: newDetails,
+    });
+
+    setIsNewStudentOpen(false);
+    toast.success(`Aluno "${newStudent.nome}" matriculado com sucesso!`);
+  };
+
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedStudent) return;
@@ -499,7 +622,12 @@ function AlunosPage() {
             status: formStatus,
             produtoId: formProdutoId,
             produtoNome: chosenProduct?.nome || "Curso de Idiomas",
-            tipoContrato: chosenProduct?.modalidade === "hora_aula" ? ("hora_aula" as const) : chosenProduct?.modalidade === "pacote_fechado" ? ("pacote_fechado" as const) : ("turma" as const),
+            tipoContrato:
+              chosenProduct?.modalidade === "hora_aula"
+                ? ("hora_aula" as const)
+                : chosenProduct?.modalidade === "pacote_fechado"
+                ? ("pacote_fechado" as const)
+                : ("turma" as const),
             valorMensalidade: Number(formValor),
             diaVencimento: Number(formVencimento),
             horasContratadas: Number(formHoras),
@@ -531,20 +659,7 @@ function AlunosPage() {
       autor: currentUser?.nome || "Coordenação Pedagógica",
     };
 
-    const currentDetails = studentDetails[selectedStudent.nome] || {
-      presenca: 85,
-      tarefas: 80,
-      streak: 1,
-      coins: 50,
-      xp: 300,
-      liga: "Bronze",
-      whats: "5511999999999",
-      historico: [],
-      financeiro: [],
-      frequencias: [],
-      avaliacoes: [],
-      ocorrencias: [],
-    };
+    const currentDetails = getSafeStudentDetails(selectedStudent);
 
     const updated = {
       ...studentDetails,
@@ -560,8 +675,10 @@ function AlunosPage() {
   };
 
   const handleMarkBillAsPaid = (billId: string, studentName: string) => {
-    const currentDetails = studentDetails[studentName];
-    if (!currentDetails) return;
+    const student = students.find((s) => s.nome === studentName);
+    if (!student) return;
+
+    const currentDetails = getSafeStudentDetails(student);
 
     const updatedBills = currentDetails.financeiro.map((b) =>
       b.id === billId
@@ -610,7 +727,7 @@ function AlunosPage() {
   });
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-8 animate-in fade-in duration-300">
+    <div className="mx-auto max-w-[1400px] space-y-8 animate-in fade-in duration-300 pb-12">
       <SectionHeader
         eyebrow="Pedagógico & Contratos"
         title="Gestão de Alunos & Dossiê 360º"
@@ -629,17 +746,17 @@ function AlunosPage() {
           />
         </div>
 
-        <div className="flex flex-wrap gap-2 w-full md:w-auto">
+        <div className="flex flex-wrap gap-2 w-full md:w-auto items-center">
           {/* Modality Filter */}
           <select
             value={modalityFilter}
             onChange={(e) => setModalityFilter(e.target.value)}
             className="h-10 rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary cursor-pointer"
           >
-            <option value="todos">Todos os Formatos de Contrato</option>
-            <option value="turma">Turma Regular (Mensalidade)</option>
+            <option value="todos">Todos os Formatos</option>
+            <option value="turma">Turma Regular</option>
             <option value="hora_aula">VIP / Hora-Aula</option>
-            <option value="pacote_fechado">Pacote Fechado / Semestral</option>
+            <option value="pacote_fechado">Pacote Fechado</option>
           </select>
 
           {/* Status Filter */}
@@ -653,6 +770,14 @@ function AlunosPage() {
             <option value="Inadimplente">Inadimplentes</option>
             <option value="Em risco">Em Risco de Evasão</option>
           </select>
+
+          {/* Botão + Novo Aluno */}
+          <button
+            onClick={handleOpenNewStudent}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground shadow hover:bg-primary/95 active:scale-[0.98] transition-all cursor-pointer shrink-0"
+          >
+            <UserPlus className="size-4" /> + Nova Matrícula
+          </button>
         </div>
       </GlassCard>
 
@@ -674,14 +799,18 @@ function AlunosPage() {
             <tbody className="divide-y divide-hairline">
               {filteredStudents.length > 0 ? (
                 filteredStudents.map((s) => (
-                  <tr key={s.nome} className="hover:bg-surface/30 transition-colors">
+                  <tr
+                    key={s.nome}
+                    onClick={() => handleOpenDrawer(s)}
+                    className="hover:bg-surface/50 transition-colors cursor-pointer group"
+                  >
                     <td className="px-6 py-4 font-semibold text-foreground">
-                      <div className="flex items-center gap-2">
-                        <span className="grid size-7 place-items-center rounded-full bg-primary/10 text-primary font-bold text-xs">
+                      <div className="flex items-center gap-2.5">
+                        <span className="grid size-8 place-items-center rounded-full bg-primary/10 text-primary font-bold text-xs group-hover:bg-primary group-hover:text-primary-foreground transition-all">
                           {s.nome.charAt(0)}
                         </span>
                         <div>
-                          <p className="font-bold text-foreground">{s.nome}</p>
+                          <p className="font-bold text-foreground group-hover:text-primary transition-colors">{s.nome}</p>
                           <p className="text-[10px] text-muted-foreground">Início: {s.inicio}</p>
                         </div>
                       </div>
@@ -715,7 +844,9 @@ function AlunosPage() {
                     <td className="px-6 py-4 font-semibold text-foreground">
                       {brl(s.valorMensalidade || 450)}
                       <span className="text-[9px] font-normal text-muted-foreground block">
-                        {s.tipoContrato === "hora_aula" ? `${s.horasContratadas || 2}h/sem contratadas` : `Vence dia ${s.diaVencimento || 10}`}
+                        {s.tipoContrato === "hora_aula"
+                          ? `${s.horasContratadas || 2}h/sem contratadas`
+                          : `Vence dia ${s.diaVencimento || 10}`}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -731,19 +862,21 @@ function AlunosPage() {
                         {s.status}
                       </StatusPill>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex gap-2 justify-end">
                         <button
+                          type="button"
                           onClick={() => handleOpenDrawer(s)}
                           title="Abrir Dossiê 360º"
-                          className="px-2.5 py-1.5 rounded-lg border border-hairline hover:border-primary hover:bg-primary/10 text-foreground transition-all cursor-pointer font-bold flex items-center gap-1"
+                          className="px-3 py-1.5 rounded-lg border border-hairline hover:border-primary hover:bg-primary/10 text-foreground transition-all cursor-pointer font-bold flex items-center gap-1 bg-surface/50"
                         >
                           <Eye className="size-3.5 text-primary" /> Ficha 360º
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleOpenEdit(s)}
                           title="Editar Contrato & Dados"
-                          className="p-1.5 rounded-lg border border-hairline hover:bg-accent text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                          className="p-1.5 rounded-lg border border-hairline hover:bg-accent text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-surface/50"
                         >
                           <Pencil className="size-3.5" />
                         </button>
@@ -763,15 +896,178 @@ function AlunosPage() {
         </div>
       </GlassCard>
 
-      {/* --- INLINE GLASSMORPHIC MODAL: EDIT STUDENT CONTRACT & DATA --- */}
+      {/* ========================================================================= */}
+      {/* MODAL: NOVA MATRÍCULA / ALUNO */}
+      {/* ========================================================================= */}
+      {isNewStudentOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <GlassCard className="w-full max-w-lg p-6 space-y-5 shadow-2xl relative border-primary/30 text-foreground max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setIsNewStudentOpen(false)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0"
+            >
+              <X className="size-5" />
+            </button>
+
+            <div className="flex items-center gap-2.5 border-b border-hairline pb-3">
+              <span className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary">
+                <UserPlus className="size-5" />
+              </span>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Nova Matrícula de Aluno</h3>
+                <p className="text-xs text-muted-foreground">Cadastre o aluno e vincule ao curso contratado.</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateStudentSubmit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  Nome Completo do Aluno *
+                </label>
+                <input
+                  placeholder="Ex: Gabriel Santos"
+                  value={formNome}
+                  onChange={(e) => setFormNome(e.target.value)}
+                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary font-medium"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  WhatsApp para Contato
+                </label>
+                <input
+                  placeholder="Ex: 5511999998888"
+                  value={formWhats}
+                  onChange={(e) => setFormWhats(e.target.value)}
+                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary font-mono"
+                />
+              </div>
+
+              {/* Course Product Selector */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  Curso / Produto Educacional Contratado
+                </label>
+                <select
+                  value={formProdutoId}
+                  onChange={(e) => {
+                    const nextId = e.target.value;
+                    setFormProdutoId(nextId);
+                    const prod = initialEducationalProducts.find((p) => p.id === nextId);
+                    if (prod) {
+                      setFormValor(prod.valorBase);
+                      setFormHoras(prod.cargaHorariaSemanal);
+                      setFormNivel(prod.nivel);
+                    }
+                  }}
+                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-2.5 text-xs text-foreground outline-none focus:border-primary cursor-pointer font-medium"
+                >
+                  {initialEducationalProducts.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nome} ({p.modalidade === "hora_aula" ? "VIP Hora/Aula" : p.modalidade === "pacote_fechado" ? "Pacote Semestral" : "Turma Regular"}) — {brl(p.valorBase)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    Nível CEFR
+                  </label>
+                  <select
+                    value={formNivel}
+                    onChange={(e) => setFormNivel(e.target.value)}
+                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-2.5 text-xs text-foreground outline-none focus:border-primary cursor-pointer font-medium"
+                  >
+                    {levels.map((lvl) => (
+                      <option key={lvl.id} value={lvl.nome}>
+                        {lvl.codigo} - {lvl.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    Mensalidade (R$)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formValor}
+                    onChange={(e) => setFormValor(Number(e.target.value))}
+                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary font-bold"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    Dia Venc.
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={31}
+                    value={formVencimento}
+                    onChange={(e) => setFormVencimento(Number(e.target.value))}
+                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  Turma Alocada
+                </label>
+                <select
+                  value={formTurma}
+                  onChange={(e) => setFormTurma(e.target.value)}
+                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-2.5 text-xs text-foreground outline-none focus:border-primary cursor-pointer font-medium"
+                >
+                  <option value="VIP Individual">VIP Individual (Sem Turma Coletiva)</option>
+                  {initialClasses.map((c) => (
+                    <option key={c.nome} value={c.nome}>
+                      {c.nome} (Nível {c.nivel} · {c.salaNome})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-hairline">
+                <button
+                  type="button"
+                  onClick={() => setIsNewStudentOpen(false)}
+                  className="rounded-lg border border-hairline px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-primary px-5 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/95 shadow cursor-pointer"
+                >
+                  Confirmar Matrícula
+                </button>
+              </div>
+            </form>
+          </GlassCard>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: EDITAR MATRÍCULA DO ALUNO */}
+      {/* ========================================================================= */}
       {isEditOpen && selectedStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200">
-          <GlassCard className="w-full max-w-lg p-6 space-y-5 shadow-2xl relative border-primary/30 text-foreground">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <GlassCard className="w-full max-w-lg p-6 space-y-5 shadow-2xl relative border-primary/30 text-foreground max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setIsEditOpen(false)}
               className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0"
             >
-              <X className="size-4.5" />
+              <X className="size-5" />
             </button>
             <div className="flex items-center gap-2.5 border-b border-hairline pb-3">
               <span className="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary">
@@ -785,20 +1081,20 @@ function AlunosPage() {
 
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                   Nome Completo
                 </label>
                 <input
                   value={formNome}
                   onChange={(e) => setFormNome(e.target.value)}
-                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
+                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary font-medium"
                   required
                 />
               </div>
 
               {/* Course Product Selector */}
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                   Curso / Produto Educacional Contratado
                 </label>
                 <select
@@ -812,11 +1108,11 @@ function AlunosPage() {
                       setFormHoras(prod.cargaHorariaSemanal);
                     }
                   }}
-                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-2.5 text-xs text-foreground outline-none focus:border-primary cursor-pointer"
+                  className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-2.5 text-xs text-foreground outline-none focus:border-primary cursor-pointer font-medium"
                 >
                   {initialEducationalProducts.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.nome} ({p.modalidade === "hora_aula" ? "VIP Hora-Aula" : p.modalidade === "pacote_fechado" ? "Pacote Semestral" : "Turma Regular"}) — {brl(p.valorBase)}
+                      {p.nome} ({p.modalidade === "hora_aula" ? "VIP Hora/Aula" : p.modalidade === "pacote_fechado" ? "Pacote Semestral" : "Turma Regular"}) — {brl(p.valorBase)}
                     </option>
                   ))}
                 </select>
@@ -824,25 +1120,24 @@ function AlunosPage() {
 
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Proficiência
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    Proficiência CEFR
                   </label>
                   <select
                     value={formNivel}
                     onChange={(e) => setFormNivel(e.target.value)}
-                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-2.5 text-xs text-foreground outline-none focus:border-primary cursor-pointer"
+                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-2.5 text-xs text-foreground outline-none focus:border-primary cursor-pointer font-medium"
                   >
-                    <option value="A1">CEFR A1</option>
-                    <option value="A2">CEFR A2</option>
-                    <option value="B1">CEFR B1</option>
-                    <option value="B2">CEFR B2</option>
-                    <option value="C1">CEFR C1</option>
-                    <option value="C2">CEFR C2</option>
+                    {levels.map((lvl) => (
+                      <option key={lvl.id} value={lvl.nome}>
+                        {lvl.codigo} - {lvl.nome}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                     Mensalidade (R$)
                   </label>
                   <input
@@ -850,13 +1145,13 @@ function AlunosPage() {
                     step="0.01"
                     value={formValor}
                     onChange={(e) => setFormValor(Number(e.target.value))}
-                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
+                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary font-bold"
                     required
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                     Dia Venc.
                   </label>
                   <input
@@ -865,20 +1160,20 @@ function AlunosPage() {
                     max={31}
                     value={formVencimento}
                     onChange={(e) => setFormVencimento(Number(e.target.value))}
-                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
+                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary font-bold"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                     Turma Vinculada
                   </label>
                   <select
                     value={formTurma}
                     onChange={(e) => setFormTurma(e.target.value)}
-                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-2.5 text-xs text-foreground outline-none focus:border-primary cursor-pointer"
+                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-2.5 text-xs text-foreground outline-none focus:border-primary cursor-pointer font-medium"
                   >
                     <option value="VIP Individual">VIP Individual (Sem Turma Coletiva)</option>
                     {initialClasses.map((c) => (
@@ -890,13 +1185,13 @@ function AlunosPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                     Situação
                   </label>
                   <select
                     value={formStatus}
                     onChange={(e) => setFormStatus(e.target.value)}
-                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-2.5 text-xs text-foreground outline-none focus:border-primary cursor-pointer"
+                    className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-2.5 text-xs text-foreground outline-none focus:border-primary cursor-pointer font-medium"
                   >
                     <option value="Ativo">Ativo</option>
                     <option value="Inadimplente">Inadimplente</option>
@@ -925,9 +1220,11 @@ function AlunosPage() {
         </div>
       )}
 
-      {/* --- INLINE GLASSMORPHIC DRAWER: STUDENT 360º DOSSIER --- */}
+      {/* ========================================================================= */}
+      {/* GAVETA / DRAWER: DOSSIÊ 360º COMPLETO DO ALUNO */}
+      {/* ========================================================================= */}
       {isDrawerOpen && selectedStudent && selectedDetails && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[100] flex justify-end bg-black/75 backdrop-blur-md animate-in fade-in duration-300">
           <div className="w-full max-w-3xl h-full border-l border-hairline bg-popover text-foreground p-6 shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-300 relative">
             <button
               onClick={() => setIsDrawerOpen(false)}
