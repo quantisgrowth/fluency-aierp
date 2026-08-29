@@ -27,9 +27,17 @@ import {
   AlertCircle,
   HelpCircle,
   Save,
+  LayoutGrid,
+  List,
+  Calculator,
+  Percent,
+  Coins,
+  ArrowRight,
+  ShieldCheck,
 } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
+import { StatusPill } from "@/components/kit/status-pill";
 import { useModules } from "@/modules/module-context";
 import { MODULES } from "@/modules/registry";
 import { useTenant, type TenantPreset } from "@/modules/tenant-context";
@@ -41,6 +49,8 @@ import {
   livrosTrilhas,
   initialEducationalLevels,
   type EducationalLevel,
+  initialSchoolCosts,
+  type SchoolCost,
 } from "@/data/mock";
 import { toast } from "sonner";
 
@@ -57,6 +67,7 @@ export const Route = createFileRoute("/admin/modulos")({
 type ModuleDef = typeof MODULES[0];
 const PRODUCTS_KEY = "fluency-ai:products:catalog";
 const LEVELS_KEY = "fluency-ai:academic:levels";
+const COSTS_KEY = "fluency-ai:finance:costs";
 
 const MODALITY_LABELS: Record<PricingModelType, { label: string; badgeClass: string; desc: string }> = {
   mensalidade_fixa: {
@@ -87,6 +98,23 @@ function AdminModulosPage() {
   const [activeTab, setActiveTab] = useState<"cursos" | "modules" | "branding">("cursos");
   const [customColor, setCustomColor] = useState(tenant.primaryColor);
   const [schoolName, setSchoolName] = useState(tenant.name);
+
+  // View Display Modes (Cards vs List)
+  const [catalogDisplayMode, setCatalogDisplayMode] = useState<"cards" | "list">(() => {
+    try {
+      return (window.localStorage.getItem("fluency-ai:products:display-mode") as "cards" | "list") || "cards";
+    } catch {
+      return "cards";
+    }
+  });
+
+  const [modulesDisplayMode, setModulesDisplayMode] = useState<"cards" | "list">(() => {
+    try {
+      return (window.localStorage.getItem("fluency-ai:erp-modules:display-mode") as "cards" | "list") || "cards";
+    } catch {
+      return "cards";
+    }
+  });
 
   // Full-Screen Course Editor State
   const [viewMode, setViewMode] = useState<"list" | "editor">("list");
@@ -120,6 +148,16 @@ function AdminModulosPage() {
     }
   });
 
+  // School Costs State (for pricing calculation)
+  const [costs] = useState<SchoolCost[]>(() => {
+    try {
+      const stored = window.localStorage.getItem(COSTS_KEY);
+      return stored ? JSON.parse(stored) : initialSchoolCosts;
+    } catch {
+      return initialSchoolCosts;
+    }
+  });
+
   // Course Form States
   const [prodNome, setProdNome] = useState("");
   const [prodCodigo, setProdCodigo] = useState("");
@@ -135,9 +173,41 @@ function AdminModulosPage() {
   const [prodPermiteTurma, setProdPermiteTurma] = useState(true);
   const [prodMaxAlunos, setProdMaxAlunos] = useState(14);
 
+  // --- CALCULADORA INTELIGENTE DE PRECIFICAÇÃO ---
+  const [simulacaoAlunos, setSimulacaoAlunos] = useState(8);
+  const [margemLucroAlvoPct, setMargemLucroAlvoPct] = useState(45); // 45% de margem padrão
+
   // Cálculos Automáticos de Carga Horária
   const cargaHorariaSemanalCalculada = Number(((prodDuracaoMinutos / 60) * prodVezesSemana).toFixed(1));
   const cargaHorariaMensalCalculada = Number((cargaHorariaSemanalCalculada * 4.33).toFixed(1));
+
+  // Cálculos da Calculadora de Custos & Unit Economics
+  const custoHoraDocente = 45.0; // R$ 45/h base professor
+  const custoFixoTotalMensal = costs.filter((c) => c.tipo === "fixo").reduce((acc, c) => acc + c.valor, 0);
+  const baseAlunosEscolaEstimada = 80; // Base média da unidade escolar
+  const rateioFixoPorAluno = custoFixoTotalMensal / baseAlunosEscolaEstimada; // ~R$ 380/aluno/mês rateio global
+  const custoMaterialMensalRateado = 20.0; // Custo do livro rateado no semestre
+
+  // Custo Direto da Turma / Curso
+  const custoDocenteTotalTurmaMes = cargaHorariaMensalCalculada * custoHoraDocente;
+  const qtdAlunosCalc = prodModalidade === "hora_aula" ? 1 : Math.max(1, simulacaoAlunos);
+  const custoDocentePorAlunoMes = custoDocenteTotalTurmaMes / qtdAlunosCalc;
+
+  // Custo Real Total por Aluno/Mês
+  const custoTotalRealPorAluno =
+    prodModalidade === "hora_aula"
+      ? custoHoraDocente + 15 // Custo por hora lecionada VIP + rateio operacional
+      : custoDocentePorAlunoMes + (rateioFixoPorAluno * 0.35) + custoMaterialMensalRateado;
+
+  // Preço de Equilíbrio (Break-Even) e Preço Sugerido com Margem
+  const precoMinimoBreakEven = custoTotalRealPorAluno;
+  const precoSugeridoCalculado = Number(
+    (custoTotalRealPorAluno / (1 - margemLucroAlvoPct / 100)).toFixed(2)
+  );
+
+  // Projeção de Faturamento e Lucro por Turma
+  const faturamentoEstimadoTurma = precoSugeridoCalculado * qtdAlunosCalc;
+  const lucroEstimadoTurmaMes = faturamentoEstimadoTurma - (custoDocenteTotalTurmaMes + ((rateioFixoPorAluno * 0.35) * qtdAlunosCalc));
 
   // Self-Service Checkout states for ERP Modules
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -159,6 +229,18 @@ function AdminModulosPage() {
       window.localStorage.setItem(LEVELS_KEY, JSON.stringify(levels));
     } catch {}
   }, [levels]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("fluency-ai:products:display-mode", catalogDisplayMode);
+    } catch {}
+  }, [catalogDisplayMode]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("fluency-ai:erp-modules:display-mode", modulesDisplayMode);
+    } catch {}
+  }, [modulesDisplayMode]);
 
   // Sync local states when tenant changes
   useEffect(() => {
@@ -216,6 +298,8 @@ function AdminModulosPage() {
     setProdPublico("Jovens e Adultos (Geral)");
     setProdPermiteTurma(true);
     setProdMaxAlunos(14);
+    setSimulacaoAlunos(8);
+    setMargemLucroAlvoPct(45);
     setViewMode("editor");
   };
 
@@ -234,7 +318,14 @@ function AdminModulosPage() {
     setProdPublico(prod.publicoAlvo);
     setProdPermiteTurma(prod.permiteTurma);
     setProdMaxAlunos(prod.maxAlunosTurma || 14);
+    setSimulacaoAlunos(prod.modalidade === "hora_aula" ? 1 : 8);
+    setMargemLucroAlvoPct(45);
     setViewMode("editor");
+  };
+
+  const handleApplySuggestedPrice = () => {
+    setProdValor(precoSugeridoCalculado);
+    toast.success(`Preço sugerido de ${brl(precoSugeridoCalculado)} aplicado com sucesso ao produto!`);
   };
 
   const handleSaveCourse = (e: React.FormEvent) => {
@@ -253,7 +344,6 @@ function AdminModulosPage() {
             ? {
                 ...p,
                 nome: prodNome.trim(),
-                // Código permanece estritamente imutável
                 modalidade: prodModalidade,
                 nivel: prodNivel,
                 duracaoAulaMinutos: Number(prodDuracaoMinutos),
@@ -381,7 +471,7 @@ function AdminModulosPage() {
       <SectionHeader
         eyebrow="Gestão Acadêmica & Plataforma"
         title="Catálogo de Cursos & Módulos da Escola"
-        description="Gerencie os cursos oferecidos pela escola, configure a carga horária detalhada, níveis CEFR customizados e módulos do ERP."
+        description="Gerencie os cursos oferecidos pela escola, simule a precificação inteligente com base em custos do DRE, configure níveis e contrate módulos."
       />
 
       {/* Tabs selectors (only shown in list mode) */}
@@ -425,31 +515,57 @@ function AdminModulosPage() {
       {/* ========================================================================= */}
       {activeTab === "cursos" && viewMode === "list" && (
         <div className="space-y-6 animate-in fade-in duration-300">
-          {/* Top Actions Header */}
+          {/* Top Actions & Display Mode Switcher */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="space-y-1">
               <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                 <BookOpen className="size-4 text-primary" /> Grade de Cursos e Modalidades Contratáveis
               </h3>
               <p className="text-xs text-muted-foreground">
-                Cada curso possui sua carga horária analítica (por aula, semanal e semestral), livro vinculado e regra de cobrança.
+                Cada curso possui sua carga horária analítica, livro didático vinculado e sugestão de precificação por custos.
               </p>
             </div>
 
             <div className="flex items-center gap-2.5 shrink-0">
+              {/* Toggle Cards vs List */}
+              <div className="flex items-center rounded-lg border border-hairline bg-surface/50 p-0.5">
+                <button
+                  onClick={() => setCatalogDisplayMode("cards")}
+                  title="Visualização em Módulos / Cards"
+                  className={`p-2 rounded-md transition-all cursor-pointer ${
+                    catalogDisplayMode === "cards"
+                      ? "bg-primary text-primary-foreground shadow"
+                      : "text-muted-foreground hover:text-foreground bg-transparent"
+                  }`}
+                >
+                  <LayoutGrid className="size-4" />
+                </button>
+                <button
+                  onClick={() => setCatalogDisplayMode("list")}
+                  title="Visualização em Lista / Tabela"
+                  className={`p-2 rounded-md transition-all cursor-pointer ${
+                    catalogDisplayMode === "list"
+                      ? "bg-primary text-primary-foreground shadow"
+                      : "text-muted-foreground hover:text-foreground bg-transparent"
+                  }`}
+                >
+                  <List className="size-4" />
+                </button>
+              </div>
+
               <button
                 onClick={() => {
                   handleOpenNewLevel();
                   setIsLevelsModalOpen(true);
                 }}
-                className="inline-flex items-center gap-2 rounded-lg border border-hairline bg-surface/50 px-3.5 py-2.5 text-xs font-bold text-foreground hover:bg-accent transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 rounded-lg border border-hairline bg-surface/50 px-3.5 py-2 text-xs font-bold text-foreground hover:bg-accent transition-all cursor-pointer"
               >
-                <Settings2 className="size-4 text-primary" /> Gerenciar Níveis CEFR ({levels.length})
+                <Settings2 className="size-4 text-primary" /> Gerenciar Níveis ({levels.length})
               </button>
 
               <button
                 onClick={handleOpenNewCourse}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground shadow hover:bg-primary/95 active:scale-[0.98] transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow hover:bg-primary/95 active:scale-[0.98] transition-all cursor-pointer"
               >
                 <Plus className="size-4" /> + Novo Curso / Oferta
               </button>
@@ -486,121 +602,210 @@ function AdminModulosPage() {
             </GlassCard>
           </div>
 
-          {/* Educational Products Grid */}
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {products.map((prod) => {
-              const modInfo = MODALITY_LABELS[prod.modalidade] || MODALITY_LABELS.mensalidade_fixa;
+          {/* MODE 1: CARDS / MÓDULOS GRID */}
+          {catalogDisplayMode === "cards" && (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {products.map((prod) => {
+                const modInfo = MODALITY_LABELS[prod.modalidade] || MODALITY_LABELS.mensalidade_fixa;
 
-              return (
-                <GlassCard
-                  key={prod.id}
-                  className={`p-5 flex flex-col justify-between space-y-4 transition-all ${
-                    prod.ativo ? "hover:border-white/15" : "opacity-60 border-dashed"
-                  }`}
-                >
-                  <div className="space-y-3">
-                    {/* Badge line */}
-                    <div className="flex justify-between items-start gap-2">
-                      <span
-                        className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border ${modInfo.badgeClass}`}
-                      >
-                        {modInfo.label}
-                      </span>
-                      <span className="text-[10px] font-mono text-muted-foreground bg-surface px-1.5 py-0.5 rounded border border-hairline">
-                        {prod.codigo}
-                      </span>
-                    </div>
-
-                    <h4 className="text-base font-bold text-foreground leading-snug">{prod.nome}</h4>
-                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{prod.descricao}</p>
-
-                    {/* Matrix of detailed hours & level */}
-                    <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
-                      <div className="rounded-lg bg-surface/40 border border-hairline p-2 space-y-0.5">
-                        <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
-                          Carga Semanal
+                return (
+                  <GlassCard
+                    key={prod.id}
+                    className={`p-5 flex flex-col justify-between space-y-4 transition-all ${
+                      prod.ativo ? "hover:border-white/15" : "opacity-60 border-dashed"
+                    }`}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-start gap-2">
+                        <span
+                          className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border ${modInfo.badgeClass}`}
+                        >
+                          {modInfo.label}
                         </span>
-                        <p className="font-bold text-foreground flex items-center gap-1">
-                          <Clock className="size-3 text-primary" /> {prod.cargaHorariaSemanal || 3}h / sem
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {prod.vezesPorSemana || 2}x de {prod.duracaoAulaMinutos || 90}min
-                        </p>
+                        <span className="text-[10px] font-mono text-muted-foreground bg-surface px-1.5 py-0.5 rounded border border-hairline">
+                          {prod.codigo}
+                        </span>
                       </div>
 
-                      <div className="rounded-lg bg-surface/40 border border-hairline p-2 space-y-0.5">
-                        <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
-                          Total do Módulo
+                      <h4 className="text-base font-bold text-foreground leading-snug">{prod.nome}</h4>
+                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{prod.descricao}</p>
+
+                      <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
+                        <div className="rounded-lg bg-surface/40 border border-hairline p-2 space-y-0.5">
+                          <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
+                            Carga Semanal
+                          </span>
+                          <p className="font-bold text-foreground flex items-center gap-1">
+                            <Clock className="size-3 text-primary" /> {prod.cargaHorariaSemanal || 3}h / sem
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {prod.vezesPorSemana || 2}x de {prod.duracaoAulaMinutos || 90}min
+                          </p>
+                        </div>
+
+                        <div className="rounded-lg bg-surface/40 border border-hairline p-2 space-y-0.5">
+                          <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
+                            Total do Módulo
+                          </span>
+                          <p className="font-bold text-foreground flex items-center gap-1">
+                            <Calendar className="size-3 text-primary" /> {prod.cargaHorariaTotal || 60}h Totais
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">~{prod.cargaHorariaMensal || 13}h / mês</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        <span className="rounded bg-surface-elevated border border-hairline px-2 py-0.5 text-[10px] text-foreground font-semibold flex items-center gap-1">
+                          <Tag className="size-3 text-primary" /> Nível: {prod.nivel}
                         </span>
-                        <p className="font-bold text-foreground flex items-center gap-1">
-                          <Calendar className="size-3 text-primary" /> {prod.cargaHorariaTotal || 60}h Totais
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">~{prod.cargaHorariaMensal || 13}h / mês</p>
+                        {prod.livroPadraoNome && (
+                          <span className="rounded bg-surface-elevated border border-hairline px-2 py-0.5 text-[10px] text-muted-foreground flex items-center gap-1 truncate max-w-full">
+                            <BookOpen className="size-3 text-muted-foreground shrink-0" /> {prod.livroPadraoNome}
+                          </span>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      <span className="rounded bg-surface-elevated border border-hairline px-2 py-0.5 text-[10px] text-foreground font-semibold flex items-center gap-1">
-                        <Tag className="size-3 text-primary" /> Nível: {prod.nivel}
-                      </span>
-                      {prod.livroPadraoNome && (
-                        <span className="rounded bg-surface-elevated border border-hairline px-2 py-0.5 text-[10px] text-muted-foreground flex items-center gap-1 truncate max-w-full">
-                          <BookOpen className="size-3 text-muted-foreground shrink-0" /> {prod.livroPadraoNome}
+                    <div className="space-y-3 pt-3 border-t border-hairline">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-muted-foreground">Valor Cobrado</span>
+                        <span className="text-lg font-bold text-foreground">
+                          {brl(prod.valorBase)}
+                          <span className="text-[10px] font-normal text-muted-foreground">
+                            {prod.modalidade === "hora_aula"
+                              ? " / hora"
+                              : prod.modalidade === "pacote_fechado"
+                              ? " / semestre"
+                              : " / mês"}
+                          </span>
                         </span>
-                      )}
-                    </div>
-                  </div>
+                      </div>
 
-                  {/* Bottom: Pricing & Actions */}
-                  <div className="space-y-3 pt-3 border-t border-hairline">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-muted-foreground">Valor Cobrado</span>
-                      <span className="text-lg font-bold text-foreground">
-                        {brl(prod.valorBase)}
-                        <span className="text-[10px] font-normal text-muted-foreground">
-                          {prod.modalidade === "hora_aula"
-                            ? " / hora"
-                            : prod.modalidade === "pacote_fechado"
-                            ? " / semestre"
-                            : " / mês"}
-                        </span>
-                      </span>
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => handleToggleProductStatus(prod.id, prod.ativo, prod.nome)}
+                          className={`px-3 py-2 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+                            prod.ativo
+                              ? "border-hairline bg-surface/40 text-muted-foreground hover:text-foreground"
+                              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                          }`}
+                        >
+                          {prod.ativo ? "Pausar" : "Ativar"}
+                        </button>
+                        <button
+                          onClick={() => handleOpenEditCourse(prod)}
+                          className="flex-1 rounded-lg border border-hairline bg-surface/50 py-2 text-xs font-bold text-foreground hover:border-primary hover:bg-accent cursor-pointer transition-colors"
+                        >
+                          Editar Curso Completo
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProduct(prod.id, prod.nome)}
+                          className="px-2.5 rounded-lg border border-hairline bg-surface/50 py-2 text-xs text-muted-foreground hover:text-overdue hover:bg-overdue/10 cursor-pointer transition-colors"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
                     </div>
+                  </GlassCard>
+                );
+              })}
+            </div>
+          )}
 
-                    <div className="flex gap-2 pt-1">
-                      <button
-                        onClick={() => handleToggleProductStatus(prod.id, prod.ativo, prod.nome)}
-                        className={`px-3 py-2 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
-                          prod.ativo
-                            ? "border-hairline bg-surface/40 text-muted-foreground hover:text-foreground"
-                            : "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
-                        }`}
-                      >
-                        {prod.ativo ? "Pausar" : "Ativar"}
-                      </button>
-                      <button
-                        onClick={() => handleOpenEditCourse(prod)}
-                        className="flex-1 rounded-lg border border-hairline bg-surface/50 py-2 text-xs font-bold text-foreground hover:border-primary hover:bg-accent cursor-pointer transition-colors"
-                      >
-                        Editar Curso Completo
-                      </button>
-                      <button
-                        onClick={() => handleDeleteProduct(prod.id, prod.nome)}
-                        className="px-2.5 rounded-lg border border-hairline bg-surface/50 py-2 text-xs text-muted-foreground hover:text-overdue hover:bg-overdue/10 cursor-pointer transition-colors"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </GlassCard>
-              );
-            })}
-          </div>
+          {/* MODE 2: LIST / TABULAR VIEW */}
+          {catalogDisplayMode === "list" && (
+            <GlassCard className="overflow-hidden p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-hairline bg-surface/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+                    <tr>
+                      <th className="px-6 py-3.5 font-bold">Código SKU</th>
+                      <th className="px-6 py-3.5 font-bold">Curso / Oferta</th>
+                      <th className="px-6 py-3.5 font-bold">Modalidade</th>
+                      <th className="px-6 py-3.5 font-bold">Nível CEFR</th>
+                      <th className="px-6 py-3.5 font-bold">Carga Horária</th>
+                      <th className="px-6 py-3.5 font-bold">Livro Didático</th>
+                      <th className="px-6 py-3.5 font-bold">Preço Base</th>
+                      <th className="px-6 py-3.5 font-bold">Status</th>
+                      <th className="px-6 py-3.5 font-bold text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-hairline">
+                    {products.map((prod) => {
+                      const modInfo = MODALITY_LABELS[prod.modalidade] || MODALITY_LABELS.mensalidade_fixa;
+
+                      return (
+                        <tr key={prod.id} className="hover:bg-surface/40 transition-colors">
+                          <td className="px-6 py-4 font-mono font-bold text-muted-foreground">
+                            {prod.codigo}
+                          </td>
+                          <td className="px-6 py-4 font-bold text-foreground">
+                            <p>{prod.nome}</p>
+                            <p className="text-[10px] text-muted-foreground line-clamp-1 font-normal">{prod.descricao}</p>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase border ${modInfo.badgeClass}`}>
+                              {modInfo.label}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 font-semibold text-foreground">
+                            {prod.nivel}
+                          </td>
+                          <td className="px-6 py-4 text-muted-foreground">
+                            <span className="font-bold text-foreground">{prod.cargaHorariaSemanal}h/sem</span>
+                            <span className="block text-[10px]">{prod.cargaHorariaTotal}h totais ({prod.vezesPorSemana}x {prod.duracaoAulaMinutos}min)</span>
+                          </td>
+                          <td className="px-6 py-4 text-muted-foreground">
+                            {prod.livroPadraoNome || "Material Padrão"}
+                          </td>
+                          <td className="px-6 py-4 font-extrabold text-foreground">
+                            {brl(prod.valorBase)}
+                            <span className="text-[9px] font-normal text-muted-foreground block">
+                              {prod.modalidade === "hora_aula" ? "/ hora" : prod.modalidade === "pacote_fechado" ? "/ pacote" : "/ mês"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <StatusPill tone={prod.ativo ? "paid" : "due"}>
+                              {prod.ativo ? "Ativo" : "Pausado"}
+                            </StatusPill>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => handleOpenEditCourse(prod)}
+                                className="p-1.5 rounded-lg border border-hairline hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer"
+                                title="Editar Curso"
+                              >
+                                <Pencil className="size-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleToggleProductStatus(prod.id, prod.ativo, prod.nome)}
+                                className="px-2 py-1 rounded-lg border border-hairline text-[10px] font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+                              >
+                                {prod.ativo ? "Pausar" : "Ativar"}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteProduct(prod.id, prod.nome)}
+                                className="p-1.5 rounded-lg border border-hairline hover:bg-overdue/10 text-muted-foreground hover:text-overdue cursor-pointer"
+                                title="Remover"
+                              >
+                                <Trash2 className="size-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </GlassCard>
+          )}
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* FULL-SCREEN / EXPANDED COURSE EDITOR (SUBSTITUI O POPUP PEQUENO) */}
+      {/* FULL-SCREEN COURSE EDITOR WITH INTEL PRICING CALCULATOR */}
       {/* ========================================================================= */}
       {activeTab === "cursos" && viewMode === "editor" && (
         <div className="space-y-6 animate-in fade-in duration-300">
@@ -845,42 +1050,157 @@ function AdminModulosPage() {
               </GlassCard>
             </div>
 
-            {/* COLUMN 2: VALORES, MATERIAL DIDÁTICO E TURMAS */}
+            {/* COLUMN 2: CALCULADORA INTELIGENTE DE PRECIFICAÇÃO & DETALHES */}
             <div className="space-y-6">
-              {/* Precificação do Curso */}
+              
+              {/* CALCULADORA DE SUGESTÃO DE PRECIFICAÇÃO BASEADA EM CUSTOS */}
+              <GlassCard className="p-6 space-y-5 border-emerald-500/30 bg-emerald-500/[0.02]">
+                <div className="flex justify-between items-center border-b border-hairline pb-2">
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <Calculator className="size-4 text-emerald-400" /> Calculadora de Sugestão de Preço (Base DRE)
+                  </h3>
+                  <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1">
+                    <ShieldCheck className="size-3" /> Unit Economics
+                  </span>
+                </div>
+
+                {/* Parâmetros do Simulador */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Alunos Estimados na Turma
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={1}
+                        max={30}
+                        value={simulacaoAlunos}
+                        onChange={(e) => setSimulacaoAlunos(Number(e.target.value))}
+                        disabled={prodModalidade === "hora_aula"}
+                        className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary font-bold"
+                      />
+                      <span className="text-xs text-muted-foreground font-semibold">alunos</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between">
+                      <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        Margem Alvo
+                      </label>
+                      <span className="text-xs font-extrabold text-emerald-400">{margemLucroAlvoPct}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={20}
+                      max={70}
+                      step={5}
+                      value={margemLucroAlvoPct}
+                      onChange={(e) => setMargemLucroAlvoPct(Number(e.target.value))}
+                      className="w-full h-2 rounded-lg bg-surface border border-hairline accent-primary cursor-pointer mt-2"
+                    />
+                  </div>
+                </div>
+
+                {/* Painel com Decomposição de Custos e Preço Sugerido */}
+                <div className="space-y-3 p-4 rounded-xl bg-surface/50 border border-hairline text-xs">
+                  <div className="grid grid-cols-2 gap-3 divide-x divide-hairline">
+                    <div className="space-y-1 pr-2">
+                      <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
+                        Custo Docente Turma:
+                      </span>
+                      <p className="font-bold text-foreground">
+                        {brl(custoDocenteTotalTurmaMes)} / mês
+                        <span className="text-[10px] text-muted-foreground block font-normal">
+                          ({cargaHorariaMensalCalculada}h × R$ 45/h)
+                        </span>
+                      </p>
+
+                      <span className="text-[10px] text-muted-foreground font-semibold uppercase block pt-2">
+                        Custo Real / Aluno / Mês:
+                      </span>
+                      <p className="font-bold text-foreground">
+                        {brl(custoTotalRealPorAluno)}
+                        <span className="text-[10px] text-muted-foreground block font-normal">
+                          (Docente + Rateio Fixo + Material)
+                        </span>
+                      </p>
+                    </div>
+
+                    <div className="space-y-1 pl-4">
+                      <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
+                        Break-Even (Ponto Equilíbrio):
+                      </span>
+                      <p className="font-bold text-amber-400">
+                        {brl(precoMinimoBreakEven)} / mês
+                        <span className="text-[10px] text-muted-foreground block font-normal">
+                          Preço mínimo sem prejuízo
+                        </span>
+                      </p>
+
+                      <span className="text-[10px] text-emerald-400 font-bold uppercase block pt-2">
+                        ⭐ Preço Sugerido ({margemLucroAlvoPct}% Margem):
+                      </span>
+                      <p className="text-xl font-extrabold text-emerald-400">
+                        {brl(precoSugeridoCalculado)}
+                        <span className="text-[10px] text-muted-foreground block font-normal">
+                          {prodModalidade === "hora_aula" ? "por hora lecionada" : "por mês"}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Projeção de Lucro da Turma */}
+                  <div className="border-t border-hairline pt-3 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground font-semibold uppercase block">
+                        Lucro Projetado da Turma ({qtdAlunosCalc} alunos):
+                      </span>
+                      <p className="text-sm font-extrabold text-foreground">
+                        {brl(lucroEstimadoTurmaMes)} / mês
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleApplySuggestedPrice}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3.5 py-2 text-xs font-bold text-black hover:bg-emerald-400 transition-all shadow cursor-pointer active:scale-[0.98]"
+                    >
+                      <Sparkles className="size-3.5" /> Aplicar Preço Sugerido
+                    </button>
+                  </div>
+                </div>
+
+                {/* Input de Valor Base */}
+                <div className="space-y-1.5 pt-1">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    Valor Final do Curso no Catálogo (R$) *
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
+                      R$
+                    </span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min={1}
+                      value={prodValor}
+                      onChange={(e) => setProdValor(Number(e.target.value))}
+                      className="h-11 w-full rounded-lg border border-hairline bg-surface/50 pl-9 pr-3 text-lg font-extrabold text-foreground outline-none focus:border-primary"
+                      required
+                    />
+                  </div>
+                </div>
+              </GlassCard>
+
+              {/* Material Didático & Detalhes */}
               <GlassCard className="p-6 space-y-5">
                 <h3 className="text-sm font-bold text-foreground flex items-center gap-2 border-b border-hairline pb-2">
-                  <DollarSign className="size-4 text-emerald-400" /> Precificação & Regras de Pagamento
+                  <BookOpen className="size-4 text-primary" /> Material Didático & Detalhes
                 </h3>
 
                 <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                      Valor Base (R$) *
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">
-                        R$
-                      </span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min={1}
-                        value={prodValor}
-                        onChange={(e) => setProdValor(Number(e.target.value))}
-                        className="h-11 w-full rounded-lg border border-hairline bg-surface/50 pl-9 pr-3 text-base font-extrabold text-foreground outline-none focus:border-primary"
-                        required
-                      />
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      {prodModalidade === "hora_aula"
-                        ? "Valor cobrado por cada hora de aula lecionada."
-                        : prodModalidade === "pacote_fechado"
-                        ? "Valor total do pacote semestral fechado (parcelável no contrato)."
-                        : "Valor cobrado mensalmente do aluno matriculado."}
-                    </p>
-                  </div>
-
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                       Livro / Material Didático Padrão
@@ -898,35 +1218,6 @@ function AdminModulosPage() {
                     </select>
                   </div>
 
-                  {/* Exibição da ementa do livro selecionado */}
-                  {(() => {
-                    const activeBook = livrosTrilhas.find((b) => b.id === prodLivroId);
-                    if (!activeBook) return null;
-                    return (
-                      <div className="p-3 rounded-lg bg-surface/30 border border-hairline space-y-1.5 text-xs">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
-                          <BookOpen className="size-3 text-primary" /> Ementa do Livro Vinculado:
-                        </span>
-                        <div className="divide-y divide-hairline max-h-32 overflow-y-auto">
-                          {activeBook.aulas.map((a) => (
-                            <div key={a.id} className="py-1 text-[11px] flex justify-between">
-                              <span className="text-foreground font-medium">Aula {a.aula}: {a.tema}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </GlassCard>
-
-              {/* Descrição & Alocação */}
-              <GlassCard className="p-6 space-y-5">
-                <h3 className="text-sm font-bold text-foreground flex items-center gap-2 border-b border-hairline pb-2">
-                  <BookOpen className="size-4 text-primary" /> Descrição & Alocação em Turmas
-                </h3>
-
-                <div className="space-y-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                       Descrição & Proposta Metodológica
@@ -935,7 +1226,7 @@ function AdminModulosPage() {
                       placeholder="Destaques do curso, foco da conversação, diferenciais e dinâmicas..."
                       value={prodDesc}
                       onChange={(e) => setProdDesc(e.target.value)}
-                      rows={3}
+                      rows={2}
                       className="w-full rounded-lg border border-hairline bg-surface/50 p-2.5 text-xs text-foreground outline-none focus:border-primary resize-none leading-relaxed"
                     />
                   </div>
@@ -1145,90 +1436,185 @@ function AdminModulosPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 2: MÓDULOS ERP (ORIGINAL) */}
+      {/* TAB 2: MÓDULOS ERP (COM TOGGLE DE CARDS VS LISTA) */}
       {/* ========================================================================= */}
       {activeTab === "modules" && viewMode === "list" && (
-        <div className="grid gap-6 lg:grid-cols-3 animate-in fade-in duration-300">
-          <div className="lg:col-span-2 space-y-4">
-            {MODULES.map((m) => {
-              const isEnabled = active.includes(m.id);
-              const Icon = m.icon;
-              return (
-                <GlassCard
-                  key={m.id}
-                  className={`p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all duration-300 ${
-                    isEnabled ? "border-primary/20 bg-primary/[0.01]" : "border-hairline opacity-80"
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <span
-                      className={`grid size-11 place-items-center rounded-xl border ${
-                        isEnabled
-                          ? "bg-primary/10 border-primary/20 text-primary"
-                          : "bg-surface-elevated/40 border-hairline text-muted-foreground"
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="flex justify-between items-center">
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-foreground">Módulos & Recursos Adicionais</h3>
+              <p className="text-xs text-muted-foreground">Contrate recursos do ecossistema Fluency AI para a sua franquia.</p>
+            </div>
+
+            {/* Toggle Cards vs List */}
+            <div className="flex items-center rounded-lg border border-hairline bg-surface/50 p-0.5">
+              <button
+                onClick={() => setModulesDisplayMode("cards")}
+                title="Visualização em Cards"
+                className={`p-2 rounded-md transition-all cursor-pointer ${
+                  modulesDisplayMode === "cards"
+                    ? "bg-primary text-primary-foreground shadow"
+                    : "text-muted-foreground hover:text-foreground bg-transparent"
+                }`}
+              >
+                <LayoutGrid className="size-4" />
+              </button>
+              <button
+                onClick={() => setModulesDisplayMode("list")}
+                title="Visualização em Lista"
+                className={`p-2 rounded-md transition-all cursor-pointer ${
+                  modulesDisplayMode === "list"
+                    ? "bg-primary text-primary-foreground shadow"
+                    : "text-muted-foreground hover:text-foreground bg-transparent"
+                }`}
+              >
+                <List className="size-4" />
+              </button>
+            </div>
+          </div>
+
+          {modulesDisplayMode === "cards" ? (
+            <div className="grid gap-6 lg:grid-cols-3">
+              <div className="lg:col-span-2 space-y-4">
+                {MODULES.map((m) => {
+                  const isEnabled = active.includes(m.id);
+                  const Icon = m.icon;
+                  return (
+                    <GlassCard
+                      key={m.id}
+                      className={`p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all duration-300 ${
+                        isEnabled ? "border-primary/20 bg-primary/[0.01]" : "border-hairline opacity-80"
                       }`}
                     >
-                      {isEnabled ? <Icon className="size-5" /> : <Lock className="size-5" />}
-                    </span>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2.5">
-                        <h3 className="text-sm font-semibold text-foreground">{m.name}</h3>
+                      <div className="flex items-start gap-4">
                         <span
-                          className={`rounded-full px-2 py-0.5 text-[9px] font-bold border uppercase tracking-wider ${
+                          className={`grid size-11 place-items-center rounded-xl border ${
                             isEnabled
                               ? "bg-primary/10 border-primary/20 text-primary"
-                              : "bg-muted border-hairline text-muted-foreground"
+                              : "bg-surface-elevated/40 border-hairline text-muted-foreground"
                           }`}
                         >
-                          {isEnabled ? "Ativo" : "Bloqueado"}
+                          {isEnabled ? <Icon className="size-5" /> : <Lock className="size-5" />}
                         </span>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2.5">
+                            <h3 className="text-sm font-semibold text-foreground">{m.name}</h3>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[9px] font-bold border uppercase tracking-wider ${
+                                isEnabled
+                                  ? "bg-primary/10 border-primary/20 text-primary"
+                                  : "bg-muted border-hairline text-muted-foreground"
+                              }`}
+                            >
+                              {isEnabled ? "Ativo" : "Bloqueado"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground leading-relaxed">{m.description}</p>
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">{m.description}</p>
+
+                      <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-hairline">
+                        <span className="text-xs font-semibold text-foreground">{brl(m.price)}/mês</span>
+                        {isEnabled ? (
+                          <button
+                            onClick={() => toggleModule(m.id)}
+                            className="rounded-lg border border-hairline px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-overdue hover:bg-overdue/10 transition-colors cursor-pointer"
+                          >
+                            Desativar
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleOpenCheckout(m)}
+                            className="rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 shadow transition-all cursor-pointer flex items-center gap-1.5"
+                          >
+                            <Sparkles className="size-3.5" /> Contratar
+                          </button>
+                        )}
+                      </div>
+                    </GlassCard>
+                  );
+                })}
+              </div>
+
+              <div className="space-y-4">
+                <GlassCard className="p-6 space-y-4 sticky top-6">
+                  <h3 className="text-sm font-semibold text-foreground">Resumo da Assinatura</h3>
+                  <div className="space-y-2 text-xs divide-y divide-hairline">
+                    <div className="flex justify-between pt-2">
+                      <span className="text-muted-foreground">Módulos Ativos</span>
+                      <span className="font-semibold text-foreground">{active.length} de {MODULES.length}</span>
+                    </div>
+                    <div className="flex justify-between pt-2">
+                      <span className="text-muted-foreground">Total Mensal</span>
+                      <span className="font-bold text-foreground text-sm">{brl(monthlyTotal)}/mês</span>
+                    </div>
+                    <div className="flex justify-between pt-2">
+                      <span className="text-muted-foreground">Próxima Fatura</span>
+                      <span className="font-semibold text-foreground">05/09/2026</span>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-hairline">
-                    <span className="text-xs font-semibold text-foreground">{brl(m.price)}/mês</span>
-                    {isEnabled ? (
-                      <button
-                        onClick={() => toggleModule(m.id)}
-                        className="rounded-lg border border-hairline px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-overdue hover:bg-overdue/10 transition-colors cursor-pointer"
-                      >
-                        Desativar
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleOpenCheckout(m)}
-                        className="rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 shadow transition-all cursor-pointer flex items-center gap-1.5"
-                      >
-                        <Sparkles className="size-3.5" /> Contratar
-                      </button>
-                    )}
-                  </div>
                 </GlassCard>
-              );
-            })}
-          </div>
-
-          <div className="space-y-4">
-            <GlassCard className="p-6 space-y-4 sticky top-6">
-              <h3 className="text-sm font-semibold text-foreground">Resumo da Assinatura</h3>
-              <div className="space-y-2 text-xs divide-y divide-hairline">
-                <div className="flex justify-between pt-2">
-                  <span className="text-muted-foreground">Módulos Ativos</span>
-                  <span className="font-semibold text-foreground">{active.length} de {MODULES.length}</span>
-                </div>
-                <div className="flex justify-between pt-2">
-                  <span className="text-muted-foreground">Total Mensal</span>
-                  <span className="font-bold text-foreground text-sm">{brl(monthlyTotal)}/mês</span>
-                </div>
-                <div className="flex justify-between pt-2">
-                  <span className="text-muted-foreground">Próxima Fatura</span>
-                  <span className="font-semibold text-foreground">05/09/2026</span>
-                </div>
               </div>
+            </div>
+          ) : (
+            <GlassCard className="overflow-hidden p-0">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-hairline bg-surface/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-6 py-3.5 font-bold">Módulo</th>
+                    <th className="px-6 py-3.5 font-bold">Descrição</th>
+                    <th className="px-6 py-3.5 font-bold">Valor Mensal</th>
+                    <th className="px-6 py-3.5 font-bold">Status</th>
+                    <th className="px-6 py-3.5 font-bold text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-hairline">
+                  {MODULES.map((m) => {
+                    const isEnabled = active.includes(m.id);
+                    const Icon = m.icon;
+                    return (
+                      <tr key={m.id} className="hover:bg-surface/40 transition-colors">
+                        <td className="px-6 py-4 font-bold text-foreground flex items-center gap-2.5">
+                          <span className={`grid size-7 place-items-center rounded-md border ${isEnabled ? "bg-primary/10 border-primary/20 text-primary" : "bg-surface text-muted-foreground"}`}>
+                            <Icon className="size-3.5" />
+                          </span>
+                          {m.name}
+                        </td>
+                        <td className="px-6 py-4 text-muted-foreground max-w-md">
+                          {m.description}
+                        </td>
+                        <td className="px-6 py-4 font-bold text-foreground">
+                          {brl(m.price)}/mês
+                        </td>
+                        <td className="px-6 py-4">
+                          <StatusPill tone={isEnabled ? "paid" : "due"}>
+                            {isEnabled ? "Ativo" : "Bloqueado"}
+                          </StatusPill>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {isEnabled ? (
+                            <button
+                              onClick={() => toggleModule(m.id)}
+                              className="rounded-lg border border-hairline px-3 py-1 text-xs font-semibold text-muted-foreground hover:text-overdue hover:bg-overdue/10 transition-colors cursor-pointer"
+                            >
+                              Desativar
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleOpenCheckout(m)}
+                              className="rounded-lg bg-primary px-3 py-1 text-xs font-bold text-primary-foreground hover:bg-primary/95 shadow transition-all cursor-pointer inline-flex items-center gap-1"
+                            >
+                              <Sparkles className="size-3" /> Contratar
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </GlassCard>
-          </div>
+          )}
         </div>
       )}
 
