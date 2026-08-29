@@ -48,40 +48,40 @@
 
 :root {
   --radius: 0.75rem;
-  --background: oklch(0.985 0.002 260);
-  --foreground: oklch(0.14 0.015 260);
-  --surface: oklch(1 0 0);
-  --surface-elevated: oklch(0.995 0.002 260);
-  --hairline: oklch(0.88 0.008 260);
+  --background: oklch(0.965 0.004 260); /* Fundo levemente contrastante para destacar cards brancos */
+  --foreground: oklch(0.12 0.015 260); /* Preto profundo super nítido */
+  --surface: oklch(1 0 0); /* Branco puro */
+  --surface-elevated: oklch(0.99 0.002 260);
+  --hairline: oklch(0.82 0.01 260); /* Bordas nítidas no tema claro */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.14 0.015 260);
+  --card-foreground: oklch(0.12 0.015 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.14 0.015 260);
+  --popover-foreground: oklch(0.12 0.015 260);
   --primary: oklch(0.55 0.09 245);
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.94 0.006 260);
-  --secondary-foreground: oklch(0.18 0.015 260);
-  --muted: oklch(0.94 0.006 260);
-  --muted-foreground: oklch(0.40 0.015 260); /* High contrast legible dark grey in light mode */
-  --accent: oklch(0.93 0.012 245);
-  --accent-foreground: oklch(0.18 0.015 260);
-  --destructive: oklch(0.58 0.2 25);
+  --secondary: oklch(0.92 0.008 260);
+  --secondary-foreground: oklch(0.15 0.015 260);
+  --muted: oklch(0.92 0.008 260);
+  --muted-foreground: oklch(0.32 0.015 260); /* Grafite escuro de alto contraste */
+  --accent: oklch(0.90 0.015 245);
+  --accent-foreground: oklch(0.14 0.015 260);
+  --destructive: oklch(0.55 0.22 25);
   --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.88 0.008 260);
-  --input: oklch(0.88 0.008 260);
-  --ring: oklch(0.6 0.07 245);
-  --paid: oklch(0.62 0.16 158);
-  --due: oklch(0.72 0.16 85);
-  --overdue: oklch(0.56 0.22 25);
-  --churn: oklch(0.60 0.18 40);
-  --chart-1: oklch(0.58 0.12 245);
-  --chart-2: oklch(0.62 0.16 158);
-  --chart-3: oklch(0.72 0.16 85);
-  --chart-4: oklch(0.56 0.22 25);
-  --chart-5: oklch(0.50 0.04 260);
-  --glass-bg: color-mix(in oklab, oklch(1 0 0) 85%, transparent);
-  --glass-border: color-mix(in oklab, oklch(0.14 0.015 260) 14%, transparent);
-  --shadow-elevated: 0 20px 50px -25px oklch(0.14 0.015 260 / 0.18);
+  --border: oklch(0.82 0.01 260);
+  --input: oklch(0.82 0.01 260);
+  --ring: oklch(0.55 0.09 245);
+  --paid: oklch(0.52 0.18 155);
+  --due: oklch(0.65 0.18 75);
+  --overdue: oklch(0.54 0.24 25);
+  --churn: oklch(0.58 0.20 40);
+  --chart-1: oklch(0.55 0.14 245);
+  --chart-2: oklch(0.52 0.18 155);
+  --chart-3: oklch(0.65 0.18 75);
+  --chart-4: oklch(0.54 0.24 25);
+  --chart-5: oklch(0.45 0.05 260);
+  --glass-bg: color-mix(in oklab, oklch(1 0 0) 90%, transparent);
+  --glass-border: color-mix(in oklab, oklch(0.12 0.015 260) 15%, transparent);
+  --shadow-elevated: 0 12px 36px -12px oklch(0.12 0.015 260 / 0.14);
 }
 
 .dark {

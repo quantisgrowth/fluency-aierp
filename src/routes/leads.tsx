@@ -25,6 +25,8 @@ import {
   AlertCircle,
   X,
   Sparkles,
+  MessageSquare,
+  Send,
 } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
@@ -199,8 +201,8 @@ function LeadsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"contato" | "pessoais" | "endereco" | "anotacoes">("contato");
 
-  // View details drawer
-  const [selectedDetails, setSelectedDetails] = useState<Lead | null>(null);
+  // View details drawer (pre-select first lead by default so panel is never empty)
+  const [selectedDetails, setSelectedDetails] = useState<Lead | null>(() => DEFAULT_LEADS[0] || null);
 
   // Form local states
   const [nome, setNome] = useState("");
@@ -789,15 +791,26 @@ function LeadsPage() {
                 </div>
               </div>
 
-              {/* Anotações */}
-              {selectedDetails.anotacoes && (
-                <div className="space-y-2">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-hairline pb-1">Anotações Comerciais</p>
-                  <p className="text-xs text-muted-foreground italic leading-relaxed bg-accent/30 p-2.5 rounded-lg border border-hairline">
-                    "{selectedDetails.anotacoes}"
-                  </p>
+              {/* Ações Comerciais Rápidas */}
+              <div className="space-y-2 pt-2 border-t border-hairline">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Ações Comerciais Rápidas</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <a
+                    href={`https://wa.me/${selectedDetails.telefone.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-1.5 rounded-lg border border-paid/30 bg-paid/10 px-3 py-2 text-xs font-bold text-paid hover:bg-paid/20 transition-all text-center"
+                  >
+                    <MessageSquare className="size-3.5" /> WhatsApp
+                  </a>
+                  <a
+                    href="/crm"
+                    className="flex items-center justify-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/20 transition-all text-center"
+                  >
+                    <Send className="size-3.5" /> Ver no Funil CRM
+                  </a>
                 </div>
-              )}
+              </div>
 
             </GlassCard>
           ) : (

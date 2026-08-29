@@ -441,11 +441,11 @@ function PortalAlunoPage() {
           </div>
         </div>
 
-        {/* SMARTPHONE DEVICE WRAPPER */}
-      <div className="relative mx-auto w-full max-w-[390px] h-[820px] rounded-[50px] border-[12px] border-neutral-900 bg-[#07090e] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col justify-between text-white select-none">
+        {/* SMARTPHONE DEVICE WRAPPER (Fluid 100% on Mobile, Realistic Device Mockup on Desktop) */}
+        <div className="relative mx-auto w-full sm:max-w-[400px] h-full min-h-[780px] sm:h-[820px] rounded-none sm:rounded-[50px] border-0 sm:border-[12px] sm:border-neutral-900 bg-[#07090e] shadow-none sm:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col justify-between text-white select-none">
         
-        {/* Notch details */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-neutral-900 rounded-b-2xl z-50 flex items-center justify-center">
+        {/* Notch details (Hidden on real mobile devices) */}
+        <div className="hidden sm:flex absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-neutral-900 rounded-b-2xl z-50 items-center justify-center">
           <span className="size-2 rounded-full bg-neutral-800 mr-2" />
           <span className="w-10 h-1 bg-neutral-800 rounded-full" />
         </div>
