@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -18,6 +18,7 @@ import {
   Globe,
   Check,
   Send,
+  CheckCircle2,
 } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
@@ -53,6 +54,19 @@ function UsuariosPage() {
   const { users, companies, addUser, updateUser, deleteUser, resetPassword, resendInvite } = useUser();
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState<SchoolUser | null>(null);
+  const [confirmInviteUser, setConfirmInviteUser] = useState<SchoolUser | null>(null);
+  const [sentInviteUserId, setSentInviteUserId] = useState<string | null>(null);
+  const sentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleConfirmInvite = () => {
+    if (!confirmInviteUser) return;
+    const userId = confirmInviteUser.id;
+    setConfirmInviteUser(null);
+    resendInvite(userId);
+    setSentInviteUserId(userId);
+    if (sentTimerRef.current) clearTimeout(sentTimerRef.current);
+    sentTimerRef.current = setTimeout(() => setSentInviteUserId(null), 2500);
+  };
 
   const {
     register,
@@ -183,6 +197,61 @@ function UsuariosPage() {
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-8 animate-in fade-in duration-300">
+
+      {/* ── Confirmation Modal: Reenviar Convite ── */}
+      {confirmInviteUser && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
+          onClick={() => setConfirmInviteUser(null)}
+        >
+          <div
+            className="relative w-full max-w-sm rounded-2xl border border-hairline bg-surface shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close */}
+            <button
+              onClick={() => setConfirmInviteUser(null)}
+              className="absolute top-4 right-4 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+            >
+              <X className="size-4" />
+            </button>
+
+            {/* Icon */}
+            <div className="flex items-center justify-center">
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20">
+                <Send className="size-6 text-primary" />
+              </div>
+            </div>
+
+            {/* Text */}
+            <div className="text-center space-y-1.5">
+              <h3 className="text-sm font-bold text-foreground">Reenviar Convite de Acesso</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Tem certeza que deseja reenviar o e-mail de convite para{" "}
+                <span className="font-semibold text-foreground">{confirmInviteUser.name}</span>?
+              </p>
+              <p className="text-[11px] text-muted-foreground/70">{confirmInviteUser.email}</p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmInviteUser(null)}
+                className="flex-1 rounded-lg border border-hairline bg-surface/60 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-accent transition-all cursor-pointer"
+              >
+                Não, cancelar
+              </button>
+              <button
+                onClick={handleConfirmInvite}
+                className="flex-1 rounded-lg bg-primary py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 active:scale-[0.98] transition-all cursor-pointer shadow-sm"
+              >
+                Sim, enviar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <SectionHeader
         eyebrow="Administração"
         title="Usuários & Permissões"
@@ -486,11 +555,17 @@ function UsuariosPage() {
                             <Pencil className="size-4" />
                           </button>
                           <button
-                            onClick={() => resendInvite(u.id)}
+                            onClick={() => setConfirmInviteUser(u)}
                             title="Reenviar Convite de Acesso"
-                            className="p-1.5 rounded-lg border border-hairline hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                            className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                              sentInviteUserId === u.id
+                                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 scale-110"
+                                : "border-hairline hover:bg-primary/10 text-muted-foreground hover:text-primary"
+                            }`}
                           >
-                            <Send className="size-4" />
+                            {sentInviteUserId === u.id
+                              ? <CheckCircle2 className="size-4" />
+                              : <Send className="size-4" />}
                           </button>
                           <button
                             onClick={() => resetPassword(u.id)}
