@@ -50,11 +50,25 @@ const userSchema = z.object({
 
 type UserFormValues = z.infer<typeof userSchema>;
 
+// ── Tooltip wrapper ──────────────────────────────────────────────────────────
+function Tooltip({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="relative group/tip">
+      {children}
+      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg border border-hairline bg-popover px-2.5 py-1.5 text-[11px] font-semibold text-foreground shadow-lg opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150 z-20">
+        {label}
+        <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-hairline" />
+      </div>
+    </div>
+  );
+}
+
 function UsuariosPage() {
   const { users, companies, addUser, updateUser, deleteUser, resetPassword, resendInvite } = useUser();
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState<SchoolUser | null>(null);
   const [confirmInviteUser, setConfirmInviteUser] = useState<SchoolUser | null>(null);
+  const [confirmDeleteUser, setConfirmDeleteUser] = useState<SchoolUser | null>(null);
   const [sentInviteUserId, setSentInviteUserId] = useState<string | null>(null);
   const sentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -66,6 +80,13 @@ function UsuariosPage() {
     setSentInviteUserId(userId);
     if (sentTimerRef.current) clearTimeout(sentTimerRef.current);
     sentTimerRef.current = setTimeout(() => setSentInviteUserId(null), 2500);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!confirmDeleteUser) return;
+    deleteUser(confirmDeleteUser.id);
+    toast.success(`Usuário ${confirmDeleteUser.name} removido.`);
+    setConfirmDeleteUser(null);
   };
 
   const {
@@ -198,7 +219,57 @@ function UsuariosPage() {
   return (
     <div className="mx-auto max-w-[1400px] space-y-8 animate-in fade-in duration-300">
 
-      {/* ── Confirmation Modal: Reenviar Convite ── */}
+      {/* ── Confirmation Modal: Excluir Usuário ── */}
+      {confirmDeleteUser && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
+          onClick={() => setConfirmDeleteUser(null)}
+        >
+          <div
+            className="relative w-full max-w-sm rounded-2xl border border-rose-500/20 bg-surface shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setConfirmDeleteUser(null)}
+              className="absolute top-4 right-4 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+            >
+              <X className="size-4" />
+            </button>
+
+            <div className="flex items-center justify-center">
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-rose-500/10 border border-rose-500/20">
+                <Trash2 className="size-6 text-rose-400" />
+              </div>
+            </div>
+
+            <div className="text-center space-y-1.5">
+              <h3 className="text-sm font-bold text-foreground">Excluir Usuário</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Tem certeza que deseja remover{" "}
+                <span className="font-semibold text-foreground">{confirmDeleteUser.name}</span>{" "}
+                da plataforma? Esta ação não pode ser desfeita.
+              </p>
+              <p className="text-[11px] text-muted-foreground/70">{confirmDeleteUser.email}</p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDeleteUser(null)}
+                className="flex-1 rounded-lg border border-hairline bg-surface/60 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-accent transition-all cursor-pointer"
+              >
+                Não, cancelar
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 rounded-lg bg-rose-500 py-2 text-xs font-semibold text-white hover:bg-rose-600 active:scale-[0.98] transition-all cursor-pointer shadow-sm"
+              >
+                Sim, excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {confirmInviteUser && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -547,43 +618,44 @@ function UsuariosPage() {
                         </td>
                         <td className="px-6 py-4 text-muted-foreground text-xs">{u.email}</td>
                         <td className="px-6 py-4 text-right flex gap-1.5 justify-end">
-                          <button
-                            onClick={() => handleOpenEdit(u)}
-                            title="Editar Usuário"
-                            className="p-1.5 rounded-lg border border-hairline hover:bg-accent text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                          >
-                            <Pencil className="size-4" />
-                          </button>
-                          <button
-                            onClick={() => setConfirmInviteUser(u)}
-                            title="Reenviar Convite de Acesso"
-                            className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
-                              sentInviteUserId === u.id
-                                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 scale-110"
-                                : "border-hairline hover:bg-primary/10 text-muted-foreground hover:text-primary"
-                            }`}
-                          >
-                            {sentInviteUserId === u.id
-                              ? <CircleCheck className="size-4" />
-                              : <Send className="size-4" />}
-                          </button>
-                          <button
-                            onClick={() => resetPassword(u.id)}
-                            title="Redefinir Senha por E-mail"
-                            className="p-1.5 rounded-lg border border-hairline hover:bg-accent text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                          >
-                            <Key className="size-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              deleteUser(u.id);
-                              toast.success(`Usuário ${u.name} removido.`);
-                            }}
-                            title="Excluir Usuário"
-                            className="p-1.5 rounded-lg border border-hairline hover:bg-overdue/10 text-muted-foreground hover:text-overdue transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="size-4" />
-                          </button>
+                          <Tooltip label="Editar usuário">
+                            <button
+                              onClick={() => handleOpenEdit(u)}
+                              className="p-1.5 rounded-lg border border-hairline hover:bg-accent text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            >
+                              <Pencil className="size-4" />
+                            </button>
+                          </Tooltip>
+                          <Tooltip label={sentInviteUserId === u.id ? "Convite enviado!" : "Reenviar convite de acesso"}>
+                            <button
+                              onClick={() => setConfirmInviteUser(u)}
+                              className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                                sentInviteUserId === u.id
+                                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 scale-110"
+                                  : "border-hairline hover:bg-primary/10 text-muted-foreground hover:text-primary"
+                              }`}
+                            >
+                              {sentInviteUserId === u.id
+                                ? <CircleCheck className="size-4" />
+                                : <Send className="size-4" />}
+                            </button>
+                          </Tooltip>
+                          <Tooltip label="Redefinir senha por e-mail">
+                            <button
+                              onClick={() => resetPassword(u.id)}
+                              className="p-1.5 rounded-lg border border-hairline hover:bg-accent text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            >
+                              <Key className="size-4" />
+                            </button>
+                          </Tooltip>
+                          <Tooltip label="Excluir usuário">
+                            <button
+                              onClick={() => setConfirmDeleteUser(u)}
+                              className="p-1.5 rounded-lg border border-hairline hover:bg-rose-500/10 text-muted-foreground hover:text-rose-400 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          </Tooltip>
                         </td>
                       </tr>
                     );
