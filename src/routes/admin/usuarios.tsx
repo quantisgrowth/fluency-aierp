@@ -18,7 +18,7 @@ import {
   Globe,
   Check,
   Send,
-  CheckCircle2,
+  CircleCheck,
 } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
@@ -564,7 +564,7 @@ function UsuariosPage() {
                             }`}
                           >
                             {sentInviteUserId === u.id
-                              ? <CheckCircle2 className="size-4" />
+                              ? <CircleCheck className="size-4" />
                               : <Send className="size-4" />}
                           </button>
                           <button
