@@ -47,6 +47,7 @@ type UserContextValue = {
   setActiveRole: (role: UserRole) => void;
   setActiveCompany: (company: string) => void;
   resetPassword: (id: string) => void;
+  resendInvite: (id: string) => void;
 };
 
 const UserContext = createContext<UserContextValue | null>(null);
@@ -244,6 +245,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const resendInvite = (id: string) => {
+    const user = users.find((u) => u.id === id);
+    if (!user) return;
+    toast.success(`Convite reenviado para ${user.email}!`, {
+      description: "O colaborador receberá um e-mail com o link para criar sua conta na plataforma.",
+    });
+  };
+
   return (
     <UserContext.Provider
       value={{
@@ -259,6 +268,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setActiveRole,
         setActiveCompany,
         resetPassword,
+        resendInvite,
       }}
     >
       {children}

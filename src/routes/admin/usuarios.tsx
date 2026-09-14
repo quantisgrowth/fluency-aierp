@@ -17,6 +17,7 @@ import {
   Square,
   Globe,
   Check,
+  Send,
 } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
@@ -49,7 +50,7 @@ const userSchema = z.object({
 type UserFormValues = z.infer<typeof userSchema>;
 
 function UsuariosPage() {
-  const { users, companies, addUser, updateUser, deleteUser, resetPassword } = useUser();
+  const { users, companies, addUser, updateUser, deleteUser, resetPassword, resendInvite } = useUser();
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState<SchoolUser | null>(null);
 
@@ -483,6 +484,13 @@ function UsuariosPage() {
                             className="p-1.5 rounded-lg border border-hairline hover:bg-accent text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                           >
                             <Pencil className="size-4" />
+                          </button>
+                          <button
+                            onClick={() => resendInvite(u.id)}
+                            title="Reenviar Convite de Acesso"
+                            className="p-1.5 rounded-lg border border-hairline hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                          >
+                            <Send className="size-4" />
                           </button>
                           <button
                             onClick={() => resetPassword(u.id)}
