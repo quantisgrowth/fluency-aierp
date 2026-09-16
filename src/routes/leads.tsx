@@ -226,6 +226,80 @@ function LeadsPage() {
   const [uf, setUf] = useState("");
   const [anotacoes, setAnotacoes] = useState("");
 
+  // Bulk Selection States
+  const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
+  const [isBulkOrigemModalOpen, setIsBulkOrigemModalOpen] = useState(false);
+  const [isBulkTagModalOpen, setIsBulkTagModalOpen] = useState(false);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [bulkOrigemValue, setBulkOrigemValue] = useState(ORIGEM_IDEAS[0]!);
+  const [bulkTagValue, setBulkTagValue] = useState("");
+
+  const toggleSelectAllLeads = () => {
+    if (selectedLeadIds.size === filteredLeads.length && filteredLeads.length > 0) {
+      setSelectedLeadIds(new Set());
+    } else {
+      setSelectedLeadIds(new Set(filteredLeads.map((l) => l.id)));
+    }
+  };
+
+  const toggleSelectOneLead = (id: string) => {
+    setSelectedLeadIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleApplyBulkOrigem = () => {
+    if (selectedLeadIds.size === 0) return;
+    const updated = leads.map((l) => (selectedLeadIds.has(l.id) ? { ...l, origem: bulkOrigemValue } : l));
+    saveLeads(updated);
+    toast.success(`Origem atualizada para "${bulkOrigemValue}" em ${selectedLeadIds.size} leads!`);
+    setIsBulkOrigemModalOpen(false);
+    setSelectedLeadIds(new Set());
+  };
+
+  const handleApplyBulkTag = () => {
+    if (selectedLeadIds.size === 0 || !bulkTagValue.trim()) return;
+    const newTag = bulkTagValue.trim();
+    const updated = leads.map((l) => {
+      if (selectedLeadIds.has(l.id)) {
+        const nextTags = l.tags.includes(newTag) ? l.tags : [...l.tags, newTag];
+        return { ...l, tags: nextTags };
+      }
+      return l;
+    });
+    saveLeads(updated);
+    toast.success(`Tag "${newTag}" adicionada a ${selectedLeadIds.size} leads!`);
+    setIsBulkTagModalOpen(false);
+    setBulkTagValue("");
+    setSelectedLeadIds(new Set());
+  };
+
+  const handleApplyBulkDeleteLeads = () => {
+    if (selectedLeadIds.size === 0) return;
+    const count = selectedLeadIds.size;
+    const updated = leads.filter((l) => !selectedLeadIds.has(l.id));
+    saveLeads(updated);
+    if (selectedDetails && selectedLeadIds.has(selectedDetails.id)) {
+      setSelectedDetails(updated[0] || null);
+    }
+    toast.success(`${count} leads excluídos com sucesso.`);
+    setIsBulkDeleteModalOpen(false);
+    setSelectedLeadIds(new Set());
+  };
+
+  const handleExportSelectedLeads = () => {
+    const selectedList = leads.filter((l) => selectedLeadIds.has(l.id));
+    if (selectedList.length === 0) {
+      toast.error("Nenhum lead selecionado.");
+      return;
+    }
+    exportToCSV(selectedList);
+    toast.success(`${selectedList.length} leads exportados com sucesso!`);
+  };
+
   // Load from local storage and sync across tabs
   useEffect(() => {
     const loadLeads = () => {
@@ -625,16 +699,81 @@ function LeadsPage() {
         
         {/* Table/List */}
         <div className="lg:col-span-2 space-y-4">
+
+          {/* Bulk Action Sticky Bar for Leads */}
+          {selectedLeadIds.size > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/10 p-4 shadow-xl backdrop-blur-md animate-in slide-in-from-top-2 duration-200">
+              <div className="flex items-center gap-2">
+                <span className="grid size-7 place-items-center rounded-lg bg-primary text-primary-foreground font-black text-xs">
+                  {selectedLeadIds.size}
+                </span>
+                <span className="text-xs font-bold text-foreground">
+                  {selectedLeadIds.size === 1 ? "1 lead selecionado" : `${selectedLeadIds.size} leads selecionados`}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setIsBulkOrigemModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface/80 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent transition-all cursor-pointer"
+                >
+                  <Tag className="size-3.5 text-primary" />
+                  <span>Alterar Origem</span>
+                </button>
+
+                <button
+                  onClick={() => setIsBulkTagModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface/80 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent transition-all cursor-pointer"
+                >
+                  <Plus className="size-3.5 text-primary" />
+                  <span>Adicionar Tag</span>
+                </button>
+
+                <button
+                  onClick={handleExportSelectedLeads}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface/80 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent transition-all cursor-pointer"
+                >
+                  <Download className="size-3.5 text-emerald-500" />
+                  <span>Exportar</span>
+                </button>
+
+                <button
+                  onClick={() => setIsBulkDeleteModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-400 hover:bg-rose-500/20 transition-all cursor-pointer"
+                >
+                  <XCircle className="size-3.5" />
+                  <span>Excluir</span>
+                </button>
+
+                <button
+                  onClick={() => setSelectedLeadIds(new Set())}
+                  className="text-xs text-muted-foreground hover:text-foreground font-medium px-2 py-1 cursor-pointer"
+                >
+                  Desmarcar
+                </button>
+              </div>
+            </div>
+          )}
+
           <GlassCard className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm border-collapse">
                 <thead>
                   <tr className="border-b border-hairline bg-surface-elevated/40 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                    <th className="px-6 py-4">Nome do Lead</th>
-                    <th className="px-6 py-4">Responsável (Pai/Mãe)</th>
-                    <th className="px-6 py-4">Origem</th>
-                    <th className="px-6 py-4 text-center">Teste Nível</th>
-                    <th className="px-6 py-4 text-right">Ações</th>
+                    <th className="w-12 px-4 py-4 text-center">
+                      <input
+                        type="checkbox"
+                        checked={filteredLeads.length > 0 && selectedLeadIds.size === filteredLeads.length}
+                        onChange={toggleSelectAllLeads}
+                        title="Selecionar todos os leads filtrados"
+                        className="size-4 rounded border-hairline accent-primary cursor-pointer align-middle"
+                      />
+                    </th>
+                    <th className="px-4 py-4">Nome do Lead</th>
+                    <th className="px-4 py-4">Responsável</th>
+                    <th className="px-4 py-4">Origem</th>
+                    <th className="px-4 py-4 text-center">Teste Nível</th>
+                    <th className="px-4 py-4 text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-hairline">
@@ -643,10 +782,20 @@ function LeadsPage() {
                       key={l.id}
                       onClick={() => setSelectedDetails(l)}
                       className={`cursor-pointer transition-colors hover:bg-surface/30 ${
-                        selectedDetails?.id === l.id ? "bg-primary/[0.03] border-l-2 border-l-primary" : ""
+                        selectedLeadIds.has(l.id) ? "bg-primary/5" : ""
+                      } ${
+                        selectedDetails?.id === l.id ? "border-l-2 border-l-primary" : ""
                       }`}
                     >
-                      <td className="px-6 py-4">
+                      <td className="w-12 px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedLeadIds.has(l.id)}
+                          onChange={() => toggleSelectOneLead(l.id)}
+                          className="size-4 rounded border-hairline accent-primary cursor-pointer align-middle"
+                        />
+                      </td>
+                      <td className="px-4 py-4">
                         <p className="font-semibold text-foreground">{l.nome}</p>
                         <div className="flex gap-1 mt-1 flex-wrap">
                           {l.tags.map((t) => (
@@ -1423,6 +1572,130 @@ function LeadsPage() {
               </button>
             </div>
           </GlassCard>
+        </div>
+      )}
+
+      {/* MODAL: ALTERAR ORIGEM EM MASSA */}
+      {isBulkOrigemModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl border border-hairline bg-card p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-hairline pb-3">
+              <h3 className="text-base font-bold text-foreground">Alterar Origem em Massa</h3>
+              <button onClick={() => setIsBulkOrigemModalOpen(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="size-5" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Selecione o novo canal de origem para <strong>{selectedLeadIds.size} leads selecionados</strong>:
+            </p>
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase font-bold text-muted-foreground">Canal de Origem</label>
+              <select
+                value={bulkOrigemValue}
+                onChange={(e) => setBulkOrigemValue(e.target.value)}
+                className="w-full h-11 rounded-lg border border-hairline bg-surface px-3 text-xs text-foreground outline-none focus:border-primary cursor-pointer"
+              >
+                {ORIGEM_IDEAS.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setIsBulkOrigemModalOpen(false)}
+                className="rounded-lg border border-hairline px-4 py-2 text-xs font-semibold text-foreground hover:bg-accent cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleApplyBulkOrigem}
+                className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/95 shadow cursor-pointer"
+              >
+                Aplicar aos {selectedLeadIds.size} Leads
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ADICIONAR TAG EM MASSA */}
+      {isBulkTagModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl border border-hairline bg-card p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-hairline pb-3">
+              <h3 className="text-base font-bold text-foreground">Adicionar Tag em Massa</h3>
+              <button onClick={() => setIsBulkTagModalOpen(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="size-5" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Informe a etiqueta que deseja adicionar aos <strong>{selectedLeadIds.size} leads selecionados</strong>:
+            </p>
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase font-bold text-muted-foreground">Nome da Tag</label>
+              <input
+                type="text"
+                placeholder="Ex: Campanha VIP, Follow-up, Interessado"
+                value={bulkTagValue}
+                onChange={(e) => setBulkTagValue(e.target.value)}
+                className="w-full h-11 rounded-lg border border-hairline bg-surface px-3 text-xs text-foreground outline-none focus:border-primary"
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setIsBulkTagModalOpen(false)}
+                className="rounded-lg border border-hairline px-4 py-2 text-xs font-semibold text-foreground hover:bg-accent cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                disabled={!bulkTagValue.trim()}
+                onClick={handleApplyBulkTag}
+                className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/95 shadow disabled:opacity-50 cursor-pointer"
+              >
+                Adicionar Tag
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EXCLUSÃO EM MASSA DE LEADS */}
+      {isBulkDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl border border-rose-500/30 bg-card p-6 shadow-2xl space-y-5">
+            <div className="flex items-center gap-3 border-b border-hairline pb-3">
+              <div className="grid size-10 place-items-center rounded-xl bg-rose-500/10 text-rose-500">
+                <XCircle className="size-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Excluir Leads em Massa</h3>
+                <p className="text-xs text-muted-foreground">Ação de exclusão comercial</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 text-xs text-rose-400 space-y-2">
+              <p className="font-bold">Atenção:</p>
+              <p>
+                Você está prestes a excluir permanentemente <strong>{selectedLeadIds.size} leads</strong> da base comercial.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setIsBulkDeleteModalOpen(false)}
+                className="rounded-lg border border-hairline px-4 py-2 text-xs font-semibold text-foreground hover:bg-accent cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleApplyBulkDeleteLeads}
+                className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 shadow cursor-pointer"
+              >
+                Sim, Excluir {selectedLeadIds.size} Leads
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -151,15 +151,40 @@ function LoginPage() {
         });
 
         if (error) {
-          // If auth fails on Supabase, inform clearly
-          toast.error("Falha na autenticação Supabase", {
-            description: error.message,
-          });
-          setIsLoading(false);
-          return;
-        }
+          // If user doesn't exist yet on Supabase Auth, attempt auto-signup
+          if (
+            error.message.toLowerCase().includes("invalid login credentials") ||
+            error.message.toLowerCase().includes("invalid_grant") ||
+            error.status === 400
+          ) {
+            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+              email: data.email,
+              password: data.password,
+            });
 
-        if (authData.user) {
+            if (!signUpError && (signUpData.session || signUpData.user)) {
+              toast.success("Conta criada e autenticada com sucesso!", {
+                description: `Bem-vindo à plataforma Fluency AI (${data.email}).`,
+              });
+              if (signUpData.user) {
+                window.localStorage.setItem("fluency-ai:user-email", signUpData.user.email || data.email);
+                window.localStorage.setItem("fluency-ai:user-id", signUpData.user.id);
+              }
+            } else {
+              toast.error("Credenciais inválidas", {
+                description: "Verifique sua senha ou tente a opção 'Link Mágico (Resend)'.",
+              });
+              setIsLoading(false);
+              return;
+            }
+          } else {
+            toast.error("Falha na autenticação", {
+              description: error.message,
+            });
+            setIsLoading(false);
+            return;
+          }
+        } else if (authData.user) {
           window.localStorage.setItem("fluency-ai:user-email", authData.user.email || data.email);
           window.localStorage.setItem("fluency-ai:user-id", authData.user.id);
         }

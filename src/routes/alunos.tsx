@@ -428,6 +428,70 @@ function AlunosPage() {
   const [importFileName, setImportFileName] = useState("");
   const [importStats, setImportStats] = useState({ totalValid: 0, totalErrors: 0 });
 
+  // Bulk Selection States
+  const [selectedStudentNames, setSelectedStudentNames] = useState<Set<string>>(new Set());
+  const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
+  const [isBulkTurmaModalOpen, setIsBulkTurmaModalOpen] = useState(false);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [bulkStatusValue, setBulkStatusValue] = useState("Ativo");
+  const [bulkTurmaValue, setBulkTurmaValue] = useState("Regular Noite");
+
+  const toggleSelectAll = () => {
+    if (selectedStudentNames.size === filteredStudents.length && filteredStudents.length > 0) {
+      setSelectedStudentNames(new Set());
+    } else {
+      setSelectedStudentNames(new Set(filteredStudents.map((s) => s.nome)));
+    }
+  };
+
+  const toggleSelectOne = (nome: string) => {
+    setSelectedStudentNames((prev) => {
+      const next = new Set(prev);
+      if (next.has(nome)) next.delete(nome);
+      else next.add(nome);
+      return next;
+    });
+  };
+
+  const handleApplyBulkStatus = () => {
+    if (selectedStudentNames.size === 0) return;
+    setStudents((prev) =>
+      prev.map((s) => (selectedStudentNames.has(s.nome) ? { ...s, status: bulkStatusValue } : s))
+    );
+    toast.success(`Situação alterada para "${bulkStatusValue}" em ${selectedStudentNames.size} alunos!`);
+    setIsBulkStatusModalOpen(false);
+    setSelectedStudentNames(new Set());
+  };
+
+  const handleApplyBulkTurma = () => {
+    if (selectedStudentNames.size === 0) return;
+    setStudents((prev) =>
+      prev.map((s) => (selectedStudentNames.has(s.nome) ? { ...s, turma: bulkTurmaValue } : s))
+    );
+    toast.success(`Turma alterada para "${bulkTurmaValue}" em ${selectedStudentNames.size} alunos!`);
+    setIsBulkTurmaModalOpen(false);
+    setSelectedStudentNames(new Set());
+  };
+
+  const handleApplyBulkDelete = () => {
+    if (selectedStudentNames.size === 0) return;
+    const count = selectedStudentNames.size;
+    setStudents((prev) => prev.filter((s) => !selectedStudentNames.has(s.nome)));
+    toast.success(`${count} alunos excluídos com sucesso.`);
+    setIsBulkDeleteModalOpen(false);
+    setSelectedStudentNames(new Set());
+  };
+
+  const handleExportSelected = () => {
+    const selectedList = students.filter((s) => selectedStudentNames.has(s.nome));
+    if (selectedList.length === 0) {
+      toast.error("Nenhum aluno selecionado.");
+      return;
+    }
+    exportStudentsToXLSX(selectedList);
+    toast.success(`${selectedList.length} alunos exportados para Excel!`);
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -894,19 +958,83 @@ function AlunosPage() {
         </div>
       </GlassCard>
 
+      {/* Bulk Action Sticky Bar */}
+      {selectedStudentNames.size > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/10 p-4 shadow-xl backdrop-blur-md animate-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center gap-2">
+            <span className="grid size-7 place-items-center rounded-lg bg-primary text-primary-foreground font-black text-xs">
+              {selectedStudentNames.size}
+            </span>
+            <span className="text-xs font-bold text-foreground">
+              {selectedStudentNames.size === 1 ? "1 aluno selecionado" : `${selectedStudentNames.size} alunos selecionados`}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setIsBulkStatusModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface/80 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent transition-all cursor-pointer"
+            >
+              <RefreshCw className="size-3.5 text-primary" />
+              <span>Alterar Situação</span>
+            </button>
+
+            <button
+              onClick={() => setIsBulkTurmaModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface/80 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent transition-all cursor-pointer"
+            >
+              <Users className="size-3.5 text-primary" />
+              <span>Mudar Turma</span>
+            </button>
+
+            <button
+              onClick={handleExportSelected}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface/80 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent transition-all cursor-pointer"
+            >
+              <Download className="size-3.5 text-emerald-500" />
+              <span>Exportar Selecionados</span>
+            </button>
+
+            <button
+              onClick={() => setIsBulkDeleteModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-400 hover:bg-rose-500/20 transition-all cursor-pointer"
+            >
+              <Trash2 className="size-3.5" />
+              <span>Excluir</span>
+            </button>
+
+            <button
+              onClick={() => setSelectedStudentNames(new Set())}
+              className="text-xs text-muted-foreground hover:text-foreground font-medium px-2 py-1 cursor-pointer"
+            >
+              Desmarcar
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Students List Table */}
       <GlassCard className="overflow-hidden p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="border-b border-hairline bg-surface/40 text-[11px] uppercase tracking-wider text-muted-foreground">
               <tr>
-                <th className="px-6 py-3.5 font-bold">Aluno</th>
-                <th className="px-6 py-3.5 font-bold">Nível CEFR</th>
-                <th className="px-6 py-3.5 font-bold">Curso / Produto Contratado</th>
-                <th className="px-6 py-3.5 font-bold">Turma / Horário</th>
-                <th className="px-6 py-3.5 font-bold">Mensalidade</th>
-                <th className="px-6 py-3.5 font-bold">Situação</th>
-                <th className="px-6 py-3.5 font-bold text-right">Ações</th>
+                <th className="w-12 px-4 py-3.5 text-center">
+                  <input
+                    type="checkbox"
+                    checked={filteredStudents.length > 0 && selectedStudentNames.size === filteredStudents.length}
+                    onChange={toggleSelectAll}
+                    title="Selecionar todos os alunos filtrados"
+                    className="size-4 rounded border-hairline accent-primary cursor-pointer align-middle"
+                  />
+                </th>
+                <th className="px-4 py-3.5 font-bold">Aluno</th>
+                <th className="px-4 py-3.5 font-bold">Nível CEFR</th>
+                <th className="px-4 py-3.5 font-bold">Curso / Produto Contratado</th>
+                <th className="px-4 py-3.5 font-bold">Turma / Horário</th>
+                <th className="px-4 py-3.5 font-bold">Mensalidade</th>
+                <th className="px-4 py-3.5 font-bold">Situação</th>
+                <th className="px-4 py-3.5 font-bold text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-hairline">
@@ -915,9 +1043,19 @@ function AlunosPage() {
                   <tr
                     key={s.nome}
                     onClick={() => handleOpenDrawer(s)}
-                    className="hover:bg-surface/50 transition-colors cursor-pointer group"
+                    className={`hover:bg-surface/50 transition-colors cursor-pointer group ${
+                      selectedStudentNames.has(s.nome) ? "bg-primary/5" : ""
+                    }`}
                   >
-                    <td className="px-6 py-4 font-semibold text-foreground">
+                    <td className="w-12 px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedStudentNames.has(s.nome)}
+                        onChange={() => toggleSelectOne(s.nome)}
+                        className="size-4 rounded border-hairline accent-primary cursor-pointer align-middle"
+                      />
+                    </td>
+                    <td className="px-4 py-4 font-semibold text-foreground">
                       <div className="flex items-center gap-2.5">
                         <span className="grid size-8 place-items-center rounded-full bg-primary/10 text-primary font-bold text-xs group-hover:bg-primary group-hover:text-primary-foreground transition-all">
                           {s.nome.charAt(0)}
@@ -1954,6 +2092,141 @@ function AlunosPage() {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ALTERAR SITUAÇÃO EM MASSA */}
+      {isBulkStatusModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl border border-hairline bg-card p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-hairline pb-3">
+              <h3 className="text-base font-bold text-foreground">Alterar Situação em Massa</h3>
+              <button onClick={() => setIsBulkStatusModalOpen(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="size-5" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Selecione a nova situação cadastral para aplicar aos <strong>{selectedStudentNames.size} alunos selecionados</strong>:
+            </p>
+            <div className="space-y-2">
+              {["Ativo", "Inadimplente", "Em risco", "Trancado", "Bolsista", "Cancelado"].map((st) => (
+                <label
+                  key={st}
+                  className={`flex items-center justify-between rounded-xl border p-3 text-xs font-semibold transition-all cursor-pointer ${
+                    bulkStatusValue === st
+                      ? "border-primary bg-primary/10 text-primary shadow-sm"
+                      : "border-hairline bg-surface/40 text-foreground hover:bg-accent"
+                  }`}
+                >
+                  <span>{st}</span>
+                  <input
+                    type="radio"
+                    name="bulkStatus"
+                    value={st}
+                    checked={bulkStatusValue === st}
+                    onChange={(e) => setBulkStatusValue(e.target.value)}
+                    className="accent-primary"
+                  />
+                </label>
+              ))}
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setIsBulkStatusModalOpen(false)}
+                className="rounded-lg border border-hairline px-4 py-2 text-xs font-semibold text-foreground hover:bg-accent cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleApplyBulkStatus}
+                className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/95 shadow cursor-pointer"
+              >
+                Aplicar aos {selectedStudentNames.size} Alunos
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: MUDAR TURMA EM MASSA */}
+      {isBulkTurmaModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl border border-hairline bg-card p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-hairline pb-3">
+              <h3 className="text-base font-bold text-foreground">Transferir Turma em Massa</h3>
+              <button onClick={() => setIsBulkTurmaModalOpen(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="size-5" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Escolha a turma de destino para transferir os <strong>{selectedStudentNames.size} alunos selecionados</strong>:
+            </p>
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase font-bold text-muted-foreground">Turma de Destino</label>
+              <select
+                value={bulkTurmaValue}
+                onChange={(e) => setBulkTurmaValue(e.target.value)}
+                className="w-full h-11 rounded-lg border border-hairline bg-surface px-3 text-xs text-foreground outline-none focus:border-primary cursor-pointer"
+              >
+                {initialClasses.map((c) => (
+                  <option key={c.nome} value={c.nome}>
+                    {c.nome} — {c.horario} ({c.nivel})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setIsBulkTurmaModalOpen(false)}
+                className="rounded-lg border border-hairline px-4 py-2 text-xs font-semibold text-foreground hover:bg-accent cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleApplyBulkTurma}
+                className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/95 shadow cursor-pointer"
+              >
+                Confirmar Transferência
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EXCLUSÃO EM MASSA */}
+      {isBulkDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl border border-rose-500/30 bg-card p-6 shadow-2xl space-y-5">
+            <div className="flex items-center gap-3 border-b border-hairline pb-3">
+              <div className="grid size-10 place-items-center rounded-xl bg-rose-500/10 text-rose-500">
+                <Trash2 className="size-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Excluir Alunos em Massa</h3>
+                <p className="text-xs text-muted-foreground">Ação irreversível de exclusão cadastral</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 text-xs text-rose-400 space-y-2">
+              <p className="font-bold">Atenção:</p>
+              <p>
+                Você está prestes a excluir permanentemente <strong>{selectedStudentNames.size} alunos</strong> da base do sistema.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setIsBulkDeleteModalOpen(false)}
+                className="rounded-lg border border-hairline px-4 py-2 text-xs font-semibold text-foreground hover:bg-accent cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleApplyBulkDelete}
+                className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 shadow cursor-pointer"
+              >
+                Sim, Excluir {selectedStudentNames.size} Alunos
+              </button>
+            </div>
           </div>
         </div>
       )}

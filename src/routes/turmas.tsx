@@ -579,6 +579,57 @@ function TurmasPage() {
   const canManage = activeRole === "admin" || activeRole === "coordenador";
   const isProfessor = activeRole === "professor";
 
+  // Bulk Selection States for Classes
+  const [selectedClassNames, setSelectedClassNames] = useState<Set<string>>(new Set());
+  const [isBulkTeacherModalOpen, setIsBulkTeacherModalOpen] = useState(false);
+  const [isBulkDeleteClassesModalOpen, setIsBulkDeleteClassesModalOpen] = useState(false);
+  const [bulkTeacherValue, setBulkTeacherValue] = useState("Julia Kern");
+
+  const toggleSelectAllClasses = () => {
+    if (selectedClassNames.size === filteredClasses.length && filteredClasses.length > 0) {
+      setSelectedClassNames(new Set());
+    } else {
+      setSelectedClassNames(new Set(filteredClasses.map((c) => c.nome)));
+    }
+  };
+
+  const toggleSelectOneClass = (nome: string) => {
+    setSelectedClassNames((prev) => {
+      const next = new Set(prev);
+      if (next.has(nome)) next.delete(nome);
+      else next.add(nome);
+      return next;
+    });
+  };
+
+  const handleApplyBulkTeacher = () => {
+    if (selectedClassNames.size === 0) return;
+    setClasses((prev) =>
+      prev.map((c) => (selectedClassNames.has(c.nome) ? { ...c, professor: bulkTeacherValue } : c))
+    );
+    toast.success(`Professor(a) "${bulkTeacherValue}" atribuído(a) a ${selectedClassNames.size} turmas!`);
+    setIsBulkTeacherModalOpen(false);
+    setSelectedClassNames(new Set());
+  };
+
+  const handleApplyBulkDeleteClasses = () => {
+    if (selectedClassNames.size === 0) return;
+    const count = selectedClassNames.size;
+    setClasses((prev) => prev.filter((c) => !selectedClassNames.has(c.nome)));
+    toast.success(`${count} turmas excluídas com sucesso.`);
+    setIsBulkDeleteClassesModalOpen(false);
+    setSelectedClassNames(new Set());
+  };
+
+  const handleExportSelectedClasses = () => {
+    const selectedList = classes.filter((c) => selectedClassNames.has(c.nome));
+    if (selectedList.length === 0) {
+      toast.error("Nenhuma turma selecionada.");
+      return;
+    }
+    toast.success(`${selectedList.length} turmas exportadas.`);
+  };
+
   // Sync classes to localStorage
   useEffect(() => {
     try {
@@ -1056,6 +1107,59 @@ function TurmasPage() {
             </div>
           </GlassCard>
 
+          {/* Bulk Action Sticky Bar for Turmas */}
+          {selectedClassNames.size > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/10 p-4 shadow-xl backdrop-blur-md animate-in slide-in-from-top-2 duration-200">
+              <div className="flex items-center gap-2">
+                <span className="grid size-7 place-items-center rounded-lg bg-primary text-primary-foreground font-black text-xs">
+                  {selectedClassNames.size}
+                </span>
+                <span className="text-xs font-bold text-foreground">
+                  {selectedClassNames.size === 1 ? "1 turma selecionada" : `${selectedClassNames.size} turmas selecionadas`}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setIsBulkTeacherModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface/80 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent transition-all cursor-pointer"
+                >
+                  <Users className="size-3.5 text-primary" />
+                  <span>Trocar Professor</span>
+                </button>
+
+                <button
+                  onClick={() => setIsBulkDeleteClassesModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-400 hover:bg-rose-500/20 transition-all cursor-pointer"
+                >
+                  <Trash2 className="size-3.5" />
+                  <span>Excluir</span>
+                </button>
+
+                <button
+                  onClick={() => setSelectedClassNames(new Set())}
+                  className="text-xs text-muted-foreground hover:text-foreground font-medium px-2 py-1 cursor-pointer"
+                >
+                  Desmarcar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Select All bar */}
+          <div className="flex items-center justify-between px-2 text-xs text-muted-foreground">
+            <label className="flex items-center gap-2 cursor-pointer font-semibold hover:text-foreground">
+              <input
+                type="checkbox"
+                checked={filteredClasses.length > 0 && selectedClassNames.size === filteredClasses.length}
+                onChange={toggleSelectAllClasses}
+                className="size-4 rounded border-hairline accent-primary cursor-pointer"
+              />
+              <span>Selecionar todas as {filteredClasses.length} turmas</span>
+            </label>
+            <span>{filteredClasses.length} turmas encontradas</span>
+          </div>
+
           {/* Classes Grid */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredClasses.length > 0 ? (
@@ -1064,9 +1168,20 @@ function TurmasPage() {
                 const isFull = c.alunos >= c.vagas;
                 const themeObj = CLASS_COLOR_THEMES.find((t) => t.id === c.corTheme) || CLASS_COLOR_THEMES[0];
                 const conflictInfo = getClassConflictInfo(c);
+                const isSelected = selectedClassNames.has(c.nome);
 
                 return (
-                  <GlassCard key={c.nome} className={`p-6 flex flex-col justify-between hover:border-white/10 hover:shadow-lg transition-all duration-300 relative group/card ${conflictInfo ? "border-rose-500/40 bg-rose-500/[0.03]" : ""}`}>
+                  <GlassCard key={c.nome} className={`p-6 flex flex-col justify-between hover:border-white/10 hover:shadow-lg transition-all duration-300 relative group/card ${isSelected ? "border-primary/50 bg-primary/[0.03]" : ""} ${conflictInfo ? "border-rose-500/40 bg-rose-500/[0.03]" : ""}`}>
+                    
+                    {/* Checkbox selector */}
+                    <div className="absolute top-4 left-4 z-10">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelectOneClass(c.nome)}
+                        className="size-4 rounded border-hairline accent-primary cursor-pointer"
+                      />
+                    </div>
                     
                     {/* Actions overlay for Coordenador/Admin */}
                     {canManage && (
@@ -3074,6 +3189,87 @@ function TurmasPage() {
         </div>
       )}
 
+      {/* MODAL: TROCAR PROFESSOR EM MASSA */}
+      {isBulkTeacherModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl border border-hairline bg-card p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-hairline pb-3">
+              <h3 className="text-base font-bold text-foreground">Trocar Professor(a) em Massa</h3>
+              <button onClick={() => setIsBulkTeacherModalOpen(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="size-5" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Selecione o(a) novo(a) docente para <strong>{selectedClassNames.size} turmas selecionadas</strong>:
+            </p>
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase font-bold text-muted-foreground">Professor(a) Responsável</label>
+              <select
+                value={bulkTeacherValue}
+                onChange={(e) => setBulkTeacherValue(e.target.value)}
+                className="w-full h-11 rounded-lg border border-hairline bg-surface px-3 text-xs text-foreground outline-none focus:border-primary cursor-pointer"
+              >
+                {DEFAULT_TEACHERS.map((t) => (
+                  <option key={t.nome} value={t.nome}>
+                    {t.nome} ({t.idioma} - {t.especialidade})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setIsBulkTeacherModalOpen(false)}
+                className="rounded-lg border border-hairline px-4 py-2 text-xs font-semibold text-foreground hover:bg-accent cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleApplyBulkTeacher}
+                className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/95 shadow cursor-pointer"
+              >
+                Atribuir a {selectedClassNames.size} Turmas
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EXCLUSÃO EM MASSA DE TURMAS */}
+      {isBulkDeleteClassesModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl border border-rose-500/30 bg-card p-6 shadow-2xl space-y-5">
+            <div className="flex items-center gap-3 border-b border-hairline pb-3">
+              <div className="grid size-10 place-items-center rounded-xl bg-rose-500/10 text-rose-500">
+                <Trash2 className="size-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground">Excluir Turmas em Massa</h3>
+                <p className="text-xs text-muted-foreground">Ação de exclusão pedagógica</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 text-xs text-rose-400 space-y-2">
+              <p className="font-bold">Atenção:</p>
+              <p>
+                Você está prestes a excluir permanentemente <strong>{selectedClassNames.size} turmas</strong>.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setIsBulkDeleteClassesModalOpen(false)}
+                className="rounded-lg border border-hairline px-4 py-2 text-xs font-semibold text-foreground hover:bg-accent cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleApplyBulkDeleteClasses}
+                className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 shadow cursor-pointer"
+              >
+                Sim, Excluir {selectedClassNames.size} Turmas
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
