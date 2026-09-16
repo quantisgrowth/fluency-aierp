@@ -29,7 +29,21 @@ import {
   Building2,
   Award,
   UserPlus,
+  FileSpreadsheet,
+  UploadCloud,
+  Download,
+  AlertCircle,
+  Trash2,
+  Loader2,
 } from "lucide-react";
+import {
+  downloadStudentTemplateXLSX,
+  downloadStudentTemplateCSV,
+  parseStudentSpreadsheet,
+  exportStudentsToXLSX,
+  saveBatchStudentsToSupabase,
+  type StudentSpreadsheetRow,
+} from "@/lib/spreadsheet-service";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import { StatusPill } from "@/components/kit/status-pill";
@@ -404,7 +418,84 @@ function AlunosPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isNewStudentOpen, setIsNewStudentOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+
+  // Spreadsheet Import States
+  const [isParsing, setIsParsing] = useState(false);
+  const [isSavingBatch, setIsSavingBatch] = useState(false);
+  const [importedRows, setImportedRows] = useState<StudentSpreadsheetRow[]>([]);
+  const [importFileName, setImportFileName] = useState("");
+  const [importStats, setImportStats] = useState({ totalValid: 0, totalErrors: 0 });
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsParsing(true);
+    try {
+      const result = await parseStudentSpreadsheet(file);
+      setImportedRows(result.rows);
+      setImportFileName(result.fileName);
+      setImportStats({ totalValid: result.totalValid, totalErrors: result.totalErrors });
+      if (result.totalValid > 0) {
+        toast.success(`${result.totalValid} alunos identificados na planilha!`);
+      } else {
+        toast.warning("Nenhum aluno válido encontrado. Verifique o modelo de colunas.");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Falha ao ler planilha";
+      toast.error(msg);
+    } finally {
+      setIsParsing(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleConfirmBatchImport = async () => {
+    const validRows = importedRows.filter((r) => r._isValid !== false);
+    if (validRows.length === 0) {
+      toast.error("Nenhum aluno válido para importar.");
+      return;
+    }
+
+    setIsSavingBatch(true);
+    try {
+      await saveBatchStudentsToSupabase(validRows);
+
+      // Convert imported rows to local Student state format
+      const newLocalStudents: Student[] = validRows.map((r) => ({
+        nome: r.nome,
+        nivel: r.resultadoTesteNivel || "A1",
+        turma: r.turma || "Regular Noite",
+        inicio: r.dataInicio || new Date().toISOString().split("T")[0],
+        status: r.status || "Ativo",
+        horasContratadas: 60,
+        produtoId: "prod-regular",
+        produtoNome: r.idiomaCurso || "Inglês Regular",
+        tipoContrato: "turma",
+        valorMensalidade: typeof r.valorMensalidade === "number" ? r.valorMensalidade : 450,
+        diaVencimento: typeof r.diaVencimento === "number" ? r.diaVencimento : 10,
+        livroEmUso: "English File",
+      }));
+
+      // Merge into current students list
+      setStudents((prev) => [...newLocalStudents, ...prev]);
+
+      toast.success("Importação concluída com sucesso!", {
+        description: `${validRows.length} alunos migrados e integrados ao sistema.`,
+      });
+
+      setIsImportModalOpen(false);
+      setImportedRows([]);
+      setImportFileName("");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao salvar alunos.";
+      toast.error(msg);
+    } finally {
+      setIsSavingBatch(false);
+    }
+  };
 
   // Drawer Active Tab
   const [activeTab, setActiveTab] = useState<"contrato" | "financeiro" | "frequencia" | "pedagogico" | "ocorrencias">(
@@ -771,13 +862,35 @@ function AlunosPage() {
             <option value="Em risco">Em Risco de Evasão</option>
           </select>
 
-          {/* Botão + Novo Aluno */}
-          <button
-            onClick={handleOpenNewStudent}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground shadow hover:bg-primary/95 active:scale-[0.98] transition-all cursor-pointer shrink-0"
-          >
-            <UserPlus className="size-4" /> + Nova Matrícula
-          </button>
+          {/* Botões de Ação */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => exportStudentsToXLSX(filteredStudents)}
+              title="Exportar alunos para planilha Excel"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface/60 px-3 py-2.5 text-xs font-semibold text-foreground shadow-sm hover:bg-accent hover:border-primary/40 transition-all cursor-pointer"
+            >
+              <Download className="size-4 text-emerald-500" />
+              <span className="hidden sm:inline">Exportar</span>
+            </button>
+
+            <button
+              onClick={() => setIsImportModalOpen(true)}
+              title="Importar lista de alunos via planilha (Migração de ERP)"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2.5 text-xs font-bold text-primary shadow-sm hover:bg-primary/20 hover:border-primary/50 transition-all cursor-pointer"
+            >
+              <FileSpreadsheet className="size-4" />
+              <span>Importar Planilha</span>
+            </button>
+
+            <button
+              onClick={handleOpenNewStudent}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground shadow hover:bg-primary/95 active:scale-[0.98] transition-all cursor-pointer"
+            >
+              <UserPlus className="size-4" />
+              <span className="hidden sm:inline">+ Nova Matrícula</span>
+              <span className="sm:hidden">+ Aluno</span>
+            </button>
+          </div>
         </div>
       </GlassCard>
 
@@ -1591,6 +1704,256 @@ function AlunosPage() {
                 Fechar Ficha
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE IMPORTAÇÃO DE PLANILHA / MIGRAÇÃO ERP */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative flex max-h-[92vh] w-full max-w-4xl flex-col rounded-2xl border border-hairline bg-card shadow-2xl overflow-hidden">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-hairline px-6 py-4 bg-surface/30">
+              <div className="flex items-center gap-3">
+                <div className="grid size-10 place-items-center rounded-xl bg-primary/10 border border-primary/20 text-primary">
+                  <FileSpreadsheet className="size-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-foreground">Importação em Lote & Migração de Alunos</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Traga sua base de alunos de outro sistema ou planilha Excel/CSV de uma só vez.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsImportModalOpen(false);
+                  setImportedRows([]);
+                  setImportFileName("");
+                }}
+                className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              
+              {/* Step 1: Download Templates */}
+              <div className="rounded-xl border border-hairline bg-surface/20 p-4 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                      <Download className="size-3.5 text-primary" /> 1. Baixar Planilha Modelo
+                    </h4>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Baixe o modelo pré-formatado com os 4 blocos de dados (Aluno, Responsável, Pedagógico e Financeiro).
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={downloadStudentTemplateXLSX}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 text-xs font-bold shadow transition-all cursor-pointer"
+                    >
+                      <Download className="size-3.5" /> Baixar Excel (.xlsx)
+                    </button>
+                    <button
+                      onClick={downloadStudentTemplateCSV}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-hairline bg-surface hover:bg-accent text-foreground px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer"
+                    >
+                      <Download className="size-3.5" /> CSV (.csv)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Categories Badge Overview */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-hairline/50 text-[10px]">
+                  <div className="p-2 rounded bg-surface/40 border border-hairline/40">
+                    <strong className="block text-primary">1. Dados do Aluno</strong>
+                    <span className="text-muted-foreground">Nome, Nasc, CPF, RG, Gênero, Endereço, Contatos</span>
+                  </div>
+                  <div className="p-2 rounded bg-surface/40 border border-hairline/40">
+                    <strong className="block text-primary">2. Responsável</strong>
+                    <span className="text-muted-foreground">Nome, Nasc, CPF, RG, Endereço e Contatos</span>
+                  </div>
+                  <div className="p-2 rounded bg-surface/40 border border-hairline/40">
+                    <strong className="block text-primary">3. Pedagógico</strong>
+                    <span className="text-muted-foreground">Curso, Turma, Início, Teste de Nível e Status</span>
+                  </div>
+                  <div className="p-2 rounded bg-surface/40 border border-hairline/40">
+                    <strong className="block text-primary">4. Financeiro</strong>
+                    <span className="text-muted-foreground">Vencimento, Pagamento, Mensalidade, Desconto</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 2: Upload Zone */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                  <UploadCloud className="size-3.5 text-primary" /> 2. Carregar Planilha Preenchida
+                </h4>
+
+                <label className="group relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-hairline hover:border-primary/60 bg-surface/10 hover:bg-surface/30 p-8 text-center transition-all cursor-pointer">
+                  <input
+                    type="file"
+                    accept=".xlsx, .xls, .csv"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    disabled={isParsing}
+                  />
+                  {isParsing ? (
+                    <div className="flex flex-col items-center gap-2 text-primary">
+                      <Loader2 className="size-8 animate-spin" />
+                      <span className="text-xs font-bold">Processando planilha...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid size-12 place-items-center rounded-full bg-primary/10 text-primary group-hover:scale-110 transition-transform mb-3">
+                        <UploadCloud className="size-6" />
+                      </div>
+                      <p className="text-xs font-bold text-foreground">
+                        Clique para selecionar ou arraste o arquivo aqui
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        Formatos aceitos: Microsoft Excel (.xlsx, .xls) ou CSV (.csv)
+                      </p>
+                      {importFileName && (
+                        <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-primary/15 border border-primary/30 px-3 py-1 text-xs font-bold text-primary">
+                          <FileSpreadsheet className="size-3.5" /> {importFileName}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </label>
+              </div>
+
+              {/* Step 3: Data Preview */}
+              {importedRows.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                      <Eye className="size-3.5 text-primary" /> 3. Pré-visualização dos Alunos ({importedRows.length})
+                    </h4>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="inline-flex items-center gap-1 text-emerald-500 font-semibold">
+                        <CheckCircle2 className="size-3.5" /> {importStats.totalValid} válidos
+                      </span>
+                      {importStats.totalErrors > 0 && (
+                        <span className="inline-flex items-center gap-1 text-rose-400 font-semibold">
+                          <AlertCircle className="size-3.5" /> {importStats.totalErrors} com pendências
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="max-h-60 overflow-x-auto overflow-y-auto rounded-xl border border-hairline bg-surface/30">
+                    <table className="w-full text-left text-xs">
+                      <thead className="sticky top-0 border-b border-hairline bg-surface text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                        <tr>
+                          <th className="px-3 py-2.5">Status</th>
+                          <th className="px-3 py-2.5">Nome do Aluno</th>
+                          <th className="px-3 py-2.5">CPF / RG</th>
+                          <th className="px-3 py-2.5">Responsável</th>
+                          <th className="px-3 py-2.5">Curso / Turma</th>
+                          <th className="px-3 py-2.5">Nível</th>
+                          <th className="px-3 py-2.5">Mensalidade</th>
+                          <th className="px-3 py-2.5">Venc.</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-hairline text-[11px]">
+                        {importedRows.map((row, idx) => (
+                          <tr key={idx} className={row._isValid === false ? "bg-rose-500/5" : "hover:bg-accent/30"}>
+                            <td className="px-3 py-2 whitespace-nowrap">
+                              {row._isValid === false ? (
+                                <span className="inline-flex items-center gap-1 text-rose-400 font-bold" title={row._errors?.join(", ")}>
+                                  <AlertCircle className="size-3" /> Erro
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-emerald-500 font-bold">
+                                  <CheckCircle2 className="size-3" /> OK
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 font-semibold text-foreground whitespace-nowrap">
+                              {row.nome || <span className="text-rose-400 italic">Sem nome</span>}
+                              {row.email && <div className="text-[10px] text-muted-foreground font-normal">{row.email}</div>}
+                            </td>
+                            <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
+                              {row.cpf || row.rg || "—"}
+                            </td>
+                            <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
+                              {row.responsavelNome || "— (Próprio)"}
+                            </td>
+                            <td className="px-3 py-2 whitespace-nowrap">
+                              <span className="text-foreground font-medium">{row.idiomaCurso || "Inglês"}</span>
+                              <div className="text-[10px] text-muted-foreground">{row.turma}</div>
+                            </td>
+                            <td className="px-3 py-2 whitespace-nowrap">
+                              <span className="rounded bg-primary/10 border border-primary/20 px-1.5 py-0.5 text-[9px] font-bold text-primary">
+                                {row.resultadoTesteNivel || "A1"}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 font-medium text-foreground whitespace-nowrap">
+                              {brl(Number(row.valorMensalidade) || 0)}
+                            </td>
+                            <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
+                              Dia {row.diaVencimento || 10}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between border-t border-hairline bg-surface/30 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setImportedRows([]);
+                  setImportFileName("");
+                }}
+                disabled={importedRows.length === 0 || isSavingBatch}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-rose-400 disabled:opacity-30 cursor-pointer"
+              >
+                <Trash2 className="size-3.5" /> Limpar Lista
+              </button>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsImportModalOpen(false)}
+                  disabled={isSavingBatch}
+                  className="rounded-lg border border-hairline px-4 py-2 text-xs font-semibold text-foreground hover:bg-accent transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleConfirmBatchImport}
+                  disabled={importedRows.length === 0 || importStats.totalValid === 0 || isSavingBatch}
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-xs font-bold text-primary-foreground shadow hover:bg-primary/95 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingBatch ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" /> Salvando {importStats.totalValid} Alunos...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="size-4" /> Importar {importStats.totalValid} Alunos
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}

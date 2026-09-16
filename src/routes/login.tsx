@@ -24,10 +24,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { Mail, CheckCircle2, KeyRound } from "lucide-react";
+
 // Form validation schema
 const loginSchema = z.object({
-  email: z.string().min(1, "Informe seu e-mail ou usuário"),
-  password: z.string().min(1, "Informe sua senha de acesso"),
+  email: z.string().email("Informe um e-mail válido").min(1, "Informe seu e-mail"),
+  password: z.string().optional(),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -36,13 +39,14 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Acesso ao Sistema — Fluency AI" },
-      { name: "description", content: "Acesso para equipe escolar e portal gamificado do aluno." },
+      { name: "description", content: "Acesso para equipe escolar e portal gamificado do aluno com autenticação segura." },
     ],
   }),
   component: LoginPage,
 });
 
 type ModuleId = "core" | "financeiro" | "crm" | "success";
+type AuthMethod = "password" | "magic_link";
 
 function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -50,6 +54,8 @@ function LoginPage() {
   const [selectedModule, setSelectedModule] = useState<ModuleId>("core");
   const [isDark, setIsDark] = useState(true);
   const [portalType, setPortalType] = useState<"escola" | "aluno">("escola");
+  const [authMethod, setAuthMethod] = useState<AuthMethod>("password");
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   useEffect(() => {
     const isCurrentlyDark = document.documentElement.classList.contains("dark");
@@ -67,6 +73,7 @@ function LoginPage() {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -76,8 +83,11 @@ function LoginPage() {
     },
   });
 
+  const currentEmail = watch("email");
+
   const handlePortalSwitch = (type: "escola" | "aluno") => {
     setPortalType(type);
+    setMagicLinkSent(false);
     if (type === "aluno") {
       setValue("email", "aluno@fluency.ai");
       setValue("password", "••••••••");
@@ -87,11 +97,73 @@ function LoginPage() {
     }
   };
 
-  const onSubmit = (data: LoginFormValues) => {
+  const handleSendMagicLink = async (email: string) => {
+    if (!email || !email.includes("@")) {
+      toast.error("Por favor, informe um e-mail válido para receber o link.");
+      return;
+    }
+
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      if (isSupabaseConfigured) {
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: window.location.origin,
+          },
+        });
+
+        if (error) {
+          toast.error("Erro ao enviar e-mail", {
+            description: error.message,
+          });
+          return;
+        }
+      }
+
+      setMagicLinkSent(true);
+      toast.success("E-mail enviado via Resend!", {
+        description: `Verifique a caixa de entrada de ${email} para confirmar seu acesso.`,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Falha ao enviar e-mail.";
+      toast.error(msg);
+    } finally {
       setIsLoading(false);
-      const isAluno = portalType === "aluno" || data.email.toLowerCase().includes("aluno");
+    }
+  };
+
+  const onSubmit = async (data: LoginFormValues) => {
+    setIsLoading(true);
+    const isAluno = portalType === "aluno" || data.email.toLowerCase().includes("aluno");
+
+    try {
+      if (authMethod === "magic_link") {
+        await handleSendMagicLink(data.email);
+        return;
+      }
+
+      // If user typed custom password or is using Supabase Auth
+      if (isSupabaseConfigured && data.password && data.password !== "••••••••") {
+        const { data: authData, error } = await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password,
+        });
+
+        if (error) {
+          // If auth fails on Supabase, inform clearly
+          toast.error("Falha na autenticação Supabase", {
+            description: error.message,
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        if (authData.user) {
+          window.localStorage.setItem("fluency-ai:user-email", authData.user.email || data.email);
+          window.localStorage.setItem("fluency-ai:user-id", authData.user.id);
+        }
+      }
 
       window.localStorage.setItem("fluency-ai:active-role", isAluno ? "aluno" : "admin");
       window.localStorage.setItem("fluency-ai:active-company", "Unidade Pinheiros");
@@ -100,12 +172,19 @@ function LoginPage() {
         description: `Conectado como ${isAluno ? "Aluno (Espaço Gamificado)" : "Equipe Escolar (Painel ERP)"}.`,
       });
 
-      if (isAluno) {
-        window.location.href = "/portal/aluno";
-      } else {
-        window.location.href = "/";
-      }
-    }, 600);
+      setTimeout(() => {
+        if (isAluno) {
+          window.location.href = "/portal/aluno";
+        } else {
+          window.location.href = "/";
+        }
+      }, 300);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro no login.";
+      toast.error(msg);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const modules = [
@@ -283,74 +362,145 @@ function LoginPage() {
               </p>
             </div>
 
-            {/* Standard Login Form */}
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-                  {portalType === "escola" ? "E-mail Institucional" : "E-mail ou Matrícula do Aluno"}
-                </Label>
-                <Input
-                  id="email"
-                  placeholder={portalType === "escola" ? "nome@escola.com.br" : "aluno@escola.com.br"}
-                  className="h-11 border-white/10 bg-white/5 px-3.5 text-white placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary text-xs font-medium"
-                  disabled={isLoading}
-                  {...register("email")}
-                />
-                {errors.email && (
-                  <p className="text-[11px] font-medium text-rose-400 mt-1">{errors.email.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-                    Senha de acesso
-                  </Label>
-                  <a
-                    href="#recuperar"
-                    className="text-xs font-semibold text-primary hover:underline"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      toast.info("Por favor, solicite a redefinição de senha na secretaria da sua escola.");
-                    }}
-                  >
-                    Esqueceu a senha?
-                  </a>
-                </div>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    className="h-11 border-white/10 bg-white/5 pr-10 pl-3.5 text-white placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary text-xs"
-                    disabled={isLoading}
-                    {...register("password")}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
-                  >
-                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                  </button>
-                </div>
-                {errors.password && (
-                  <p className="text-[11px] font-medium text-rose-400 mt-1">{errors.password.message}</p>
-                )}
-              </div>
-
-              <Button
-                type="submit"
-                className="mt-2 w-full h-11 bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/95 shadow-lg active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-2"
-                disabled={isLoading}
+            {/* Auth Method Switcher: Senha vs Link Mágico Resend */}
+            <div className="flex items-center justify-center gap-2 border-b border-white/5 pb-2 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMethod("password");
+                  setMagicLinkSent(false);
+                }}
+                className={`flex items-center gap-1.5 pb-1 border-b-2 font-semibold transition-all cursor-pointer ${
+                  authMethod === "password"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-neutral-400 hover:text-white"
+                }`}
               >
-                {isLoading
-                  ? "Autenticando..."
-                  : portalType === "escola"
-                  ? "Entrar no Painel da Escola"
-                  : "Entrar no Espaço do Aluno"}
-              </Button>
-            </form>
+                <KeyRound className="size-3.5" />
+                <span>Senha de Acesso</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAuthMethod("magic_link")}
+                className={`flex items-center gap-1.5 pb-1 border-b-2 font-semibold transition-all cursor-pointer ${
+                  authMethod === "magic_link"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-neutral-400 hover:text-white"
+                }`}
+              >
+                <Mail className="size-3.5" />
+                <span>Link Mágico (Resend)</span>
+              </button>
+            </div>
+
+            {magicLinkSent ? (
+              <div className="space-y-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-center">
+                <div className="mx-auto grid size-10 place-items-center rounded-full bg-emerald-500/10 text-emerald-400">
+                  <CheckCircle2 className="size-6" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-white">Confira seu e-mail</h3>
+                  <p className="text-xs text-neutral-400">
+                    Enviamos um link de confirmação para <strong>{currentEmail}</strong> via Resend.
+                  </p>
+                </div>
+                <div className="pt-2 flex gap-2 justify-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSendMagicLink(currentEmail)}
+                    disabled={isLoading}
+                    className="text-xs border-white/10 text-neutral-300 hover:bg-white/5 cursor-pointer"
+                  >
+                    Reenviar E-mail
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setMagicLinkSent(false)}
+                    className="text-xs bg-primary text-primary-foreground font-semibold cursor-pointer"
+                  >
+                    Usar Outro E-mail
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              /* Standard Login Form */
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                    {portalType === "escola" ? "E-mail Institucional" : "E-mail ou Matrícula do Aluno"}
+                  </Label>
+                  <Input
+                    id="email"
+                    placeholder={portalType === "escola" ? "nome@escola.com.br" : "aluno@escola.com.br"}
+                    className="h-11 border-white/10 bg-white/5 px-3.5 text-white placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary text-xs font-medium"
+                    disabled={isLoading}
+                    {...register("email")}
+                  />
+                  {errors.email && (
+                    <p className="text-[11px] font-medium text-rose-400 mt-1">{errors.email.message}</p>
+                  )}
+                </div>
+
+                {authMethod === "password" && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password" className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                        Senha de acesso
+                      </Label>
+                      <a
+                        href="#recuperar"
+                        className="text-xs font-semibold text-primary hover:underline"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setAuthMethod("magic_link");
+                          toast.info("Você pode acessar diretamente recebendo um link mágico no seu e-mail.");
+                        }}
+                      >
+                        Esqueceu a senha?
+                      </a>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        className="h-11 border-white/10 bg-white/5 pr-10 pl-3.5 text-white placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary text-xs"
+                        disabled={isLoading}
+                        {...register("password")}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white cursor-pointer"
+                      >
+                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </button>
+                    </div>
+                    {errors.password && (
+                      <p className="text-[11px] font-medium text-rose-400 mt-1">{errors.password.message}</p>
+                    )}
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  className="mt-2 w-full h-11 bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/95 shadow-lg active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-2"
+                  disabled={isLoading}
+                >
+                  {isLoading
+                    ? "Processando..."
+                    : authMethod === "magic_link"
+                    ? "Enviar Link Mágico por E-mail"
+                    : portalType === "escola"
+                    ? "Entrar no Painel da Escola"
+                    : "Entrar no Espaço do Aluno"}
+                </Button>
+              </form>
+            )}
           </div>
         </div>
 

@@ -32,6 +32,7 @@ import {
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import { toast } from "sonner";
+import { checkSupabaseConnection } from "@/lib/supabase";
 
 export const Route = createFileRoute("/super-admin")({
   head: () => ({
@@ -140,6 +141,33 @@ function SuperAdminPage() {
     crm: true,
     aws: true,
   });
+  const [supabaseLatency, setSupabaseLatency] = useState<number | null>(null);
+  const [isCheckingSupabase, setIsCheckingSupabase] = useState(false);
+
+  const testSupabaseLive = async (showToast = false) => {
+    setIsCheckingSupabase(true);
+    try {
+      const res = await checkSupabaseConnection();
+      setHealthStatus((prev) => ({ ...prev, supabase: res.connected }));
+      setSupabaseLatency(res.latencyMs);
+      if (showToast) {
+        if (res.connected) {
+          toast.success(`Supabase Online! Latência: ${res.latencyMs}ms`);
+        } else {
+          toast.error(res.message || "Erro ao conectar com Supabase");
+        }
+      }
+    } catch {
+      setHealthStatus((prev) => ({ ...prev, supabase: false }));
+      if (showToast) toast.error("Falha ao comunicar com o Supabase");
+    } finally {
+      setIsCheckingSupabase(false);
+    }
+  };
+
+  useEffect(() => {
+    testSupabaseLive(false);
+  }, []);
 
   // Modal Editing States - Schools
   const [isSchoolModalOpen, setIsSchoolModalOpen] = useState(false);
@@ -603,18 +631,29 @@ function SuperAdminPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-white">Banco de Dados (Supabase PostgreSQL)</h3>
-                  <p className="text-[10px] text-neutral-400 mt-0.5">Conexão ativa de tabelas e RLS</p>
+                  <p className="text-[10px] text-neutral-400 mt-0.5">Conexão ativa de tabelas e RLS (piwxpveprnwxkqlkjgux)</p>
                 </div>
                 <span className={`size-3 rounded-full ${healthStatus.supabase ? "bg-paid shadow-[0_0_10px_#10b981]" : "bg-overdue animate-ping"}`} />
               </div>
               <div className="flex justify-between items-center text-xs">
-                <span className="text-neutral-400">Latência média: <strong>{healthStatus.supabase ? "18ms" : "---"}</strong></span>
-                <button
-                  onClick={() => handleToggleHealth("supabase")}
-                  className="rounded bg-white/5 hover:bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-white transition-colors cursor-pointer"
-                >
-                  {healthStatus.supabase ? "Simular Falha" : "Restabelecer"}
-                </button>
+                <span className="text-neutral-400">
+                  Latência real: <strong>{healthStatus.supabase ? (supabaseLatency ? `${supabaseLatency}ms` : "Conectado") : "Offline / Falha"}</strong>
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={isCheckingSupabase}
+                    onClick={() => testSupabaseLive(true)}
+                    className="rounded bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 px-2.5 py-1 text-[10px] font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {isCheckingSupabase ? "Testando..." : "Testar Ping"}
+                  </button>
+                  <button
+                    onClick={() => handleToggleHealth("supabase")}
+                    className="rounded bg-white/5 hover:bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-white transition-colors cursor-pointer"
+                  >
+                    {healthStatus.supabase ? "Simular Falha" : "Restabelecer"}
+                  </button>
+                </div>
               </div>
             </GlassCard>
 
