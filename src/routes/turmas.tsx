@@ -130,6 +130,25 @@ const DEFAULT_LIVROS_TRILHAS: BookTrail[] = [
   }
 ];
 
+const DEFAULT_CRONOGRAMAS: Record<string, Lesson[]> = {
+  "Kids Playgroup": DEFAULT_LIVROS_TRILHAS[0]?.aulas.map((aula, index) => ({
+    ...aula,
+    status: index < 2 ? "Concluída" : index === 2 ? "Em Andamento" : "Pendente",
+  })) ?? [],
+  "Regular Noite": DEFAULT_LIVROS_TRILHAS[1]?.aulas.map((aula, index) => ({
+    ...aula,
+    status: index < 2 ? "Concluída" : index === 2 ? "Em Andamento" : "Pendente",
+  })) ?? [],
+  "Business English": DEFAULT_LIVROS_TRILHAS[2]?.aulas.map((aula, index) => ({
+    ...aula,
+    status: index < 2 ? "Concluída" : index === 2 ? "Em Andamento" : "Pendente",
+  })) ?? [],
+  Conversation: DEFAULT_LIVROS_TRILHAS[3]?.aulas.map((aula, index) => ({
+    ...aula,
+    status: index < 2 ? "Concluída" : index === 2 ? "Em Andamento" : "Pendente",
+  })) ?? [],
+};
+
 const CALENDAR_DAYS = [
   { key: "Seg", label: "Segunda" },
   { key: "Ter", label: "Terça" },
