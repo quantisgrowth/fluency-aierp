@@ -1,0 +1,797 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
+  public: {
+    Tables: {
+      // ── Identity / Auth ─────────────────────────────────────────
+      profiles: {
+        Row: {
+          companies: string[]
+          created_at: string
+          email: string
+          id: string
+          invitation_status: string
+          name: string
+          permissions: Json
+          updated_at: string
+        }
+        Insert: {
+          companies?: string[]
+          created_at?: string
+          email: string
+          id: string
+          invitation_status?: string
+          name: string
+          permissions?: Json
+          updated_at?: string
+        }
+        Update: {
+          companies?: string[]
+          created_at?: string
+          email?: string
+          id?: string
+          invitation_status?: string
+          name?: string
+          permissions?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      // ── Multi-Tenant ─────────────────────────────────────────────
+      escolas: {
+        Row: {
+          id: string
+          nome: string
+          slug: string
+          cnpj: string | null
+          plano: string
+          status: Database["public"]["Enums"]["escola_status"]
+          trial_starts_at: string | null
+          trial_ends_at: string | null
+          criado_por: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          nome: string
+          slug: string
+          cnpj?: string | null
+          plano?: string
+          status?: Database["public"]["Enums"]["escola_status"]
+          trial_starts_at?: string | null
+          trial_ends_at?: string | null
+          criado_por?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          nome?: string
+          slug?: string
+          cnpj?: string | null
+          plano?: string
+          status?: Database["public"]["Enums"]["escola_status"]
+          trial_starts_at?: string | null
+          trial_ends_at?: string | null
+          criado_por?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      escola_membros: {
+        Row: {
+          id: string
+          escola_id: string
+          user_id: string
+          papel: Database["public"]["Enums"]["escola_papel"]
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          escola_id: string
+          user_id: string
+          papel?: Database["public"]["Enums"]["escola_papel"]
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          escola_id?: string
+          user_id?: string
+          papel?: Database["public"]["Enums"]["escola_papel"]
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: "escola_membros_escola_id_fkey"; columns: ["escola_id"]; referencedRelation: "escolas"; referencedColumns: ["id"] },
+          { foreignKeyName: "escola_membros_user_id_fkey"; columns: ["user_id"]; referencedRelation: "users"; referencedColumns: ["id"] }
+        ]
+      }
+      // ── Pedagógico ───────────────────────────────────────────────
+      niveis_educacionais: {
+        Row: {
+          id: string
+          escola_id: string
+          codigo: string
+          nome: string
+          descricao: string | null
+          horas_sugeridas: number
+          ordem: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          escola_id: string
+          codigo: string
+          nome: string
+          descricao?: string | null
+          horas_sugeridas?: number
+          ordem?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          escola_id?: string
+          codigo?: string
+          nome?: string
+          descricao?: string | null
+          horas_sugeridas?: number
+          ordem?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      cursos: {
+        Row: {
+          id: string
+          escola_id: string
+          codigo: string
+          nome: string
+          modalidade: string
+          nivel: string | null
+          duracao_aula_minutos: number
+          vezes_por_semana: number
+          carga_horaria_semanal: number
+          carga_horaria_mensal: number
+          carga_horaria_total: number
+          valor_base: number
+          descricao: string | null
+          publico_alvo: string | null
+          ativo: boolean
+          permite_turma: boolean
+          max_alunos_turma: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          escola_id: string
+          codigo: string
+          nome: string
+          modalidade?: string
+          nivel?: string | null
+          duracao_aula_minutos?: number
+          vezes_por_semana?: number
+          carga_horaria_semanal?: number
+          carga_horaria_mensal?: number
+          carga_horaria_total?: number
+          valor_base?: number
+          descricao?: string | null
+          publico_alvo?: string | null
+          ativo?: boolean
+          permite_turma?: boolean
+          max_alunos_turma?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          escola_id?: string
+          codigo?: string
+          nome?: string
+          modalidade?: string
+          nivel?: string | null
+          duracao_aula_minutos?: number
+          vezes_por_semana?: number
+          carga_horaria_semanal?: number
+          carga_horaria_mensal?: number
+          carga_horaria_total?: number
+          valor_base?: number
+          descricao?: string | null
+          publico_alvo?: string | null
+          ativo?: boolean
+          permite_turma?: boolean
+          max_alunos_turma?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      turmas: {
+        Row: {
+          id: string
+          escola_id: string
+          curso_id: string | null
+          nome: string
+          codigo: string | null
+          nivel: string | null
+          modalidade: string
+          status: Database["public"]["Enums"]["turma_status"]
+          dias_semana: string[]
+          horario_inicio: string | null
+          horario_fim: string | null
+          sala: string | null
+          professor_user_id: string | null
+          professor_nome: string | null
+          capacidade_maxima: number
+          data_inicio: string | null
+          data_fim: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          escola_id: string
+          curso_id?: string | null
+          nome: string
+          codigo?: string | null
+          nivel?: string | null
+          modalidade?: string
+          status?: Database["public"]["Enums"]["turma_status"]
+          dias_semana?: string[]
+          horario_inicio?: string | null
+          horario_fim?: string | null
+          sala?: string | null
+          professor_user_id?: string | null
+          professor_nome?: string | null
+          capacidade_maxima?: number
+          data_inicio?: string | null
+          data_fim?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          escola_id?: string
+          curso_id?: string | null
+          nome?: string
+          codigo?: string | null
+          nivel?: string | null
+          modalidade?: string
+          status?: Database["public"]["Enums"]["turma_status"]
+          dias_semana?: string[]
+          horario_inicio?: string | null
+          horario_fim?: string | null
+          sala?: string | null
+          professor_user_id?: string | null
+          professor_nome?: string | null
+          capacidade_maxima?: number
+          data_inicio?: string | null
+          data_fim?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      alunos: {
+        Row: {
+          id: string
+          escola_id: string
+          nome: string
+          data_nascimento: string | null
+          rg: string | null
+          cpf: string | null
+          genero: string | null
+          endereco: string | null
+          telefone: string | null
+          email: string | null
+          foto_url: string | null
+          responsavel_nome: string | null
+          responsavel_cpf: string | null
+          responsavel_email: string | null
+          responsavel_telefone: string | null
+          responsavel_contato: string | null
+          idioma_curso: string | null
+          nivel_atual: string | null
+          turma_atual_id: string | null
+          data_inicio: string | null
+          fez_teste_nivel: boolean
+          resultado_teste_nivel: string | null
+          status: Database["public"]["Enums"]["aluno_status"]
+          dia_vencimento: number
+          forma_pagamento_preferencial: string | null
+          valor_mensalidade: number
+          desconto_aplicado: number
+          canal_aquisicao: string | null
+          observacoes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          escola_id: string
+          nome: string
+          data_nascimento?: string | null
+          rg?: string | null
+          cpf?: string | null
+          genero?: string | null
+          endereco?: string | null
+          telefone?: string | null
+          email?: string | null
+          foto_url?: string | null
+          responsavel_nome?: string | null
+          responsavel_cpf?: string | null
+          responsavel_email?: string | null
+          responsavel_telefone?: string | null
+          responsavel_contato?: string | null
+          idioma_curso?: string | null
+          nivel_atual?: string | null
+          turma_atual_id?: string | null
+          data_inicio?: string | null
+          fez_teste_nivel?: boolean
+          resultado_teste_nivel?: string | null
+          status?: Database["public"]["Enums"]["aluno_status"]
+          dia_vencimento?: number
+          forma_pagamento_preferencial?: string | null
+          valor_mensalidade?: number
+          desconto_aplicado?: number
+          canal_aquisicao?: string | null
+          observacoes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          escola_id?: string
+          nome?: string
+          data_nascimento?: string | null
+          rg?: string | null
+          cpf?: string | null
+          genero?: string | null
+          endereco?: string | null
+          telefone?: string | null
+          email?: string | null
+          foto_url?: string | null
+          responsavel_nome?: string | null
+          responsavel_cpf?: string | null
+          responsavel_email?: string | null
+          responsavel_telefone?: string | null
+          responsavel_contato?: string | null
+          idioma_curso?: string | null
+          nivel_atual?: string | null
+          turma_atual_id?: string | null
+          data_inicio?: string | null
+          fez_teste_nivel?: boolean
+          resultado_teste_nivel?: string | null
+          status?: Database["public"]["Enums"]["aluno_status"]
+          dia_vencimento?: number
+          forma_pagamento_preferencial?: string | null
+          valor_mensalidade?: number
+          desconto_aplicado?: number
+          canal_aquisicao?: string | null
+          observacoes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      matriculas: {
+        Row: {
+          id: string
+          escola_id: string
+          aluno_id: string
+          turma_id: string
+          data_inicio: string
+          data_fim: string | null
+          status: Database["public"]["Enums"]["matricula_status"]
+          nota_final: number | null
+          frequencia_percentual: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          escola_id: string
+          aluno_id: string
+          turma_id: string
+          data_inicio?: string
+          data_fim?: string | null
+          status?: Database["public"]["Enums"]["matricula_status"]
+          nota_final?: number | null
+          frequencia_percentual?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          escola_id?: string
+          aluno_id?: string
+          turma_id?: string
+          data_inicio?: string
+          data_fim?: string | null
+          status?: Database["public"]["Enums"]["matricula_status"]
+          nota_final?: number | null
+          frequencia_percentual?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      leads: {
+        Row: {
+          id: string
+          escola_id: string
+          nome: string
+          email: string | null
+          telefone: string | null
+          origem: string
+          etapa: Database["public"]["Enums"]["lead_etapa"]
+          interesse_curso: string | null
+          nivel_interesse: string | null
+          probabilidade: number
+          valor_potencial: number
+          responsavel_user_id: string | null
+          motivo_perda: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          escola_id: string
+          nome: string
+          email?: string | null
+          telefone?: string | null
+          origem?: string
+          etapa?: Database["public"]["Enums"]["lead_etapa"]
+          interesse_curso?: string | null
+          nivel_interesse?: string | null
+          probabilidade?: number
+          valor_potencial?: number
+          responsavel_user_id?: string | null
+          motivo_perda?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          escola_id?: string
+          nome?: string
+          email?: string | null
+          telefone?: string | null
+          origem?: string
+          etapa?: Database["public"]["Enums"]["lead_etapa"]
+          interesse_curso?: string | null
+          nivel_interesse?: string | null
+          probabilidade?: number
+          valor_potencial?: number
+          responsavel_user_id?: string | null
+          motivo_perda?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_atividades: {
+        Row: {
+          id: string
+          escola_id: string
+          lead_id: string
+          tipo: string
+          descricao: string
+          data_agendada: string | null
+          concluida: boolean
+          responsavel_user_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          escola_id: string
+          lead_id: string
+          tipo?: string
+          descricao: string
+          data_agendada?: string | null
+          concluida?: boolean
+          responsavel_user_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          escola_id?: string
+          lead_id?: string
+          tipo?: string
+          descricao?: string
+          data_agendada?: string | null
+          concluida?: boolean
+          responsavel_user_id?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      transacoes_financeiras: {
+        Row: {
+          id: string
+          escola_id: string
+          tipo: Database["public"]["Enums"]["transacao_tipo"]
+          categoria: string
+          descricao: string
+          valor: number
+          data_vencimento: string
+          data_pagamento: string | null
+          status: Database["public"]["Enums"]["transacao_status"]
+          forma_pagamento: string | null
+          aluno_id: string | null
+          numero_fatura: string | null
+          comprovante_url: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          escola_id: string
+          tipo: Database["public"]["Enums"]["transacao_tipo"]
+          categoria: string
+          descricao: string
+          valor: number
+          data_vencimento: string
+          data_pagamento?: string | null
+          status?: Database["public"]["Enums"]["transacao_status"]
+          forma_pagamento?: string | null
+          aluno_id?: string | null
+          numero_fatura?: string | null
+          comprovante_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          escola_id?: string
+          tipo?: Database["public"]["Enums"]["transacao_tipo"]
+          categoria?: string
+          descricao?: string
+          valor?: number
+          data_vencimento?: string
+          data_pagamento?: string | null
+          status?: Database["public"]["Enums"]["transacao_status"]
+          forma_pagamento?: string | null
+          aluno_id?: string | null
+          numero_fatura?: string | null
+          comprovante_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      inventario_materiais: {
+        Row: {
+          id: string
+          escola_id: string
+          titulo: string
+          tipo: string
+          nivel: string | null
+          codigo_sku: string | null
+          preco_venda: number
+          custo_aquisicao: number
+          estoque_atual: number
+          estoque_minimo: number
+          fornecedor: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          escola_id: string
+          titulo: string
+          tipo?: string
+          nivel?: string | null
+          codigo_sku?: string | null
+          preco_venda?: number
+          custo_aquisicao?: number
+          estoque_atual?: number
+          estoque_minimo?: number
+          fornecedor?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          escola_id?: string
+          titulo?: string
+          tipo?: string
+          nivel?: string | null
+          codigo_sku?: string | null
+          preco_venda?: number
+          custo_aquisicao?: number
+          estoque_atual?: number
+          estoque_minimo?: number
+          fornecedor?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      app_role: "admin" | "operador" | "professor" | "coordenador"
+      escola_status: "trial" | "ativa" | "vencida" | "suspensa" | "cancelada"
+      escola_papel: "gestor" | "secretaria" | "financeiro" | "pedagogico" | "comercial" | "professor" | "aluno" | "responsavel"
+      aluno_status: "ativo" | "inativo" | "trancado" | "cancelado" | "concluido" | "inadimplente" | "bolsista" | "em_avaliacao"
+      turma_status: "planejamento" | "matriculas_abertas" | "ativa" | "concluida" | "cancelada"
+      matricula_status: "ativa" | "trancada" | "cancelada" | "concluida"
+      lead_etapa: "novo_lead" | "contato_realizado" | "nivelamento_agendado" | "nivelamento_concluido" | "proposta_enviada" | "matricula_iniciada" | "ganho" | "perdido"
+      transacao_tipo: "receita" | "despesa"
+      transacao_status: "pago" | "pendente" | "atrasado" | "cancelado" | "estornado"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      app_role: ["admin", "operador", "professor", "coordenador"],
+    },
+  },
+} as const

@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/lib/supabase";
 
 // Form validation schema
 const loginSchema = z.object({
@@ -59,32 +60,38 @@ function ManagerLoginPage() {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "master@fluencyai.online",
-      password: "••••••••",
+      email: "",
+      password: "",
     },
   });
 
-  const onSubmit = (data: LoginFormValues) => {
+  const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      
-      // Conceder permissão master de Super Admin
-      window.localStorage.setItem("fluency-ai:active-role", "admin");
-      window.localStorage.setItem("fluency-ai:is-super-admin", "true");
-      window.localStorage.setItem("fluency-ai:active-company", "Unidade Pinheiros");
-
-      toast.success("Autenticação Master Concluída!", {
-        description: "Acesso de Super Administrador da Plataforma liberado.",
+    try {
+      const { data: signedIn, error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
       });
-
+      if (error || !signedIn.user) throw new Error("Credenciais inválidas.");
+      const { data: admin, error: accessError } = await supabase
+        .from("platform_admins")
+        .select("user_id")
+        .eq("user_id", signedIn.user.id)
+        .maybeSingle();
+      if (accessError || !admin) {
+        await supabase.auth.signOut();
+        throw new Error("Esta conta não possui acesso à administração da plataforma.");
+      }
       window.location.href = "/super-admin";
-    }, 600);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível entrar.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

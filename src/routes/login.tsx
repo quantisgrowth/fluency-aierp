@@ -72,14 +72,13 @@ function LoginPage() {
   const {
     register,
     handleSubmit,
-    setValue,
     watch,
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "gestor@fluency.ai",
-      password: "••••••••",
+      email: "",
+      password: "",
     },
   });
 
@@ -88,13 +87,6 @@ function LoginPage() {
   const handlePortalSwitch = (type: "escola" | "aluno") => {
     setPortalType(type);
     setMagicLinkSent(false);
-    if (type === "aluno") {
-      setValue("email", "aluno@fluency.ai");
-      setValue("password", "••••••••");
-    } else {
-      setValue("email", "gestor@fluency.ai");
-      setValue("password", "••••••••");
-    }
   };
 
   const handleSendMagicLink = async (email: string) => {
@@ -105,24 +97,18 @@ function LoginPage() {
 
     setIsLoading(true);
     try {
-      if (isSupabaseConfigured) {
-        const { error } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            emailRedirectTo: window.location.origin,
-          },
-        });
-
-        if (error) {
-          toast.error("Erro ao enviar e-mail", {
-            description: error.message,
-          });
-          return;
-        }
-      }
+      if (!isSupabaseConfigured) throw new Error("A autenticação não está configurada.");
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: window.location.origin,
+          shouldCreateUser: false,
+        },
+      });
+      if (error) throw error;
 
       setMagicLinkSent(true);
-      toast.success("E-mail enviado via Resend!", {
+      toast.success("Link de acesso solicitado.", {
         description: `Verifique a caixa de entrada de ${email} para confirmar seu acesso.`,
       });
     } catch (err: unknown) {
@@ -135,75 +121,37 @@ function LoginPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
-    const isAluno = portalType === "aluno" || data.email.toLowerCase().includes("aluno");
 
     try {
       if (authMethod === "magic_link") {
         await handleSendMagicLink(data.email);
         return;
       }
-
-      // If user typed custom password or is using Supabase Auth
-      if (isSupabaseConfigured && data.password && data.password !== "••••••••") {
-        const { data: authData, error } = await supabase.auth.signInWithPassword({
-          email: data.email,
-          password: data.password,
-        });
-
-        if (error) {
-          // If user doesn't exist yet on Supabase Auth, attempt auto-signup
-          if (
-            error.message.toLowerCase().includes("invalid login credentials") ||
-            error.message.toLowerCase().includes("invalid_grant") ||
-            error.status === 400
-          ) {
-            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-              email: data.email,
-              password: data.password,
-            });
-
-            if (!signUpError && (signUpData.session || signUpData.user)) {
-              toast.success("Conta criada e autenticada com sucesso!", {
-                description: `Bem-vindo à plataforma Fluency AI (${data.email}).`,
-              });
-              if (signUpData.user) {
-                window.localStorage.setItem("fluency-ai:user-email", signUpData.user.email || data.email);
-                window.localStorage.setItem("fluency-ai:user-id", signUpData.user.id);
-              }
-            } else {
-              toast.error("Credenciais inválidas", {
-                description: "Verifique sua senha ou tente a opção 'Link Mágico (Resend)'.",
-              });
-              setIsLoading(false);
-              return;
-            }
-          } else {
-            toast.error("Falha na autenticação", {
-              description: error.message,
-            });
-            setIsLoading(false);
-            return;
-          }
-        } else if (authData.user) {
-          window.localStorage.setItem("fluency-ai:user-email", authData.user.email || data.email);
-          window.localStorage.setItem("fluency-ai:user-id", authData.user.id);
-        }
+      if (!isSupabaseConfigured || !data.password) {
+        throw new Error("Informe e-mail e senha para entrar.");
       }
-
-      window.localStorage.setItem("fluency-ai:active-role", isAluno ? "aluno" : "admin");
-      window.localStorage.setItem("fluency-ai:active-company", "Unidade Pinheiros");
-
-      toast.success("Login efetuado com sucesso!", {
-        description: `Conectado como ${isAluno ? "Aluno (Espaço Gamificado)" : "Equipe Escolar (Painel ERP)"}.`,
+      const { data: signedIn, error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
       });
+      if (error || !signedIn.user) throw new Error("Credenciais inválidas.");
 
-      setTimeout(() => {
-        if (isAluno) {
-          window.location.href = "/portal/aluno";
-        } else {
-          window.location.href = "/";
-        }
-      }, 300);
+      const { data: memberships, error: membershipError } = await supabase
+        .from("escola_membros")
+        .select("papel")
+        .eq("user_id", signedIn.user.id)
+        .eq("status", "ativo");
+      if (membershipError) throw new Error("Não foi possível validar o vínculo com a escola.");
+      const roles = (memberships ?? []).map((member) => member.papel);
+      const portalRoles = ["aluno", "responsavel"];
+      const chosenRoles = portalType === "aluno"
+        ? roles.filter((role) => portalRoles.includes(role))
+        : roles.filter((role) => !portalRoles.includes(role));
+      if (chosenRoles.length === 0) {
+        await supabase.auth.signOut();
+        throw new Error("Esta conta não tem acesso ativo ao portal selecionado.");
+      }
+      window.location.href = portalType === "aluno" ? "/portal/aluno" : "/";
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro no login.";
       toast.error(msg);

@@ -6,6 +6,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  useRouterState,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
@@ -15,6 +16,7 @@ import { ModuleProvider } from "@/modules/module-context";
 import { AppShell } from "@/components/app-shell";
 import { TenantProvider } from "@/modules/tenant-context";
 import { UserProvider } from "@/modules/user-context";
+import { AuthGuard } from "@/components/auth-guard";
 
 function NotFoundComponent() {
   return (
@@ -131,18 +133,43 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function allowedSchoolRoles(pathname: string): string[] {
+  if (pathname.startsWith("/portal/")) return ["aluno", "responsavel"];
+  if (pathname === "/admin/usuarios" || pathname === "/admin/modulos") return ["gestor"];
+  if (pathname === "/financeiro") return ["gestor", "financeiro"];
+  if (pathname === "/admin/inventario") return ["gestor", "secretaria", "financeiro"];
+  if (["/crm", "/leads", "/captacao"].includes(pathname))
+    return ["gestor", "secretaria", "comercial"];
+  if (pathname === "/retencao") return ["gestor", "pedagogico"];
+  if (pathname === "/alunos" || pathname === "/turmas")
+    return ["gestor", "secretaria", "pedagogico", "professor"];
+  return ["gestor", "secretaria", "financeiro", "pedagogico", "comercial", "professor"];
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const isPublic =
+    pathname === "/login" || pathname === "/manager" || pathname.startsWith("/public/");
+  const isPlatform = pathname === "/super-admin";
+  const roles = allowedSchoolRoles(pathname);
 
   return (
     <QueryClientProvider client={queryClient}>
       <TenantProvider>
         <UserProvider>
           <ModuleProvider>
-            <AppShell>
-              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-              <Outlet />
-            </AppShell>
+            {isPublic ? (
+              <AppShell>
+                <Outlet />
+              </AppShell>
+            ) : (
+              <AuthGuard platformAdmin={isPlatform} allowedRoles={isPlatform ? undefined : roles}>
+                <AppShell>
+                  <Outlet />
+                </AppShell>
+              </AuthGuard>
+            )}
           </ModuleProvider>
         </UserProvider>
       </TenantProvider>

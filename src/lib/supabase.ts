@@ -1,17 +1,21 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://piwxpveprnwxkqlkjgux.supabase.co";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBpd3hwdmVwcm53eGtxbGtqZ3V4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0MDE0MTgsImV4cCI6MjEwNDk3NzQxOH0.zRtboVqzZ6myjKQCG22qp4zHvTp9VsTuSwBLy-KNfb8";
+const supabaseUrl = import.meta.env["VITE_SUPABASE_URL"];
+const supabaseAnonKey = import.meta.env["VITE_SUPABASE_ANON_KEY"];
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
+export const supabase = createClient(
+  supabaseUrl || "https://invalid.supabase.co",
+  supabaseAnonKey || "not-configured",
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
   },
-});
+);
 
 export interface ConnectionStatus {
   connected: boolean;

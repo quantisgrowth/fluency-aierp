@@ -1,0 +1,227 @@
+-- ==============================================================================
+-- ETAPA 1 — ISOLAMENTO E AUTORIZAÇÃO
+-- Migração: Escolas (tenants) e vínculo de usuário com escola
+-- ==============================================================================
+
+-- -----------------------------------------------------------------------
+-- 1. Enums de domínio
+-- -----------------------------------------------------------------------
+
+CREATE TYPE public.escola_status AS ENUM (
+  'trial',
+  'ativa',
+  'vencida',
+  'suspensa',
+  'cancelada'
+);
+
+CREATE TYPE public.escola_papel AS ENUM (
+  'gestor',
+  'secretaria',
+  'financeiro',
+  'pedagogico',
+  'comercial',
+  'professor',
+  'aluno',
+  'responsavel'
+);
+
+-- -----------------------------------------------------------------------
+-- 2. Tabela de Escolas / Tenants
+-- -----------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.escolas (
+  id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  nome              TEXT        NOT NULL,
+  slug              TEXT        NOT NULL,
+  cnpj              TEXT,
+  plano             TEXT        NOT NULL DEFAULT 'trial',
+  status            public.escola_status NOT NULL DEFAULT 'trial',
+  trial_starts_at   TIMESTAMPTZ,
+  trial_ends_at     TIMESTAMPTZ,
+  criado_por        UUID        REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT escolas_slug_unique UNIQUE (slug)
+);
+
+COMMENT ON TABLE  public.escolas IS 'Tenant raiz do SaaS. Cada escola é um namespace isolado de dados.';
+COMMENT ON COLUMN public.escolas.slug IS 'Identificador URL-friendly, único e imutável após criação.';
+COMMENT ON COLUMN public.escolas.plano IS 'Slug do plano contratado: trial | basico | pro | enterprise.';
+COMMENT ON COLUMN public.escolas.status IS 'Estado do ciclo de vida da escola nesta plataforma.';
+COMMENT ON COLUMN public.escolas.trial_starts_at IS 'Início do período de trial (gravado no servidor, não editável pelo cliente).';
+COMMENT ON COLUMN public.escolas.trial_ends_at IS 'Fim do trial. Calculado em 14 dias a partir do inicio. Gravado no servidor.';
+
+-- -----------------------------------------------------------------------
+-- 3. Tabela de vínculo Usuário ↔ Escola ↔ Papel
+-- -----------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.escola_membros (
+  id          UUID                PRIMARY KEY DEFAULT gen_random_uuid(),
+  escola_id   UUID                NOT NULL REFERENCES public.escolas(id) ON DELETE CASCADE,
+  user_id     UUID                NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  papel       public.escola_papel NOT NULL DEFAULT 'professor',
+  status      TEXT                NOT NULL DEFAULT 'ativo'
+                CHECK (status IN ('ativo', 'pendente', 'inativo', 'suspenso')),
+  created_at  TIMESTAMPTZ         NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ         NOT NULL DEFAULT now(),
+  CONSTRAINT escola_membros_unique UNIQUE (escola_id, user_id)
+);
+
+COMMENT ON TABLE  public.escola_membros IS 'Vínculo user↔escola↔papel. É a única fonte de autorização de acesso a dados escolares.';
+COMMENT ON COLUMN public.escola_membros.papel IS 'Papel do usuário dentro desta escola. Um usuário pode ter papéis diferentes em escolas diferentes.';
+
+-- -----------------------------------------------------------------------
+-- 4. Índices de performance
+-- -----------------------------------------------------------------------
+
+CREATE INDEX IF NOT EXISTS idx_escolas_slug    ON public.escolas(slug);
+CREATE INDEX IF NOT EXISTS idx_escolas_status  ON public.escolas(status);
+CREATE INDEX IF NOT EXISTS idx_membros_escola  ON public.escola_membros(escola_id);
+CREATE INDEX IF NOT EXISTS idx_membros_user    ON public.escola_membros(user_id);
+CREATE INDEX IF NOT EXISTS idx_membros_papel   ON public.escola_membros(papel);
+
+-- -----------------------------------------------------------------------
+-- 5. Trigger updated_at (reutiliza função já existente do schema anterior)
+-- -----------------------------------------------------------------------
+
+CREATE TRIGGER escolas_set_updated_at
+  BEFORE UPDATE ON public.escolas
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+CREATE TRIGGER escola_membros_set_updated_at
+  BEFORE UPDATE ON public.escola_membros
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- -----------------------------------------------------------------------
+-- 6. RLS — Escolas
+-- -----------------------------------------------------------------------
+
+ALTER TABLE public.escolas ENABLE ROW LEVEL SECURITY;
+
+-- Superadmin vê tudo
+CREATE POLICY "superadmin_select_escolas"
+  ON public.escolas FOR SELECT TO authenticated
+  USING (private.has_role(auth.uid(), 'admin'));
+
+-- Membro da escola vê sua própria escola
+CREATE POLICY "membro_select_propria_escola"
+  ON public.escolas FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.escola_membros
+      WHERE escola_membros.escola_id = escolas.id
+        AND escola_membros.user_id   = auth.uid()
+        AND escola_membros.status    = 'ativo'
+    )
+  );
+
+-- Apenas superadmin insere/atualiza/deleta escolas
+CREATE POLICY "superadmin_insert_escolas"
+  ON public.escolas FOR INSERT TO authenticated
+  WITH CHECK (private.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "superadmin_update_escolas"
+  ON public.escolas FOR UPDATE TO authenticated
+  USING (private.has_role(auth.uid(), 'admin'));
+
+CREATE POLICY "superadmin_delete_escolas"
+  ON public.escolas FOR DELETE TO authenticated
+  USING (private.has_role(auth.uid(), 'admin'));
+
+-- -----------------------------------------------------------------------
+-- 7. RLS — Escola Membros
+-- -----------------------------------------------------------------------
+
+ALTER TABLE public.escola_membros ENABLE ROW LEVEL SECURITY;
+
+-- Superadmin vê todos os membros
+CREATE POLICY "superadmin_select_membros"
+  ON public.escola_membros FOR SELECT TO authenticated
+  USING (private.has_role(auth.uid(), 'admin'));
+
+-- Gestor/secretaria da escola vê membros da própria escola
+CREATE POLICY "gestor_select_membros_escola"
+  ON public.escola_membros FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.escola_membros AS me
+      WHERE me.escola_id = escola_membros.escola_id
+        AND me.user_id   = auth.uid()
+        AND me.status    = 'ativo'
+        AND me.papel     IN ('gestor', 'secretaria', 'pedagogico')
+    )
+  );
+
+-- Usuário vê seu próprio vínculo
+CREATE POLICY "user_select_own_membership"
+  ON public.escola_membros FOR SELECT TO authenticated
+  USING (user_id = auth.uid());
+
+-- Apenas superadmin gerencia membros via RLS (inserções via server function com service_role)
+CREATE POLICY "superadmin_manage_membros"
+  ON public.escola_membros FOR ALL TO authenticated
+  USING (private.has_role(auth.uid(), 'admin'))
+  WITH CHECK (private.has_role(auth.uid(), 'admin'));
+
+-- -----------------------------------------------------------------------
+-- 8. Funções auxiliares de autorização (schema private — nunca expostas ao cliente)
+-- -----------------------------------------------------------------------
+
+-- Retorna a escola_id ativa do usuário autenticado para um papel mínimo exigido.
+-- Retorna NULL se o usuário não tem acesso.
+CREATE OR REPLACE FUNCTION private.get_escola_id_for_user(
+  _user_id UUID,
+  _papeis  public.escola_papel[]
+)
+RETURNS UUID
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT escola_id
+  FROM public.escola_membros
+  WHERE user_id = _user_id
+    AND status  = 'ativo'
+    AND papel   = ANY(_papeis)
+  LIMIT 1;
+$$;
+
+REVOKE ALL ON FUNCTION private.get_escola_id_for_user(UUID, public.escola_papel[]) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION private.get_escola_id_for_user(UUID, public.escola_papel[]) TO authenticated, service_role;
+
+-- Verifica se o usuário é membro ativo de uma escola específica com um dos papéis exigidos.
+CREATE OR REPLACE FUNCTION private.is_escola_membro(
+  _user_id   UUID,
+  _escola_id UUID,
+  _papeis    public.escola_papel[] DEFAULT NULL
+)
+RETURNS BOOLEAN
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.escola_membros
+    WHERE user_id   = _user_id
+      AND escola_id = _escola_id
+      AND status    = 'ativo'
+      AND (_papeis IS NULL OR papel = ANY(_papeis))
+  );
+$$;
+
+REVOKE ALL ON FUNCTION private.is_escola_membro(UUID, UUID, public.escola_papel[]) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION private.is_escola_membro(UUID, UUID, public.escola_papel[]) TO authenticated, service_role;
+
+-- -----------------------------------------------------------------------
+-- 9. Grants mínimos de tabela
+-- -----------------------------------------------------------------------
+
+GRANT SELECT, INSERT, UPDATE ON public.escolas         TO authenticated;
+GRANT SELECT                  ON public.escolas         TO anon;
+GRANT SELECT, INSERT, UPDATE ON public.escola_membros  TO authenticated;
+GRANT ALL                     ON public.escolas         TO service_role;
+GRANT ALL                     ON public.escola_membros  TO service_role;

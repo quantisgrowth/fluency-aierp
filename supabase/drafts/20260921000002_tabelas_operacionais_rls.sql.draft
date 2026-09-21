@@ -1,0 +1,426 @@
+-- ==============================================================================
+-- ETAPA 1 — TABELAS OPERACIONAIS COM ISOLAMENTO POR ESCOLA
+-- Migração: Alunos, Turmas, Cursos, Leads, Finanças, Matrículas, Inventário
+-- Todas com escola_id NOT NULL e RLS baseada em escola_membros
+-- SEGURO: apenas CREATE TABLE IF NOT EXISTS — sem destrutivo
+-- ==============================================================================
+
+-- -----------------------------------------------------------------------
+-- 1. Enums operacionais
+-- -----------------------------------------------------------------------
+
+DO $$ BEGIN
+  CREATE TYPE public.aluno_status AS ENUM (
+    'ativo', 'inativo', 'trancado', 'cancelado', 'concluido',
+    'inadimplente', 'bolsista', 'em_avaliacao'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE public.turma_status AS ENUM (
+    'planejamento', 'matriculas_abertas', 'ativa', 'concluida', 'cancelada'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE public.matricula_status AS ENUM (
+    'ativa', 'trancada', 'cancelada', 'concluida'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE public.lead_etapa AS ENUM (
+    'novo_lead', 'contato_realizado', 'nivelamento_agendado',
+    'nivelamento_concluido', 'proposta_enviada', 'matricula_iniciada',
+    'ganho', 'perdido'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE public.transacao_tipo AS ENUM ('receita', 'despesa');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE public.transacao_status AS ENUM (
+    'pago', 'pendente', 'atrasado', 'cancelado', 'estornado'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- -----------------------------------------------------------------------
+-- 2. Níveis Educacionais (CEFR ou customizados por escola)
+-- -----------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.niveis_educacionais (
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  escola_id       UUID        NOT NULL REFERENCES public.escolas(id) ON DELETE CASCADE,
+  codigo          TEXT        NOT NULL,
+  nome            TEXT        NOT NULL,
+  descricao       TEXT,
+  horas_sugeridas INTEGER     NOT NULL DEFAULT 60,
+  ordem           INTEGER     NOT NULL DEFAULT 1,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT niveis_escola_codigo_unique UNIQUE (escola_id, codigo)
+);
+
+-- -----------------------------------------------------------------------
+-- 3. Cursos / Produtos Educacionais
+-- -----------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.cursos (
+  id                      UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  escola_id               UUID          NOT NULL REFERENCES public.escolas(id) ON DELETE CASCADE,
+  codigo                  TEXT          NOT NULL,
+  nome                    TEXT          NOT NULL,
+  modalidade              TEXT          NOT NULL DEFAULT 'mensalidade_fixa',
+  nivel                   TEXT,
+  duracao_aula_minutos    INTEGER       NOT NULL DEFAULT 90,
+  vezes_por_semana        INTEGER       NOT NULL DEFAULT 2,
+  carga_horaria_semanal   NUMERIC(5,2)  NOT NULL DEFAULT 3.0,
+  carga_horaria_mensal    NUMERIC(5,2)  NOT NULL DEFAULT 13.0,
+  carga_horaria_total     NUMERIC(5,2)  NOT NULL DEFAULT 60.0,
+  valor_base              NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  descricao               TEXT,
+  publico_alvo            TEXT,
+  ativo                   BOOLEAN       NOT NULL DEFAULT true,
+  permite_turma           BOOLEAN       NOT NULL DEFAULT true,
+  max_alunos_turma        INTEGER       NOT NULL DEFAULT 15,
+  created_at              TIMESTAMPTZ   NOT NULL DEFAULT now(),
+  updated_at              TIMESTAMPTZ   NOT NULL DEFAULT now(),
+  CONSTRAINT cursos_escola_codigo_unique UNIQUE (escola_id, codigo)
+);
+
+CREATE TRIGGER cursos_set_updated_at
+  BEFORE UPDATE ON public.cursos
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- -----------------------------------------------------------------------
+-- 4. Turmas
+-- -----------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.turmas (
+  id                UUID              PRIMARY KEY DEFAULT gen_random_uuid(),
+  escola_id         UUID              NOT NULL REFERENCES public.escolas(id) ON DELETE CASCADE,
+  curso_id          UUID              REFERENCES public.cursos(id) ON DELETE SET NULL,
+  nome              TEXT              NOT NULL,
+  codigo            TEXT,
+  nivel             TEXT,
+  modalidade        TEXT              NOT NULL DEFAULT 'presencial',
+  status            public.turma_status NOT NULL DEFAULT 'ativa',
+  dias_semana       TEXT[]            NOT NULL DEFAULT ARRAY['segunda', 'quarta'],
+  horario_inicio    TIME,
+  horario_fim       TIME,
+  sala              TEXT,
+  -- professor referencia auth.users, não uma tabela separada ainda
+  professor_user_id UUID              REFERENCES auth.users(id) ON DELETE SET NULL,
+  professor_nome    TEXT,
+  capacidade_maxima INTEGER           NOT NULL DEFAULT 15,
+  data_inicio       DATE,
+  data_fim          DATE,
+  created_at        TIMESTAMPTZ       NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ       NOT NULL DEFAULT now()
+);
+
+CREATE TRIGGER turmas_set_updated_at
+  BEFORE UPDATE ON public.turmas
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- -----------------------------------------------------------------------
+-- 5. Alunos
+-- -----------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.alunos (
+  id                             UUID              PRIMARY KEY DEFAULT gen_random_uuid(),
+  escola_id                      UUID              NOT NULL REFERENCES public.escolas(id) ON DELETE CASCADE,
+  -- Identificação
+  nome                           TEXT              NOT NULL,
+  data_nascimento                DATE,
+  rg                             TEXT,
+  cpf                            TEXT,
+  genero                         TEXT,
+  endereco                       TEXT,
+  telefone                       TEXT,
+  email                          TEXT,
+  foto_url                       TEXT,
+  -- Responsável (desnormalizado por conveniência; tabela própria futura na Etapa 5)
+  responsavel_nome               TEXT,
+  responsavel_cpf                TEXT,
+  responsavel_email              TEXT,
+  responsavel_telefone           TEXT,
+  responsavel_contato            TEXT,
+  -- Dados Pedagógicos
+  idioma_curso                   TEXT              DEFAULT 'Inglês',
+  nivel_atual                    TEXT              DEFAULT 'A1',
+  turma_atual_id                 UUID              REFERENCES public.turmas(id) ON DELETE SET NULL,
+  data_inicio                    DATE              DEFAULT CURRENT_DATE,
+  fez_teste_nivel                BOOLEAN           NOT NULL DEFAULT false,
+  resultado_teste_nivel          TEXT,
+  -- Status
+  status                         public.aluno_status NOT NULL DEFAULT 'ativo',
+  -- Financeiro
+  dia_vencimento                 INTEGER           NOT NULL DEFAULT 10,
+  forma_pagamento_preferencial   TEXT              DEFAULT 'PIX',
+  valor_mensalidade              NUMERIC(10,2)     NOT NULL DEFAULT 0.00,
+  desconto_aplicado              NUMERIC(10,2)     NOT NULL DEFAULT 0.00,
+  -- Comercial
+  canal_aquisicao                TEXT,
+  observacoes                    TEXT,
+  created_at                     TIMESTAMPTZ       NOT NULL DEFAULT now(),
+  updated_at                     TIMESTAMPTZ       NOT NULL DEFAULT now()
+);
+
+CREATE TRIGGER alunos_set_updated_at
+  BEFORE UPDATE ON public.alunos
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- -----------------------------------------------------------------------
+-- 6. Matrículas (histórico de turmas por aluno)
+-- -----------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.matriculas (
+  id                   UUID                  PRIMARY KEY DEFAULT gen_random_uuid(),
+  escola_id            UUID                  NOT NULL REFERENCES public.escolas(id) ON DELETE CASCADE,
+  aluno_id             UUID                  NOT NULL REFERENCES public.alunos(id) ON DELETE CASCADE,
+  turma_id             UUID                  NOT NULL REFERENCES public.turmas(id) ON DELETE CASCADE,
+  data_inicio          DATE                  NOT NULL DEFAULT CURRENT_DATE,
+  data_fim             DATE,
+  status               public.matricula_status NOT NULL DEFAULT 'ativa',
+  nota_final           NUMERIC(4,2),
+  frequencia_percentual NUMERIC(5,2),
+  created_at           TIMESTAMPTZ           NOT NULL DEFAULT now(),
+  updated_at           TIMESTAMPTZ           NOT NULL DEFAULT now()
+);
+
+CREATE TRIGGER matriculas_set_updated_at
+  BEFORE UPDATE ON public.matriculas
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- -----------------------------------------------------------------------
+-- 7. Leads e CRM Comercial
+-- -----------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.leads (
+  id                UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
+  escola_id         UUID            NOT NULL REFERENCES public.escolas(id) ON DELETE CASCADE,
+  nome              TEXT            NOT NULL,
+  email             TEXT,
+  telefone          TEXT,
+  origem            TEXT            NOT NULL DEFAULT 'site',
+  etapa             public.lead_etapa NOT NULL DEFAULT 'novo_lead',
+  interesse_curso   TEXT,
+  nivel_interesse   TEXT,
+  probabilidade     INTEGER         NOT NULL DEFAULT 50,
+  valor_potencial   NUMERIC(10,2)   NOT NULL DEFAULT 0.00,
+  responsavel_user_id UUID          REFERENCES auth.users(id) ON DELETE SET NULL,
+  motivo_perda      TEXT,
+  created_at        TIMESTAMPTZ     NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ     NOT NULL DEFAULT now()
+);
+
+CREATE TRIGGER leads_set_updated_at
+  BEFORE UPDATE ON public.leads
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- -----------------------------------------------------------------------
+-- 8. Atividades CRM
+-- -----------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.crm_atividades (
+  id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  escola_id        UUID        NOT NULL REFERENCES public.escolas(id) ON DELETE CASCADE,
+  lead_id          UUID        NOT NULL REFERENCES public.leads(id) ON DELETE CASCADE,
+  tipo             TEXT        NOT NULL DEFAULT 'whatsapp'
+    CHECK (tipo IN ('ligacao', 'whatsapp', 'email', 'reuniao_presencial', 'teste_nivel', 'outro')),
+  descricao        TEXT        NOT NULL,
+  data_agendada    TIMESTAMPTZ,
+  concluida        BOOLEAN     NOT NULL DEFAULT false,
+  responsavel_user_id UUID     REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- -----------------------------------------------------------------------
+-- 9. Transações Financeiras
+-- -----------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.transacoes_financeiras (
+  id               UUID                    PRIMARY KEY DEFAULT gen_random_uuid(),
+  escola_id        UUID                    NOT NULL REFERENCES public.escolas(id) ON DELETE CASCADE,
+  tipo             public.transacao_tipo   NOT NULL,
+  categoria        TEXT                    NOT NULL,
+  descricao        TEXT                    NOT NULL,
+  valor            NUMERIC(10,2)           NOT NULL,
+  data_vencimento  DATE                    NOT NULL,
+  data_pagamento   DATE,
+  status           public.transacao_status NOT NULL DEFAULT 'pendente',
+  forma_pagamento  TEXT
+    CHECK (forma_pagamento IN ('pix', 'boleto', 'cartao_credito', 'cartao_debito', 'transferencia', 'dinheiro')),
+  aluno_id         UUID                    REFERENCES public.alunos(id) ON DELETE SET NULL,
+  numero_fatura    TEXT,
+  comprovante_url  TEXT,
+  created_at       TIMESTAMPTZ             NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ             NOT NULL DEFAULT now()
+);
+
+CREATE TRIGGER transacoes_set_updated_at
+  BEFORE UPDATE ON public.transacoes_financeiras
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- -----------------------------------------------------------------------
+-- 10. Inventário de Materiais
+-- -----------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.inventario_materiais (
+  id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  escola_id        UUID        NOT NULL REFERENCES public.escolas(id) ON DELETE CASCADE,
+  titulo           TEXT        NOT NULL,
+  tipo             TEXT        NOT NULL DEFAULT 'livro_fisico'
+    CHECK (tipo IN ('livro_fisico', 'licenca_digital', 'brinde', 'uniforme', 'equipamento', 'outro')),
+  nivel            TEXT,
+  codigo_sku       TEXT,
+  preco_venda      NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  custo_aquisicao  NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+  estoque_atual    INTEGER     NOT NULL DEFAULT 0,
+  estoque_minimo   INTEGER     NOT NULL DEFAULT 5,
+  fornecedor       TEXT,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT inventario_escola_sku_unique UNIQUE (escola_id, codigo_sku)
+);
+
+CREATE TRIGGER inventario_set_updated_at
+  BEFORE UPDATE ON public.inventario_materiais
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- -----------------------------------------------------------------------
+-- 11. Índices de performance (todos incluem escola_id primeiro)
+-- -----------------------------------------------------------------------
+
+CREATE INDEX IF NOT EXISTS idx_niveis_escola       ON public.niveis_educacionais(escola_id);
+CREATE INDEX IF NOT EXISTS idx_cursos_escola        ON public.cursos(escola_id);
+CREATE INDEX IF NOT EXISTS idx_cursos_ativo         ON public.cursos(escola_id, ativo);
+CREATE INDEX IF NOT EXISTS idx_turmas_escola        ON public.turmas(escola_id);
+CREATE INDEX IF NOT EXISTS idx_turmas_status        ON public.turmas(escola_id, status);
+CREATE INDEX IF NOT EXISTS idx_alunos_escola        ON public.alunos(escola_id);
+CREATE INDEX IF NOT EXISTS idx_alunos_status        ON public.alunos(escola_id, status);
+CREATE INDEX IF NOT EXISTS idx_alunos_turma         ON public.alunos(turma_atual_id);
+CREATE INDEX IF NOT EXISTS idx_matriculas_escola    ON public.matriculas(escola_id);
+CREATE INDEX IF NOT EXISTS idx_matriculas_aluno     ON public.matriculas(aluno_id);
+CREATE INDEX IF NOT EXISTS idx_matriculas_turma     ON public.matriculas(turma_id);
+CREATE INDEX IF NOT EXISTS idx_leads_escola         ON public.leads(escola_id);
+CREATE INDEX IF NOT EXISTS idx_leads_etapa          ON public.leads(escola_id, etapa);
+CREATE INDEX IF NOT EXISTS idx_crm_lead             ON public.crm_atividades(lead_id);
+CREATE INDEX IF NOT EXISTS idx_crm_escola           ON public.crm_atividades(escola_id);
+CREATE INDEX IF NOT EXISTS idx_transacoes_escola    ON public.transacoes_financeiras(escola_id);
+CREATE INDEX IF NOT EXISTS idx_transacoes_vencimento ON public.transacoes_financeiras(escola_id, data_vencimento);
+CREATE INDEX IF NOT EXISTS idx_transacoes_status    ON public.transacoes_financeiras(escola_id, status);
+CREATE INDEX IF NOT EXISTS idx_inventario_escola    ON public.inventario_materiais(escola_id);
+
+-- -----------------------------------------------------------------------
+-- 12. RLS — helper macro
+-- Todas as tabelas abaixo usam o mesmo padrão: membro ativo da escola
+-- -----------------------------------------------------------------------
+
+-- Função auxiliar DRY para policies (evita repetição)
+CREATE OR REPLACE FUNCTION private.usuario_pertence_escola(_escola_id UUID)
+RETURNS BOOLEAN
+LANGUAGE SQL
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.escola_membros
+    WHERE escola_membros.escola_id = _escola_id
+      AND escola_membros.user_id   = auth.uid()
+      AND escola_membros.status    = 'ativo'
+  )
+  OR private.has_role(auth.uid(), 'admin');
+$$;
+
+REVOKE ALL ON FUNCTION private.usuario_pertence_escola(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION private.usuario_pertence_escola(UUID) TO authenticated, service_role;
+
+-- -----------------------------------------------------------------------
+-- 13. RLS — Ativar e criar policies em cada tabela operacional
+-- -----------------------------------------------------------------------
+
+ALTER TABLE public.niveis_educacionais     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cursos                  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.turmas                  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.alunos                  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.matriculas              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.leads                   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.crm_atividades          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.transacoes_financeiras  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.inventario_materiais    ENABLE ROW LEVEL SECURITY;
+
+-- Macro: membro ativo da escola tem acesso completo à própria escola
+-- (controle fino de papel fica nas server functions; RLS garante o isolamento de tenant)
+
+CREATE POLICY "escola_acesso_niveis"
+  ON public.niveis_educacionais FOR ALL TO authenticated
+  USING (private.usuario_pertence_escola(escola_id))
+  WITH CHECK (private.usuario_pertence_escola(escola_id));
+
+CREATE POLICY "escola_acesso_cursos"
+  ON public.cursos FOR ALL TO authenticated
+  USING (private.usuario_pertence_escola(escola_id))
+  WITH CHECK (private.usuario_pertence_escola(escola_id));
+
+CREATE POLICY "escola_acesso_turmas"
+  ON public.turmas FOR ALL TO authenticated
+  USING (private.usuario_pertence_escola(escola_id))
+  WITH CHECK (private.usuario_pertence_escola(escola_id));
+
+CREATE POLICY "escola_acesso_alunos"
+  ON public.alunos FOR ALL TO authenticated
+  USING (private.usuario_pertence_escola(escola_id))
+  WITH CHECK (private.usuario_pertence_escola(escola_id));
+
+CREATE POLICY "escola_acesso_matriculas"
+  ON public.matriculas FOR ALL TO authenticated
+  USING (private.usuario_pertence_escola(escola_id))
+  WITH CHECK (private.usuario_pertence_escola(escola_id));
+
+CREATE POLICY "escola_acesso_leads"
+  ON public.leads FOR ALL TO authenticated
+  USING (private.usuario_pertence_escola(escola_id))
+  WITH CHECK (private.usuario_pertence_escola(escola_id));
+
+CREATE POLICY "escola_acesso_crm"
+  ON public.crm_atividades FOR ALL TO authenticated
+  USING (private.usuario_pertence_escola(escola_id))
+  WITH CHECK (private.usuario_pertence_escola(escola_id));
+
+CREATE POLICY "escola_acesso_transacoes"
+  ON public.transacoes_financeiras FOR ALL TO authenticated
+  USING (private.usuario_pertence_escola(escola_id))
+  WITH CHECK (private.usuario_pertence_escola(escola_id));
+
+CREATE POLICY "escola_acesso_inventario"
+  ON public.inventario_materiais FOR ALL TO authenticated
+  USING (private.usuario_pertence_escola(escola_id))
+  WITH CHECK (private.usuario_pertence_escola(escola_id));
+
+-- -----------------------------------------------------------------------
+-- 14. Grants de tabela
+-- -----------------------------------------------------------------------
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.niveis_educacionais    TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.cursos                  TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.turmas                  TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.alunos                  TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.matriculas              TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.leads                   TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.crm_atividades          TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.transacoes_financeiras  TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.inventario_materiais    TO authenticated;
+
+GRANT ALL ON public.niveis_educacionais    TO service_role;
+GRANT ALL ON public.cursos                 TO service_role;
+GRANT ALL ON public.turmas                 TO service_role;
+GRANT ALL ON public.alunos                 TO service_role;
+GRANT ALL ON public.matriculas             TO service_role;
+GRANT ALL ON public.leads                  TO service_role;
+GRANT ALL ON public.crm_atividades         TO service_role;
+GRANT ALL ON public.transacoes_financeiras TO service_role;
+GRANT ALL ON public.inventario_materiais   TO service_role;

@@ -1,0 +1,430 @@
+/**
+ * escola.functions.ts
+ *
+ * Server functions de autorização multi-tenant.
+ * Todas as operações de dados operacionais (alunos, turmas, finanças…)
+ * DEVEM chamar `assertEscolaAcesso` antes de qualquer query.
+ *
+ * NUNCA expor escola_id ao cliente como fonte de autorização —
+ * usar sempre as funções deste módulo para resolver o contexto.
+ */
+
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+// ─────────────────────────────────────────────────────────────────
+// Tipos locais (alinhados com o banco)
+// ─────────────────────────────────────────────────────────────────
+
+export type EscolaPapel =
+  | "gestor"
+  | "secretaria"
+  | "financeiro"
+  | "pedagogico"
+  | "comercial"
+  | "professor"
+  | "aluno"
+  | "responsavel";
+
+export type EscolaStatus =
+  | "trial"
+  | "ativa"
+  | "vencida"
+  | "suspensa"
+  | "cancelada";
+
+export type EscolaResumo = {
+  id: string;
+  nome: string;
+  slug: string;
+  plano: string;
+  status: EscolaStatus;
+  trial_ends_at: string | null;
+  papel: EscolaPapel;
+};
+
+// ─────────────────────────────────────────────────────────────────
+// Helpers internos (não exportados — uso exclusivo neste arquivo)
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Verifica se o usuário é superadmin da plataforma.
+ * Usa `user_roles` com papel 'admin'.
+ */
+async function isSuperAdmin(context: {
+  supabase: { from: (t: string) => any };
+  userId: string;
+}): Promise<boolean> {
+  const { data } = await context.supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", context.userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  return Boolean(data);
+}
+
+/**
+ * Lança erro se o usuário NÃO é superadmin.
+ * Usar em rotas exclusivas do painel /super-admin.
+ */
+export async function assertSuperAdmin(context: {
+  supabase: { from: (t: string) => any };
+  userId: string;
+}) {
+  const ok = await isSuperAdmin(context);
+  if (!ok) {
+    throw new Error("Forbidden: acesso restrito ao superadministrador da plataforma.");
+  }
+}
+
+/**
+ * Lança erro se o usuário NÃO é membro ativo da escola solicitada
+ * com um dos papéis exigidos.
+ *
+ * @param context  - contexto do middleware (supabase + userId)
+ * @param escolaId - UUID da escola alvo (jamais vindo de parâmetro de cliente sem validação)
+ * @param papeis   - lista de papéis aceitos; se vazio/undefined, qualquer papel é aceito
+ */
+export async function assertEscolaAcesso(
+  context: { supabase: { from: (t: string) => any }; userId: string },
+  escolaId: string,
+  papeis?: EscolaPapel[]
+) {
+  // Superadmin tem acesso total
+  const superAdmin = await isSuperAdmin(context);
+  if (superAdmin) return;
+
+  let query = context.supabase
+    .from("escola_membros")
+    .select("papel")
+    .eq("escola_id", escolaId)
+    .eq("user_id", context.userId)
+    .eq("status", "ativo");
+
+  if (papeis && papeis.length > 0) {
+    query = query.in("papel", papeis);
+  }
+
+  const { data, error } = await query.maybeSingle();
+
+  if (error || !data) {
+    throw new Error("Forbidden: você não tem acesso a esta escola.");
+  }
+}
+
+/**
+ * Retorna a primeira escola ativa do usuário e o papel dele nela.
+ * Usado para popular o contexto de sessão após login.
+ */
+async function resolveEscolaDoUsuario(context: {
+  supabase: { from: (t: string) => any };
+  userId: string;
+}): Promise<EscolaResumo | null> {
+  const { data, error } = await context.supabase
+    .from("escola_membros")
+    .select(`
+      papel,
+      escolas (
+        id, nome, slug, plano, status, trial_ends_at
+      )
+    `)
+    .eq("user_id", context.userId)
+    .eq("status", "ativo")
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  const escola = data.escolas as any;
+  if (!escola) return null;
+
+  return {
+    id: escola.id,
+    nome: escola.nome,
+    slug: escola.slug,
+    plano: escola.plano,
+    status: escola.status as EscolaStatus,
+    trial_ends_at: escola.trial_ends_at ?? null,
+    papel: data.papel as EscolaPapel,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Server Functions exportadas
+// ─────────────────────────────────────────────────────────────────
+
+/**
+ * Retorna o contexto de escola do usuário autenticado.
+ * Chamada pelo client após login para popular o TenantContext/UserContext.
+ * Superadmin recebe { isSuperAdmin: true, escola: null }.
+ */
+export const getMinhaEscola = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const superAdmin = await isSuperAdmin(context);
+
+    if (superAdmin) {
+      return { isSuperAdmin: true as const, escola: null };
+    }
+
+    const escola = await resolveEscolaDoUsuario(context);
+
+    return {
+      isSuperAdmin: false as const,
+      escola,
+    };
+  });
+
+/**
+ * [Superadmin] Lista todas as escolas da plataforma.
+ */
+export const listarTodasEscolas = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertSuperAdmin(context);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data, error } = await supabaseAdmin
+      .from("escolas")
+      .select("id, nome, slug, cnpj, plano, status, trial_starts_at, trial_ends_at, created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) throw new Error("Não foi possível carregar as escolas.");
+
+    return data ?? [];
+  });
+
+/**
+ * [Superadmin] Retorna detalhes de uma escola + membros.
+ */
+export const getEscolaDetalhes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ escolaId: z.string().uuid() }).parse(input)
+  )
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const [escolaRes, membrosRes] = await Promise.all([
+      supabaseAdmin
+        .from("escolas")
+        .select("*")
+        .eq("id", data.escolaId)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("escola_membros")
+        .select("id, user_id, papel, status, created_at, profiles(name, email)")
+        .eq("escola_id", data.escolaId),
+    ]);
+
+    if (escolaRes.error || !escolaRes.data) {
+      throw new Error("Escola não encontrada.");
+    }
+
+    return {
+      escola: escolaRes.data,
+      membros: membrosRes.data ?? [],
+    };
+  });
+
+/**
+ * [Superadmin] Atualiza plano e/ou status de uma escola.
+ */
+export const atualizarEscola = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        escolaId: z.string().uuid(),
+        plano: z.string().min(1).max(50).optional(),
+        status: z
+          .enum(["trial", "ativa", "vencida", "suspensa", "cancelada"])
+          .optional(),
+      })
+      .parse(input)
+  )
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const patch: Record<string, unknown> = {};
+    if (data.plano)  patch.plano  = data.plano;
+    if (data.status) patch.status = data.status;
+
+    const { error } = await supabaseAdmin
+      .from("escolas")
+      .update(patch)
+      .eq("id", data.escolaId);
+
+    if (error) throw new Error("Não foi possível atualizar a escola.");
+
+    return { updated: true };
+  });
+
+/**
+ * [Gestor] Lista os membros da própria escola.
+ */
+export const listarMembrosEscola = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ escolaId: z.string().uuid() }).parse(input)
+  )
+  .handler(async ({ data, context }) => {
+    await assertEscolaAcesso(context, data.escolaId, [
+      "gestor",
+      "secretaria",
+      "pedagogico",
+    ]);
+
+    const { data: membros, error } = await context.supabase
+      .from("escola_membros")
+      .select("id, user_id, papel, status, created_at, profiles(name, email)")
+      .eq("escola_id", data.escolaId)
+      .order("created_at");
+
+    if (error) throw new Error("Não foi possível carregar os membros.");
+
+    return membros ?? [];
+  });
+
+/**
+ * [Gestor] Adiciona membro à escola (via convite Supabase Auth).
+ */
+export const adicionarMembroEscola = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        escolaId: z.string().uuid(),
+        email: z.string().email(),
+        nome: z.string().min(2).max(120),
+        papel: z.enum([
+          "gestor",
+          "secretaria",
+          "financeiro",
+          "pedagogico",
+          "comercial",
+          "professor",
+          "aluno",
+          "responsavel",
+        ]),
+      })
+      .parse(input)
+  )
+  .handler(async ({ data, context }) => {
+    await assertEscolaAcesso(context, data.escolaId, ["gestor"]);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Convidar via Supabase Auth
+    const { data: invited, error: inviteError } =
+      await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
+        data: { name: data.nome },
+      });
+
+    if (inviteError || !invited.user) {
+      if (inviteError?.message.toLowerCase().includes("already")) {
+        // Usuário já existe — apenas criar o vínculo
+        const { data: existingUser } = await supabaseAdmin
+          .from("profiles")
+          .select("id")
+          .eq("email", data.email)
+          .maybeSingle();
+
+        if (!existingUser) {
+          throw new Error("Conta não encontrada. Tente enviar o convite primeiro.");
+        }
+
+        const { error: memberError } = await supabaseAdmin
+          .from("escola_membros")
+          .insert({
+            escola_id: data.escolaId,
+            user_id: existingUser.id,
+            papel: data.papel,
+            status: "ativo",
+          })
+          .onConflict("escola_id, user_id")
+          .ignore();
+
+        if (memberError) throw new Error("Não foi possível vincular o usuário à escola.");
+        return { vinculado: true, email: data.email };
+      }
+
+      throw new Error(inviteError?.message ?? "Não foi possível enviar o convite.");
+    }
+
+    // Criar profile e vínculo para o novo usuário convidado
+    const userId = invited.user.id;
+
+    await supabaseAdmin.from("profiles").upsert({
+      id: userId,
+      name: data.nome,
+      email: data.email,
+      companies: [],
+      permissions: {},
+      invitation_status: "pending",
+    });
+
+    const { error: memberError } = await supabaseAdmin
+      .from("escola_membros")
+      .insert({
+        escola_id: data.escolaId,
+        user_id: userId,
+        papel: data.papel,
+        status: "pendente",
+      });
+
+    if (memberError) {
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      throw new Error("Não foi possível criar o vínculo com a escola.");
+    }
+
+    return { convidado: true, userId, email: data.email };
+  });
+
+/**
+ * [Gestor] Remove membro da escola (não exclui conta).
+ */
+export const removerMembroEscola = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        escolaId: z.string().uuid(),
+        membroId: z.string().uuid(),
+      })
+      .parse(input)
+  )
+  .handler(async ({ data, context }) => {
+    await assertEscolaAcesso(context, data.escolaId, ["gestor"]);
+
+    // Impede auto-remoção
+    const { data: membro } = await context.supabase
+      .from("escola_membros")
+      .select("user_id")
+      .eq("id", data.membroId)
+      .eq("escola_id", data.escolaId)
+      .maybeSingle();
+
+    if (membro?.user_id === context.userId) {
+      throw new Error("Você não pode remover seu próprio acesso.");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { error } = await supabaseAdmin
+      .from("escola_membros")
+      .update({ status: "inativo" })
+      .eq("id", data.membroId)
+      .eq("escola_id", data.escolaId);
+
+    if (error) throw new Error("Não foi possível remover o membro.");
+
+    return { removido: true };
+  });
