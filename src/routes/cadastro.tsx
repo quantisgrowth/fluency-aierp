@@ -28,10 +28,15 @@ function CadastroPage() {
       setAuthenticated(Boolean(data.user));
       setReady(true);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted) setAuthenticated(Boolean(session?.user));
     });
-    return () => { mounted = false; subscription.unsubscribe(); };
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function createAccount(event: FormEvent<HTMLFormElement>) {
@@ -82,37 +87,80 @@ function CadastroPage() {
           <p className="text-sm font-semibold text-primary">Fluency AI</p>
           <h1 className="text-2xl font-bold">Comece seu teste de 14 dias</h1>
           <p className="text-sm text-neutral-400">
-            Crie uma conta para sua escola. Depois de confirmar seu e-mail,
-            você poderá configurar a primeira unidade.
+            Crie uma conta para sua escola. Depois de confirmar seu e-mail, você poderá configurar a
+            primeira unidade.
           </p>
         </div>
-        {!ready ? <p className="text-sm text-neutral-400">Verificando sua conta…</p> :
-          authenticated ? (
-            <form onSubmit={createSchool} className="space-y-4">
-              <div className="space-y-1"><Label htmlFor="manager-name">Seu nome</Label>
-                <Input id="manager-name" value={managerName} onChange={(event) => setManagerName(event.target.value)} minLength={3} maxLength={120} required /></div>
-              <div className="space-y-1"><Label htmlFor="school-name">Nome da escola</Label>
-                <Input id="school-name" value={schoolName} onChange={(event) => setSchoolName(event.target.value)} minLength={3} maxLength={120} required /></div>
-              <Button type="submit" disabled={busy} className="w-full">
-                {busy ? "Criando escola…" : "Criar escola e iniciar teste"}
-              </Button>
-            </form>
-          ) : sent ? (
-            <div className="space-y-3 text-sm">
-              <p>Confira seu e-mail e confirme a conta. Depois, volte para esta página para criar a escola.</p>
-              <a href="/login" className="text-primary underline">Já confirmou? Entrar</a>
+        {!ready ? (
+          <p className="text-sm text-neutral-400">Verificando sua conta…</p>
+        ) : authenticated ? (
+          <form onSubmit={createSchool} className="space-y-4">
+            <div className="space-y-1">
+              <Label htmlFor="manager-name">Seu nome</Label>
+              <Input
+                id="manager-name"
+                value={managerName}
+                onChange={(event) => setManagerName(event.target.value)}
+                minLength={3}
+                maxLength={120}
+                required
+              />
             </div>
-          ) : (
-            <form onSubmit={createAccount} className="space-y-4">
-              <div className="space-y-1"><Label htmlFor="signup-email">E-mail profissional</Label>
-                <Input id="signup-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></div>
-              <div className="space-y-1"><Label htmlFor="signup-password">Senha (mínimo de 12 caracteres)</Label>
-                <Input id="signup-password" type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={12} required /></div>
-              <Button type="submit" disabled={busy} className="w-full">
-                {busy ? "Criando conta…" : "Criar conta gratuita"}
-              </Button>
-            </form>
-          )}
+            <div className="space-y-1">
+              <Label htmlFor="school-name">Nome da escola</Label>
+              <Input
+                id="school-name"
+                value={schoolName}
+                onChange={(event) => setSchoolName(event.target.value)}
+                minLength={3}
+                maxLength={120}
+                required
+              />
+            </div>
+            <Button type="submit" disabled={busy} className="w-full">
+              {busy ? "Criando escola…" : "Criar escola e iniciar teste"}
+            </Button>
+          </form>
+        ) : sent ? (
+          <div className="space-y-3 text-sm">
+            <p>
+              Confira seu e-mail e confirme a conta. Depois, volte para esta página para criar a
+              escola.
+            </p>
+            <a href="/login" className="text-primary underline">
+              Já confirmou? Entrar
+            </a>
+          </div>
+        ) : (
+          <form onSubmit={createAccount} className="space-y-4">
+            <div className="space-y-1">
+              <Label htmlFor="signup-email">E-mail profissional</Label>
+              <Input
+                id="signup-email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="signup-password">Senha (mínimo de 12 caracteres)</Label>
+              <Input
+                id="signup-password"
+                type="password"
+                autoComplete="new-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                minLength={12}
+                required
+              />
+            </div>
+            <Button type="submit" disabled={busy} className="w-full">
+              {busy ? "Criando conta…" : "Criar conta gratuita"}
+            </Button>
+          </form>
+        )}
         <a href="/login" className="block text-center text-sm text-neutral-400 hover:text-white">
           Já tem conta? Entrar
         </a>
