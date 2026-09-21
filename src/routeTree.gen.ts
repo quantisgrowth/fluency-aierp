@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AlunosRouteImport } from './routes/alunos'
+import { Route as BoasVindasRouteImport } from './routes/boas-vindas'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as CaptacaoRouteImport } from './routes/captacao'
 import { Route as CrmRouteImport } from './routes/crm'
@@ -37,6 +38,11 @@ const IndexRoute = IndexRouteImport.update({
 const AlunosRoute = AlunosRouteImport.update({
   id: '/alunos',
   path: '/alunos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BoasVindasRoute = BoasVindasRouteImport.update({
+  id: '/boas-vindas',
+  path: '/boas-vindas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CadastroRoute = CadastroRouteImport.update({
@@ -128,6 +134,7 @@ const PublicTesteNivelRoute = PublicTesteNivelRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/alunos': typeof AlunosRoute
+  '/boas-vindas': typeof BoasVindasRoute
   '/cadastro': typeof CadastroRoute
   '/captacao': typeof CaptacaoRoute
   '/crm': typeof CrmRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/alunos': typeof AlunosRoute
+  '/boas-vindas': typeof BoasVindasRoute
   '/cadastro': typeof CadastroRoute
   '/captacao': typeof CaptacaoRoute
   '/crm': typeof CrmRoute
@@ -171,6 +179,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/alunos': typeof AlunosRoute
+  '/boas-vindas': typeof BoasVindasRoute
   '/cadastro': typeof CadastroRoute
   '/captacao': typeof CaptacaoRoute
   '/crm': typeof CrmRoute
@@ -194,6 +203,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/alunos'
+    | '/boas-vindas'
     | '/cadastro'
     | '/captacao'
     | '/crm'
@@ -215,6 +225,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/alunos'
+    | '/boas-vindas'
     | '/cadastro'
     | '/captacao'
     | '/crm'
@@ -236,6 +247,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/alunos'
+    | '/boas-vindas'
     | '/cadastro'
     | '/captacao'
     | '/crm'
@@ -258,6 +270,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AlunosRoute: typeof AlunosRoute
+  BoasVindasRoute: typeof BoasVindasRoute
   CadastroRoute: typeof CadastroRoute
   CaptacaoRoute: typeof CaptacaoRoute
   CrmRoute: typeof CrmRoute
@@ -291,6 +304,13 @@ declare module '@tanstack/react-router' {
       path: '/alunos'
       fullPath: '/alunos'
       preLoaderRoute: typeof AlunosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/boas-vindas': {
+      id: '/boas-vindas'
+      path: '/boas-vindas'
+      fullPath: '/boas-vindas'
+      preLoaderRoute: typeof BoasVindasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cadastro': {
@@ -418,6 +438,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AlunosRoute: AlunosRoute,
+  BoasVindasRoute: BoasVindasRoute,
   CadastroRoute: CadastroRoute,
   CaptacaoRoute: CaptacaoRoute,
   CrmRoute: CrmRoute,

@@ -21,7 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { useModules } from "@/modules/module-context";
 import type { ModuleId } from "@/modules/registry";
@@ -128,6 +128,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   const isCustomPortal =
+    pathname.startsWith("/cadastro") ||
+    pathname.startsWith("/boas-vindas") ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/manager") ||
     pathname.startsWith("/super-admin") ||
@@ -237,8 +239,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Logout section at the bottom of sidebar */}
         <div className="p-3 border-t border-hairline">
           <button
-            onClick={() => {
-              toast.success("Desconectado com sucesso!");
+            onClick={async () => {
+              await supabase.auth.signOut();
               try {
                 window.localStorage.removeItem("fluency-ai:active-role");
                 window.localStorage.removeItem("fluency-ai:active-company");
@@ -325,7 +327,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
           </Link>
         </header>
-        <main className="flex-1 px-5 py-8 sm:px-8">{children}</main>
+        <main className="flex-1 px-5 py-8 sm:px-8">
+          <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            Área demonstrativa: os números e cadastros exibidos aqui são fictícios.
+            Sua escola real aparece em <Link to="/boas-vindas" className="underline">Seu ambiente</Link>.
+          </div>
+          {children}
+        </main>
       </div>
     </div>
   );

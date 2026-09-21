@@ -72,7 +72,7 @@ function CadastroPage() {
       toast.error(error.message);
       return;
     }
-    window.location.assign("/");
+    window.location.assign("/boas-vindas");
   }
 
   return (

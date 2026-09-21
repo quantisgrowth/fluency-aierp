@@ -32,7 +32,9 @@ confirmado.
 Antes de liberar `/cadastro` em produção, configure no Supabase Auth o URL
 do site publicado e permita o redirecionamento para `/cadastro`. É preciso
 validar a entrega de e-mail de confirmação e executar um teste completo com
-uma conta real. O banco começa sem usuários e sem escolas.
+uma conta real. O banco começa sem usuários e sem escolas. Após o cadastro,
+`/boas-vindas` mostra nome da escola, unidade e prazo do trial consultados
+do banco. As demais telas exibem aviso de dados demonstrativos.
 
 Ainda faltam convites, APIs de escrita por papel, isolamento por unidade,
 portal do aluno com dados reais e testes de acesso cruzado. As telas do ERP

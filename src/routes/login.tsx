@@ -151,7 +151,7 @@ function LoginPage() {
         await supabase.auth.signOut();
         throw new Error("Esta conta não tem acesso ativo ao portal selecionado.");
       }
-      window.location.href = portalType === "aluno" ? "/portal/aluno" : "/";
+      window.location.href = portalType === "aluno" ? "/portal/aluno" : "/boas-vindas";
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro no login.";
       toast.error(msg);
