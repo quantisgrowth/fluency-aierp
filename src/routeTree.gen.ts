@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AlunosRouteImport } from './routes/alunos'
+import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as CaptacaoRouteImport } from './routes/captacao'
 import { Route as CrmRouteImport } from './routes/crm'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
@@ -36,6 +37,11 @@ const IndexRoute = IndexRouteImport.update({
 const AlunosRoute = AlunosRouteImport.update({
   id: '/alunos',
   path: '/alunos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CadastroRoute = CadastroRouteImport.update({
+  id: '/cadastro',
+  path: '/cadastro',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CaptacaoRoute = CaptacaoRouteImport.update({
@@ -122,6 +128,7 @@ const PublicTesteNivelRoute = PublicTesteNivelRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/alunos': typeof AlunosRoute
+  '/cadastro': typeof CadastroRoute
   '/captacao': typeof CaptacaoRoute
   '/crm': typeof CrmRoute
   '/financeiro': typeof FinanceiroRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/alunos': typeof AlunosRoute
+  '/cadastro': typeof CadastroRoute
   '/captacao': typeof CaptacaoRoute
   '/crm': typeof CrmRoute
   '/financeiro': typeof FinanceiroRoute
@@ -163,6 +171,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/alunos': typeof AlunosRoute
+  '/cadastro': typeof CadastroRoute
   '/captacao': typeof CaptacaoRoute
   '/crm': typeof CrmRoute
   '/financeiro': typeof FinanceiroRoute
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/alunos'
+    | '/cadastro'
     | '/captacao'
     | '/crm'
     | '/financeiro'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/alunos'
+    | '/cadastro'
     | '/captacao'
     | '/crm'
     | '/financeiro'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/alunos'
+    | '/cadastro'
     | '/captacao'
     | '/crm'
     | '/financeiro'
@@ -246,6 +258,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AlunosRoute: typeof AlunosRoute
+  CadastroRoute: typeof CadastroRoute
   CaptacaoRoute: typeof CaptacaoRoute
   CrmRoute: typeof CrmRoute
   FinanceiroRoute: typeof FinanceiroRoute
@@ -278,6 +291,13 @@ declare module '@tanstack/react-router' {
       path: '/alunos'
       fullPath: '/alunos'
       preLoaderRoute: typeof AlunosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cadastro': {
+      id: '/cadastro'
+      path: '/cadastro'
+      fullPath: '/cadastro'
+      preLoaderRoute: typeof CadastroRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/captacao': {
@@ -398,6 +418,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AlunosRoute: AlunosRoute,
+  CadastroRoute: CadastroRoute,
   CaptacaoRoute: CaptacaoRoute,
   CrmRoute: CrmRoute,
   FinanceiroRoute: FinanceiroRoute,

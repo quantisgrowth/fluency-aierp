@@ -479,7 +479,9 @@ function LoginPage() {
 
         {/* Footer Support Information */}
         <div className="relative z-10 flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-6 text-[11px] text-neutral-500 sm:flex-row">
-          <span>Fluency AI — Versão Escolar</span>
+          <a href="/cadastro" className="font-semibold text-primary hover:underline">
+            Sua escola ainda não usa a plataforma? Comece o teste gratuito
+          </a>
           <span>Suporte: 0800 591 0422</span>
         </div>
       </div>

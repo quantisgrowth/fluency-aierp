@@ -150,7 +150,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const isPublic =
-    pathname === "/login" || pathname === "/manager" || pathname.startsWith("/public/");
+    pathname === "/login" || pathname === "/cadastro" || pathname === "/manager" || pathname.startsWith("/public/");
   const isPlatform = pathname === "/super-admin";
   const roles = allowedSchoolRoles(pathname);
 
