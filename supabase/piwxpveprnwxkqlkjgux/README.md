@@ -8,18 +8,20 @@ registrada e políticas `PUBLIC FOR ALL USING (true) WITH CHECK (true)`
 com privilégios de leitura e escrita para `anon`. Por isso, os dois
 arquivos SQL nesta pasta foram escritos para esse esquema já existente.
 
-1. `001_fechar_acesso_publico.sql` remove políticas abertas e privilégios
-   de `anon`/`authenticated`. É a correção de segurança urgente.
-2. `002_identidade_escolas_e_rls.sql` cria vínculos e políticas por escola.
-   A verificação inicial aborta caso algum dado operacional tenha sido
+1. `001_fechar_acesso_publico.sql` foi aplicado ao projeto confirmado.
+   Removeu políticas abertas e privilégios de `anon`/`authenticated`.
+2. `002_identidade_escolas_e_rls.sql` também foi aplicado ao projeto
+   confirmado. Cria vínculos e políticas por escola, concede apenas leitura
+   aos papéis permitidos e expira o acesso ao fim do trial de 14 dias.
+   A verificação inicial abortaria caso algum dado operacional tivesse sido
    criado depois da inspeção.
 
 Estes arquivos **não estão na pasta de migrações automática** porque
 `supabase/config.toml` referencia outro projeto e as três migrações
 anteriores descrevem outro esquema (`profiles`/`user_roles`).
 Não execute `supabase db push` neste repositório contra o projeto
-confirmado. Execute os arquivos apenas após revisão, no projeto indicado,
-registrando-os no histórico desse banco.
+confirmado. As duas migrações já foram registradas no histórico do projeto
+confirmado.
 
 Após 002, ainda faltam cadastro autônomo/trial, convites, associação de
 usuários, APIs de escrita por papel e testes de acesso cruzado. Sem uma

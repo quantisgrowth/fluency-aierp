@@ -3,6 +3,9 @@
 -- IF NOT EXISTS masking a mismatch with the current schema.
 BEGIN;
 
+-- Existing event-trigger helper is internal and should not be callable via RPC.
+REVOKE ALL ON FUNCTION public.rls_auto_enable() FROM PUBLIC, anon, authenticated;
+
 -- The live schema was empty when inspected. Refuse a structural change if
 -- records have appeared since then; they would need a tenant backfill first.
 DO $preflight$
@@ -31,8 +34,8 @@ GRANT USAGE ON SCHEMA private TO authenticated, service_role;
 ALTER TABLE public.escolas
   ADD COLUMN status text NOT NULL DEFAULT 'trial'
     CHECK (status IN ('trial','ativa','vencida','suspensa','cancelada')),
-  ADD COLUMN trial_starts_at timestamptz,
-  ADD COLUMN trial_ends_at timestamptz;
+  ADD COLUMN trial_starts_at timestamptz NOT NULL DEFAULT now(),
+  ADD COLUMN trial_ends_at timestamptz NOT NULL DEFAULT (now() + interval '14 days');
 
 CREATE TABLE public.escola_membros (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -63,11 +66,14 @@ CREATE FUNCTION private.is_member(_escola_id uuid, _roles text[] DEFAULT NULL)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
 AS $$
   SELECT EXISTS (
-    SELECT 1 FROM public.escola_membros
-    WHERE escola_id = _escola_id
-      AND user_id = (SELECT auth.uid())
-      AND status = 'ativo'
-      AND (_roles IS NULL OR papel = ANY(_roles))
+    SELECT 1 FROM public.escola_membros AS membro
+    JOIN public.escolas AS escola ON escola.id = membro.escola_id
+    WHERE membro.escola_id = _escola_id
+      AND membro.user_id = (SELECT auth.uid())
+      AND membro.status = 'ativo'
+      AND (escola.status = 'ativa' OR
+        (escola.status = 'trial' AND escola.trial_ends_at > now()))
+      AND (_roles IS NULL OR membro.papel = ANY(_roles))
   );
 $$;
 REVOKE ALL ON FUNCTION private.is_member(uuid,text[]) FROM PUBLIC;
@@ -81,8 +87,9 @@ GRANT SELECT ON public.escola_membros, public.platform_admins TO authenticated;
 GRANT ALL ON public.escola_membros, public.platform_admins TO service_role;
 
 CREATE POLICY membros_select ON public.escola_membros FOR SELECT TO authenticated
-  USING (user_id = (SELECT auth.uid())
-    OR private.is_member(escola_id, ARRAY['gestor','secretaria','pedagogico']));
+  USING (private.is_member(escola_id) AND
+    (user_id = (SELECT auth.uid()) OR
+      private.is_member(escola_id, ARRAY['gestor','secretaria','pedagogico'])));
 CREATE POLICY platform_admin_self ON public.platform_admins FOR SELECT TO authenticated
   USING (user_id = (SELECT auth.uid()));
 CREATE POLICY escolas_select ON public.escolas FOR SELECT TO authenticated
