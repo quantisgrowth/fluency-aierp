@@ -29,10 +29,12 @@ Não execute `supabase db push` neste repositório contra o projeto
 confirmado. As migrações foram registradas no histórico do projeto
 confirmado.
 
-Antes de liberar `/cadastro` em produção, configure no Supabase Auth o URL
-do site publicado e permita o redirecionamento para `/cadastro`. É preciso
-validar a entrega de e-mail de confirmação e executar um teste completo com
-uma conta real. O banco começa sem usuários e sem escolas. Após o cadastro,
+O Supabase Auth foi configurado com Site URL
+`https://fluency-aierp.lovable.app` e retorno permitido para
+`https://fluency-aierp.lovable.app/cadastro`. Cadastro e confirmação de
+e-mail estão habilitados. Ainda é preciso validar a entrega de e-mail e
+executar um teste completo com uma conta real depois de publicar esta
+branch no site. O banco começa sem usuários e sem escolas. Após o cadastro,
 `/boas-vindas` mostra nome da escola, unidade e prazo do trial consultados
 do banco. As demais telas exibem aviso de dados demonstrativos.
 
