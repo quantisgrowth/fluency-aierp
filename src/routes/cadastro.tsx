@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +15,8 @@ function CadastroPage() {
   const [authenticated, setAuthenticated] = useState(false);
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [feedback, setFeedback] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [managerName, setManagerName] = useState("");
@@ -41,43 +42,55 @@ function CadastroPage() {
 
   async function createAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setFeedback("");
     if (password.length < 12) {
-      toast.error("Escolha uma senha com pelo menos 12 caracteres.");
+      setFeedback("Escolha uma senha com pelo menos 12 caracteres.");
       return;
     }
     if (!isSupabaseConfigured) {
-      toast.error("O cadastro ainda não está configurado neste ambiente.");
+      setFeedback("O cadastro ainda não está configurado neste ambiente.");
       return;
     }
     setBusy(true);
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-      options: { emailRedirectTo: `${window.location.origin}/cadastro` },
-    });
-    setBusy(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { emailRedirectTo: `${window.location.origin}/cadastro` },
+      });
+      if (error) {
+        setFeedback(`Não foi possível criar a conta: ${error.message}`);
+        return;
+      }
+      setSent(true);
+      if (data.session) setAuthenticated(true);
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "Falha de conexão com o cadastro.");
+    } finally {
+      setBusy(false);
     }
-    setSent(true);
-    if (data.session) setAuthenticated(true);
   }
 
   async function createSchool(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setFeedback("");
     if (!isSupabaseConfigured) return;
     setBusy(true);
-    const { error } = await supabase.rpc("create_trial_school", {
-      _school_name: schoolName.trim(),
-      _manager_name: managerName.trim(),
-    });
-    setBusy(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      const { error } = await supabase.rpc("create_trial_school", {
+        _school_name: schoolName.trim(),
+        _manager_name: managerName.trim(),
+      });
+      if (error) {
+        setFeedback(`Não foi possível criar a escola: ${error.message}`);
+        return;
+      }
+      window.location.assign("/boas-vindas");
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "Falha de conexão com a escola.");
+    } finally {
+      setBusy(false);
     }
-    window.location.assign("/boas-vindas");
   }
 
   return (
@@ -91,6 +104,14 @@ function CadastroPage() {
             primeira unidade.
           </p>
         </div>
+        {feedback && (
+          <p
+            role="alert"
+            className="rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-200"
+          >
+            {feedback}
+          </p>
+        )}
         {!ready ? (
           <p className="text-sm text-neutral-400">Verificando sua conta…</p>
         ) : authenticated ? (
@@ -145,10 +166,20 @@ function CadastroPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="signup-password">Senha (mínimo de 12 caracteres)</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="signup-password">Senha (mínimo de 12 caracteres)</Label>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Ocultar senha" : "Visualizar senha"}
+                  className="text-xs text-primary hover:underline"
+                >
+                  {showPassword ? "Ocultar" : "Visualizar"}
+                </button>
+              </div>
               <Input
                 id="signup-password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
