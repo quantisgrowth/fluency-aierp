@@ -148,6 +148,10 @@ function LoginPage() {
         ? roles.filter((role) => portalRoles.includes(role))
         : roles.filter((role) => !portalRoles.includes(role));
       if (chosenRoles.length === 0) {
+        if (portalType !== "aluno" && roles.length === 0) {
+          window.location.href = "/cadastro";
+          return;
+        }
         await supabase.auth.signOut();
         throw new Error("Esta conta não tem acesso ativo ao portal selecionado.");
       }
