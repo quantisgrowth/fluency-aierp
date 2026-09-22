@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -80,9 +80,29 @@ function WelcomePage() {
                 <p>Teste até: {new Date(school.trial_ends_at).toLocaleDateString("pt-BR")}</p>
                 <p>Unidades: {units.map((unit) => unit.nome).join(", ") || "Nenhuma"}</p>
               </div>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  to="/turmas"
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                >
+                  Cadastrar cursos e turmas
+                </Link>
+                <Link
+                  to="/alunos"
+                  className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold"
+                >
+                  Cadastrar alunos e matrículas
+                </Link>
+                <Link
+                  to="/financeiro"
+                  className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold"
+                >
+                  Abrir financeiro
+                </Link>
+              </div>
               <p className="text-sm text-amber-300">
-                O cadastro de alunos, turmas e financeiro ainda está em implantação. Os painéis
-                demonstrativos não representam os dados da sua escola.
+                Os demais painéis ainda exibem dados demonstrativos e não representam os dados da
+                sua escola. O financeiro registra lançamentos manuais, sem cobrança automática.
               </p>
             </>
           )

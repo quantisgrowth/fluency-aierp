@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { RealFinancePage } from "@/components/real-finance-page";
 import { useState, useEffect, useMemo } from "react";
 import {
   Wallet,
@@ -78,7 +79,7 @@ export const Route = createFileRoute("/financeiro")({
       { name: "description", content: "DRE Gerencial, Gestão de Custos, Políticas de Precificação e Previsão de Caixa." },
     ],
   }),
-  component: FinanceiroPage,
+  component: RealFinancePage,
 });
 
 const DELINQUENCY_KEY = "fluency-ai:finance:delinquency";

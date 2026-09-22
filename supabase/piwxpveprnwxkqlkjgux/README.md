@@ -21,6 +21,12 @@ pasta foram escritos para esse esquema já existente.
 4. `004_privilegio_cadastro.sql` move a implementação privilegiada para o
    esquema privado. A função pública não eleva privilégios; o verificador
    de segurança não apontou alertas após essa etapa.
+5. `005_operacao_academica.sql` permite escrita em cursos, turmas, alunos e
+   matrículas apenas para membros ativos da escola com papéis adequados.
+6. `006_financeiro_manual.sql` permite lançamentos manuais apenas para gestor
+   e financeiro da própria escola.
+7. `007_integridade_academica.sql` impede códigos de curso repetidos na mesma
+   escola e matrículas ativas duplicadas na mesma turma.
 
 Estes arquivos **não estão na pasta de migrações automática** porque
 `supabase/config.toml` referencia outro projeto e as três migrações
@@ -31,13 +37,16 @@ confirmado.
 
 O Supabase Auth foi configurado com Site URL
 `https://fluency-aierp.lovable.app` e retorno permitido para
-`https://fluency-aierp.lovable.app/cadastro`. Cadastro e confirmação de
-e-mail estão habilitados. Ainda é preciso validar a entrega de e-mail e
-executar um teste completo com uma conta real depois de publicar esta
-branch no site. O banco começa sem usuários e sem escolas. Após o cadastro,
-`/boas-vindas` mostra nome da escola, unidade e prazo do trial consultados
-do banco. As demais telas exibem aviso de dados demonstrativos.
+`https://fluency-aierp.lovable.app/cadastro`. O cadastro e a confirmação
+foram validados com a escola de teste The Bridge em 22/09/2026. O remetente
+Resend ainda aceita somente o endereço de teste autorizado; um domínio de
+envio verificado é necessário antes de abrir o trial a todos. A URL local
+`http://localhost:5173/cadastro` está permitida temporariamente para testes
+e deve ser removida ao final. `/boas-vindas` mostra nome da escola, unidade
+e prazo do trial consultados do banco. Cursos, turmas, alunos, matrículas e
+lançamentos financeiros manuais passam a ler e gravar registros da escola.
 
-Ainda faltam convites, APIs de escrita por papel, isolamento por unidade,
-portal do aluno com dados reais e testes de acesso cruzado. As telas do ERP
-ainda contêm dados demonstrativos; esta etapa não conclui o produto vendável.
+Ainda faltam convites, isolamento por unidade, portal do aluno com dados
+reais, cobrança automática, notas fiscais, demais módulos operacionais e
+testes de acesso cruzado. Os painéis fora das rotas acadêmicas e do financeiro
+manual ainda usam dados demonstrativos; esta etapa não conclui o produto vendável.

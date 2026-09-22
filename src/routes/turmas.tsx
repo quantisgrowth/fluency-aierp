@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AcademicClassesPage } from "@/components/academic-classes-page";
 import { useState, useEffect } from "react";
 import {
   Search,
@@ -46,7 +47,7 @@ export const Route = createFileRoute("/turmas")({
       { name: "description", content: "Turmas por proficiência e horários." },
     ],
   }),
-  component: TurmasPage,
+  component: AcademicClassesPage,
 });
 
 type ClassItem = {

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AcademicStudentsPage } from "@/components/academic-students-page";
 import { useState, useEffect } from "react";
 import {
   Search,
@@ -68,7 +69,7 @@ export const Route = createFileRoute("/alunos")({
       { name: "description", content: "Dossiê 360º, contratos por produto, frequência, notas e financeiro do aluno." },
     ],
   }),
-  component: AlunosPage,
+  component: AcademicStudentsPage,
 });
 
 type Student = {
