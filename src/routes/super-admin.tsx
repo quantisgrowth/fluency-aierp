@@ -33,7 +33,15 @@ import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import { toast } from "sonner";
 import { checkSupabaseConnection } from "@/lib/supabase";
-import { masterAdmin, type MasterAuditLog, type MasterOverview } from "@/lib/master-admin";
+import {
+  masterAdmin,
+  type MasterAuditLog,
+  type MasterOverview,
+  type MasterSchoolInvite,
+  type MasterSchoolMember,
+  type MasterSchoolModule,
+  type MasterSchoolUnit,
+} from "@/lib/master-admin";
 
 export const Route = createFileRoute("/super-admin")({
   head: () => ({
@@ -60,12 +68,10 @@ type SchoolTenant = {
   status: "Ativo" | "Inativo" | "Atrasado";
   studentsCount: number;
   teachersLimit: number;
-  modules: {
-    crm: boolean;
-    financeiro: boolean;
-    pedagogico: boolean;
-    success: boolean;
-  };
+  modules: MasterSchoolModule[];
+  members: MasterSchoolMember[];
+  units: MasterSchoolUnit[];
+  invites: MasterSchoolInvite[];
   paymentHistory: PaymentLog[];
   plan: string;
   rawStatus: "trial" | "ativa" | "vencida" | "suspensa" | "cancelada";
@@ -82,6 +88,8 @@ type MasterUser = {
   status: "Ativo" | "Inativo";
 };
 
+type MasterTab = "schools" | "status" | "logs" | "team" | "customization" | "profile";
+
 const roleLabels: Record<string, MasterUser["role"]> = {
   administrador: "Administrador",
   financeiro: "Financeiro",
@@ -90,12 +98,31 @@ const roleLabels: Record<string, MasterUser["role"]> = {
   comercial: "Vendedor",
 };
 
+const schoolModuleLabels: Record<string, string> = {
+  core: "Pedagógico",
+  financeiro: "Financeiro",
+  crm: "CRM",
+  success: "Retenção",
+  captacao: "Captação",
+  portal_aluno: "Portal do aluno",
+  asaas: "ASAAS",
+  nota_fiscal: "Nota fiscal",
+};
+
+const isEnabledModule = (module: MasterSchoolModule) =>
+  ["trial", "ativo", "cortesia"].includes(module.status);
+
 function mapOverview(data: MasterOverview) {
   const schools: SchoolTenant[] = data.schools.map((school) => ({
     id: school.id,
     name: school.nome,
     subdominio: `${school.slug}.fluencyai.online`,
-    status: school.status === "ativa" || school.status === "trial" ? "Ativo" : school.status === "vencida" ? "Atrasado" : "Inativo",
+    status:
+      school.status === "ativa" || school.status === "trial"
+        ? "Ativo"
+        : school.status === "vencida"
+          ? "Atrasado"
+          : "Inativo",
     rawStatus: school.status,
     plan: school.plano,
     studentsCount: school.students_count,
@@ -103,7 +130,10 @@ function mapOverview(data: MasterOverview) {
     unitsCount: school.units_count,
     managersCount: school.managers_count,
     pendingInvitesCount: school.pending_invites_count,
-    modules: { crm: false, financeiro: false, pedagogico: false, success: false },
+    modules: school.modules ?? [],
+    members: school.members ?? [],
+    units: school.units ?? [],
+    invites: school.invites ?? [],
     paymentHistory: [],
   }));
   const team: MasterUser[] = data.team.map((member) => ({
@@ -122,7 +152,7 @@ function SuperAdminPage() {
   const [auditLogs, setAuditLogs] = useState<MasterAuditLog[]>([]);
   const [isLoadingMaster, setIsLoadingMaster] = useState(true);
   const [masterError, setMasterError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"schools" | "status" | "logs" | "team" | "customization" | "profile">("schools");
+  const [activeTab, setActiveTab] = useState<MasterTab>("schools");
 
   // System Health States
   const [healthStatus, setHealthStatus] = useState({
@@ -171,6 +201,8 @@ function SuperAdminPage() {
     managerName: "",
     managerEmail: "",
   });
+  const [schoolInvite, setSchoolInvite] = useState({ name: "", email: "", role: "gestor" });
+  const [isInvitingSchoolUser, setIsInvitingSchoolUser] = useState(false);
 
   // Modal Editing States - Team Users
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
@@ -211,7 +243,9 @@ function SuperAdminPage() {
       setTeam(mapped.team);
       setAuditLogs(data.audit_logs);
     } catch (error) {
-      setMasterError(error instanceof Error ? error.message : "Não foi possível carregar o Console Master.");
+      setMasterError(
+        error instanceof Error ? error.message : "Não foi possível carregar o Console Master.",
+      );
     } finally {
       setIsLoadingMaster(false);
     }
@@ -234,7 +268,10 @@ function SuperAdminPage() {
     if (!school) return;
     const activating = school.status !== "Ativo";
     try {
-      await masterAdmin.updateSchool(schoolId, { status: activating ? "ativa" : "suspensa", ativa: activating });
+      await masterAdmin.updateSchool(schoolId, {
+        status: activating ? "ativa" : "suspensa",
+        ativa: activating,
+      });
       await loadMasterData();
       toast.success(`Situação da escola ${school.name} alterada com sucesso.`);
     } catch (error) {
@@ -291,7 +328,12 @@ function SuperAdminPage() {
       await masterAdmin.updateSchool(editingSchool.id, {
         nome: editingSchool.name,
         slug: editingSchool.subdominio.split(".")[0],
-        status: editingSchool.status === "Ativo" ? "ativa" : editingSchool.status === "Atrasado" ? "vencida" : "suspensa",
+        status:
+          editingSchool.status === "Ativo"
+            ? "ativa"
+            : editingSchool.status === "Atrasado"
+              ? "vencida"
+              : "suspensa",
         ativa: editingSchool.status === "Ativo",
         plano: editingSchool.plan,
       });
@@ -330,6 +372,89 @@ function SuperAdminPage() {
     }
   };
 
+  const handleToggleSchoolModule = async (module: MasterSchoolModule) => {
+    if (!editingSchool) return;
+    const enabled = isEnabledModule(module);
+    setIsSavingSchool(true);
+    try {
+      await masterAdmin.setSchoolModule(editingSchool.id, module.modulo_id, !enabled);
+      await loadMasterData();
+      setEditingSchool((current) =>
+        current
+          ? {
+              ...current,
+              modules: current.modules.map((item) =>
+                item.modulo_id === module.modulo_id
+                  ? { ...item, status: enabled ? "disponivel" : "ativo" }
+                  : item,
+              ),
+            }
+          : current,
+      );
+      toast.success(
+        `${schoolModuleLabels[module.modulo_id] ?? module.modulo_id} ${enabled ? "desabilitado" : "habilitado"}.`,
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível alterar o módulo.");
+    } finally {
+      setIsSavingSchool(false);
+    }
+  };
+
+  const handleCreateSchoolInvite = async () => {
+    if (!editingSchool || !schoolInvite.name.trim() || !schoolInvite.email.trim()) {
+      toast.error("Informe nome e e-mail do usuário.");
+      return;
+    }
+    setIsInvitingSchoolUser(true);
+    try {
+      const result = await masterAdmin.createInvite({
+        school_id: editingSchool.id,
+        name: schoolInvite.name,
+        email: schoolInvite.email,
+        role: schoolInvite.role,
+        unit_ids: schoolInvite.role === "gestor" ? editingSchool.units.map((unit) => unit.id) : [],
+      });
+      await navigator.clipboard.writeText(result.invite_url);
+      setSchoolInvite({ name: "", email: "", role: "gestor" });
+      await loadMasterData();
+      toast.success("Convite criado e link seguro copiado.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível criar o convite.");
+    } finally {
+      setIsInvitingSchoolUser(false);
+    }
+  };
+
+  const handleUpdateSchoolMember = async (
+    member: MasterSchoolMember,
+    changes: { role?: string; status?: string },
+  ) => {
+    if (!editingSchool) return;
+    try {
+      await masterAdmin.updateMember({
+        school_id: editingSchool.id,
+        member_id: member.id,
+        role: changes.role ?? member.papel,
+        status: changes.status ?? member.status,
+        unit_ids: member.unit_ids,
+      });
+      const nextMember = {
+        ...member,
+        papel: changes.role ?? member.papel,
+        status: changes.status ?? member.status,
+      };
+      setEditingSchool({
+        ...editingSchool,
+        members: editingSchool.members.map((item) => (item.id === member.id ? nextMember : item)),
+      });
+      await loadMasterData();
+      toast.success("Acesso do usuário atualizado.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível alterar o acesso.");
+    }
+  };
+
   const handleSaveEditingTeamMember = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTeamMember) return;
@@ -349,7 +474,6 @@ function SuperAdminPage() {
 
   return (
     <div className="min-h-screen w-full bg-[#05060a] text-foreground p-6 sm:p-12 md:max-w-6xl mx-auto space-y-8 animate-in fade-in duration-300">
-      
       {/* Header bar */}
       <div className="flex items-center justify-between border-b border-white/5 pb-4">
         <div className="flex items-center gap-2.5">
@@ -358,7 +482,9 @@ function SuperAdminPage() {
           </span>
           <div>
             <h1 className="text-base font-bold text-white">{customLogoName}</h1>
-            <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-semibold mt-0.5">Console de Administração Geral</p>
+            <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-semibold mt-0.5">
+              Console de Administração Geral
+            </p>
           </div>
         </div>
 
@@ -389,7 +515,7 @@ function SuperAdminPage() {
           return (
             <button
               key={t.id}
-              onClick={() => setActiveTab(t.id as any)}
+              onClick={() => setActiveTab(t.id as MasterTab)}
               className={`pb-4 text-xs font-bold tracking-wider uppercase border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
                 activeTab === t.id
                   ? "border-primary text-primary"
@@ -413,7 +539,9 @@ function SuperAdminPage() {
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-xs text-neutral-400">
-              {isLoadingMaster ? "Carregando dados reais do Supabase…" : `${schools.length} escola(s) encontrada(s)`}
+              {isLoadingMaster
+                ? "Carregando dados reais do Supabase…"
+                : `${schools.length} escola(s) encontrada(s)`}
             </div>
             <div className="flex gap-2">
               <button
@@ -445,9 +573,13 @@ function SuperAdminPage() {
           <div className="grid gap-4 sm:grid-cols-3">
             <GlassCard className="p-5 flex items-center justify-between border-white/5 bg-neutral-900/40">
               <div>
-                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Faturamento Recorrente (MRR)</p>
+                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                  Faturamento Recorrente (MRR)
+                </p>
                 <p className="mt-1 text-2xl font-bold text-white">—</p>
-                <p className="text-[10px] text-neutral-500 mt-1">Será calculado pelo catálogo e cobranças ASAAS</p>
+                <p className="text-[10px] text-neutral-500 mt-1">
+                  Será calculado pelo catálogo e cobranças ASAAS
+                </p>
               </div>
               <span className="grid size-10 place-items-center rounded-xl bg-paid/10 border border-paid/20">
                 <Wallet className="size-5 text-paid" />
@@ -456,8 +588,12 @@ function SuperAdminPage() {
 
             <GlassCard className="p-5 flex items-center justify-between border-white/5 bg-neutral-900/40">
               <div>
-                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Escolas Ativas</p>
-                <p className="mt-1 text-2xl font-bold text-white">{schools.filter((s) => s.status === "Ativo").length}</p>
+                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                  Escolas Ativas
+                </p>
+                <p className="mt-1 text-2xl font-bold text-white">
+                  {schools.filter((s) => s.status === "Ativo").length}
+                </p>
                 <p className="text-[10px] text-neutral-500 mt-1">Unidades com acesso liberado</p>
               </div>
               <span className="grid size-10 place-items-center rounded-xl bg-primary/10 border border-primary/20">
@@ -467,9 +603,11 @@ function SuperAdminPage() {
 
             <GlassCard className="p-5 flex items-center justify-between border-white/5 bg-neutral-900/40">
               <div>
-                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Módulos Ativados</p>
+                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                  Módulos Ativados
+                </p>
                 <p className="mt-1 text-2xl font-bold text-white">
-                  {schools.reduce((acc, s) => acc + Object.values(s.modules).filter(Boolean).length, 0)}
+                  {schools.reduce((acc, s) => acc + s.modules.filter(isEnabledModule).length, 0)}
                 </p>
                 <p className="text-[10px] text-neutral-500 mt-1">Add-ons instalados na base</p>
               </div>
@@ -485,7 +623,8 @@ function SuperAdminPage() {
             <div>
               <p className="font-bold uppercase tracking-wider">Painel Master de Sobrescrita</p>
               <p className="mt-1 opacity-90">
-                Gerencie os planos contratados de cada unidade, edite seus detalhes operacionais e veja o histórico completo de faturas geradas no SaaS.
+                Gerencie os planos contratados de cada unidade, edite seus detalhes operacionais e
+                veja o histórico completo de faturas geradas no SaaS.
               </p>
             </div>
           </div>
@@ -519,67 +658,37 @@ function SuperAdminPage() {
                         </button>
                         <p className="text-[10px] text-neutral-500 mt-0.5">ID: #{s.id}</p>
                       </td>
-                      <td className="px-6 py-4 text-neutral-400 text-xs font-mono">{s.subdominio}</td>
-                      <td className="px-6 py-4">
-                        
-                        <div className="grid gap-2 sm:grid-cols-2 max-w-xs">
-                          {/* CRM */}
-                          <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-white">
-                            <input
-                              type="checkbox"
-                              checked={s.modules.crm}
-                              disabled
-                              title="Catálogo de módulos será conectado no próximo pacote"
-                              className="size-4 rounded border-white/10 bg-white/5 text-primary opacity-50"
-                            />
-                            <span>CRM</span>
-                          </label>
-
-                          {/* Financeiro */}
-                          <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-white">
-                            <input
-                              type="checkbox"
-                              checked={s.modules.financeiro}
-                              disabled
-                              title="Catálogo de módulos será conectado no próximo pacote"
-                              className="size-4 rounded border-white/10 bg-white/5 text-primary opacity-50"
-                            />
-                            <span>Financeiro</span>
-                          </label>
-
-                          {/* Pedagogico */}
-                          <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-white">
-                            <input
-                              type="checkbox"
-                              checked={s.modules.pedagogico}
-                              disabled
-                              title="Catálogo de módulos será conectado no próximo pacote"
-                              className="size-4 rounded border-white/10 bg-white/5 text-primary opacity-50"
-                            />
-                            <span>Pedagógico</span>
-                          </label>
-
-                          {/* Success/Retencao */}
-                          <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-white">
-                            <input
-                              type="checkbox"
-                              checked={s.modules.success}
-                              disabled
-                              title="Catálogo de módulos será conectado no próximo pacote"
-                              className="size-4 rounded border-white/10 bg-white/5 text-primary opacity-50"
-                            />
-                            <span>Retenção</span>
-                          </label>
-                        </div>
-
+                      <td className="px-6 py-4 text-neutral-400 text-xs font-mono">
+                        {s.subdominio}
                       </td>
-                      <td className="px-6 py-4 text-neutral-300 text-xs font-semibold">{s.studentsCount} alunos</td>
                       <td className="px-6 py-4">
-                        <span className={`rounded-full px-2.5 py-0.5 text-[9px] font-bold border ${
-                          s.status === "Ativo"
-                            ? "bg-paid/10 border-paid/20 text-paid"
-                            : "bg-overdue/10 border-overdue/20 text-overdue"
-                        }`}>
+                        <div className="flex max-w-xs flex-wrap gap-1.5">
+                          {s.modules.filter(isEnabledModule).map((module) => (
+                            <span
+                              key={module.modulo_id}
+                              className="rounded-md border border-primary/20 bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary"
+                            >
+                              {schoolModuleLabels[module.modulo_id] ?? module.modulo_id}
+                            </span>
+                          ))}
+                          {s.modules.filter(isEnabledModule).length === 0 && (
+                            <span className="text-[10px] text-neutral-500">
+                              Nenhum módulo habilitado
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-neutral-300 text-xs font-semibold">
+                        {s.studentsCount} alunos
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[9px] font-bold border ${
+                            s.status === "Ativo"
+                              ? "bg-paid/10 border-paid/20 text-paid"
+                              : "bg-overdue/10 border-overdue/20 text-overdue"
+                          }`}
+                        >
                           {s.status.toUpperCase()}
                         </span>
                       </td>
@@ -633,7 +742,9 @@ function SuperAdminPage() {
             <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 flex gap-3 text-xs text-rose-400 leading-relaxed items-start animate-pulse">
               <ShieldAlert className="size-4.5 shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold uppercase tracking-wider">Aviso de Infraestrutura Instável</p>
+                <p className="font-bold uppercase tracking-wider">
+                  Aviso de Infraestrutura Instável
+                </p>
                 <p className="mt-1 opacity-90">
                   Um ou mais microserviços simulados estão offline ou reportando falha.
                 </p>
@@ -642,19 +753,31 @@ function SuperAdminPage() {
           )}
 
           <div className="grid gap-6 sm:grid-cols-2">
-            
             {/* Supabase status card */}
             <GlassCard className="p-6 space-y-4 border-white/5 bg-neutral-900/40">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-white">Banco de Dados (Supabase PostgreSQL)</h3>
-                  <p className="text-[10px] text-neutral-400 mt-0.5">Conexão ativa de tabelas e RLS (piwxpveprnwxkqlkjgux)</p>
+                  <h3 className="text-sm font-semibold text-white">
+                    Banco de Dados (Supabase PostgreSQL)
+                  </h3>
+                  <p className="text-[10px] text-neutral-400 mt-0.5">
+                    Conexão ativa de tabelas e RLS (piwxpveprnwxkqlkjgux)
+                  </p>
                 </div>
-                <span className={`size-3 rounded-full ${healthStatus.supabase ? "bg-paid shadow-[0_0_10px_#10b981]" : "bg-overdue animate-ping"}`} />
+                <span
+                  className={`size-3 rounded-full ${healthStatus.supabase ? "bg-paid shadow-[0_0_10px_#10b981]" : "bg-overdue animate-ping"}`}
+                />
               </div>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-neutral-400">
-                  Latência real: <strong>{healthStatus.supabase ? (supabaseLatency ? `${supabaseLatency}ms` : "Conectado") : "Offline / Falha"}</strong>
+                  Latência real:{" "}
+                  <strong>
+                    {healthStatus.supabase
+                      ? supabaseLatency
+                        ? `${supabaseLatency}ms`
+                        : "Conectado"
+                      : "Offline / Falha"}
+                  </strong>
                 </span>
                 <div className="flex items-center gap-2">
                   <button
@@ -678,13 +801,22 @@ function SuperAdminPage() {
             <GlassCard className="p-6 space-y-4 border-white/5 bg-neutral-900/40">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-white">Gateway de Pagamentos & Webhooks</h3>
-                  <p className="text-[10px] text-neutral-400 mt-0.5">Processamento de mensalidades recorrentes B2B</p>
+                  <h3 className="text-sm font-semibold text-white">
+                    Gateway de Pagamentos & Webhooks
+                  </h3>
+                  <p className="text-[10px] text-neutral-400 mt-0.5">
+                    Processamento de mensalidades recorrentes B2B
+                  </p>
                 </div>
-                <span className={`size-3 rounded-full ${healthStatus.stripe ? "bg-paid shadow-[0_0_10px_#10b981]" : "bg-overdue animate-ping"}`} />
+                <span
+                  className={`size-3 rounded-full ${healthStatus.stripe ? "bg-paid shadow-[0_0_10px_#10b981]" : "bg-overdue animate-ping"}`}
+                />
               </div>
               <div className="flex justify-between items-center text-xs">
-                <span className="text-neutral-400">Webhook Listeners: <strong>{healthStatus.stripe ? "Operacionais" : "Erro de Handshake"}</strong></span>
+                <span className="text-neutral-400">
+                  Webhook Listeners:{" "}
+                  <strong>{healthStatus.stripe ? "Operacionais" : "Erro de Handshake"}</strong>
+                </span>
                 <button
                   onClick={() => handleToggleHealth("stripe")}
                   className="rounded bg-white/5 hover:bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-white transition-colors cursor-pointer"
@@ -698,13 +830,22 @@ function SuperAdminPage() {
             <GlassCard className="p-6 space-y-4 border-white/5 bg-neutral-900/40">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-white">Motor de Sincronia CRM & Funil</h3>
-                  <p className="text-[10px] text-neutral-400 mt-0.5">Mapeador de leads e negócios integrados</p>
+                  <h3 className="text-sm font-semibold text-white">
+                    Motor de Sincronia CRM & Funil
+                  </h3>
+                  <p className="text-[10px] text-neutral-400 mt-0.5">
+                    Mapeador de leads e negócios integrados
+                  </p>
                 </div>
-                <span className={`size-3 rounded-full ${healthStatus.crm ? "bg-paid shadow-[0_0_10px_#10b981]" : "bg-overdue animate-ping"}`} />
+                <span
+                  className={`size-3 rounded-full ${healthStatus.crm ? "bg-paid shadow-[0_0_10px_#10b981]" : "bg-overdue animate-ping"}`}
+                />
               </div>
               <div className="flex justify-between items-center text-xs">
-                <span className="text-neutral-400">Status dos Worker queues: <strong>{healthStatus.crm ? "Online (0 pendentes)" : "Travado"}</strong></span>
+                <span className="text-neutral-400">
+                  Status dos Worker queues:{" "}
+                  <strong>{healthStatus.crm ? "Online (0 pendentes)" : "Travado"}</strong>
+                </span>
                 <button
                   onClick={() => handleToggleHealth("crm")}
                   className="rounded bg-white/5 hover:bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-white transition-colors cursor-pointer"
@@ -719,12 +860,19 @@ function SuperAdminPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-white">Serviço de E-mails (AWS SES)</h3>
-                  <p className="text-[10px] text-neutral-400 mt-0.5">Envio de faturas, links de redefinição e cobranças</p>
+                  <p className="text-[10px] text-neutral-400 mt-0.5">
+                    Envio de faturas, links de redefinição e cobranças
+                  </p>
                 </div>
-                <span className={`size-3 rounded-full ${healthStatus.aws ? "bg-paid shadow-[0_0_10px_#10b981]" : "bg-overdue animate-ping"}`} />
+                <span
+                  className={`size-3 rounded-full ${healthStatus.aws ? "bg-paid shadow-[0_0_10px_#10b981]" : "bg-overdue animate-ping"}`}
+                />
               </div>
               <div className="flex justify-between items-center text-xs">
-                <span className="text-neutral-400">Entregabilidade: <strong>{healthStatus.aws ? "99.8% (Excelente)" : "Falha na Fila"}</strong></span>
+                <span className="text-neutral-400">
+                  Entregabilidade:{" "}
+                  <strong>{healthStatus.aws ? "99.8% (Excelente)" : "Falha na Fila"}</strong>
+                </span>
                 <button
                   onClick={() => handleToggleHealth("aws")}
                   className="rounded bg-white/5 hover:bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-white transition-colors cursor-pointer"
@@ -733,7 +881,6 @@ function SuperAdminPage() {
                 </button>
               </div>
             </GlassCard>
-
           </div>
         </div>
       )}
@@ -748,11 +895,12 @@ function SuperAdminPage() {
           />
 
           <div className="grid gap-6 md:grid-cols-3">
-            
             {/* Online stats */}
             <GlassCard className="p-5 flex flex-col justify-between border-white/5 bg-neutral-900/40 md:col-span-1 space-y-4">
               <div>
-                <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Usuários Ativos Agora</h4>
+                <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
+                  Usuários Ativos Agora
+                </h4>
                 <p className="text-3xl font-extrabold text-white mt-1">Não medido</p>
               </div>
               <div className="space-y-2 text-xs text-neutral-400">
@@ -774,17 +922,27 @@ function SuperAdminPage() {
             {/* Audit Logs list */}
             <GlassCard className="p-6 border-white/5 bg-neutral-900/40 md:col-span-2 space-y-4">
               <div>
-                <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Histórico de Auditoria Geral (Audit Logs)</h4>
-                <p className="text-[10px] text-neutral-500 mt-0.5">Eventos mais recentes processados no cluster</p>
+                <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
+                  Histórico de Auditoria Geral (Audit Logs)
+                </h4>
+                <p className="text-[10px] text-neutral-500 mt-0.5">
+                  Eventos mais recentes processados no cluster
+                </p>
               </div>
 
               <div className="space-y-3 font-mono text-[11px] text-neutral-300 max-h-[220px] overflow-y-auto pr-1">
                 {auditLogs.map((log) => (
-                  <div key={log.id} className="flex gap-3 items-start border-b border-white/5 pb-2 last:border-0 last:pb-0">
+                  <div
+                    key={log.id}
+                    className="flex gap-3 items-start border-b border-white/5 pb-2 last:border-0 last:pb-0"
+                  >
                     <span className="text-primary font-bold shrink-0">
                       [{new Date(log.occurred_at).toLocaleTimeString("pt-BR")}]
                     </span>
-                    <span>{log.action} · {log.resource_type}{log.resource_id ? ` #${log.resource_id.slice(0, 8)}` : ""}</span>
+                    <span>
+                      {log.action} · {log.resource_type}
+                      {log.resource_id ? ` #${log.resource_id.slice(0, 8)}` : ""}
+                    </span>
                   </div>
                 ))}
                 {!isLoadingMaster && auditLogs.length === 0 && (
@@ -792,7 +950,6 @@ function SuperAdminPage() {
                 )}
               </div>
             </GlassCard>
-
           </div>
         </div>
       )}
@@ -807,7 +964,6 @@ function SuperAdminPage() {
           />
 
           <div className="grid gap-6 lg:grid-cols-3 items-start">
-            
             {/* Team Table list */}
             <div className="lg:col-span-2">
               <GlassCard className="overflow-hidden border-white/5 bg-neutral-900/40">
@@ -837,20 +993,29 @@ function SuperAdminPage() {
                           <p className="text-[10px] text-neutral-500 font-mono mt-0.5">{t.email}</p>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`rounded px-2 py-0.5 text-[10px] font-bold border uppercase tracking-wider ${
-                            t.role === "Administrador" ? "bg-primary/10 border-primary/20 text-primary" :
-                            t.role === "Financeiro" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" :
-                            t.role === "Desenvolvedor" ? "bg-blue-500/10 border-blue-500/20 text-blue-400" :
-                            "bg-purple-500/10 border-purple-500/20 text-purple-400"
-                          }`}>
+                          <span
+                            className={`rounded px-2 py-0.5 text-[10px] font-bold border uppercase tracking-wider ${
+                              t.role === "Administrador"
+                                ? "bg-primary/10 border-primary/20 text-primary"
+                                : t.role === "Financeiro"
+                                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                                  : t.role === "Desenvolvedor"
+                                    ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                                    : "bg-purple-500/10 border-purple-500/20 text-purple-400"
+                            }`}
+                          >
                             {t.role}
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex items-center gap-1.5 text-xs font-bold ${
-                            t.status === "Ativo" ? "text-paid" : "text-neutral-500"
-                          }`}>
-                            <span className={`size-1.5 rounded-full ${t.status === "Ativo" ? "bg-paid animate-pulse" : "bg-neutral-500"}`} /> 
+                          <span
+                            className={`inline-flex items-center gap-1.5 text-xs font-bold ${
+                              t.status === "Ativo" ? "text-paid" : "text-neutral-500"
+                            }`}
+                          >
+                            <span
+                              className={`size-1.5 rounded-full ${t.status === "Ativo" ? "bg-paid animate-pulse" : "bg-neutral-500"}`}
+                            />
                             {t.status}
                           </span>
                         </td>
@@ -884,13 +1049,16 @@ function SuperAdminPage() {
             <GlassCard className="p-6 space-y-4 border-white/5 bg-neutral-900/40">
               <div>
                 <h3 className="text-sm font-semibold text-white">Cadastrar Membro Master</h3>
-                <p className="text-xs text-neutral-400 mt-0.5">Adicione equipe para gerenciar o backoffice.</p>
+                <p className="text-xs text-neutral-400 mt-0.5">
+                  Adicione equipe para gerenciar o backoffice.
+                </p>
               </div>
 
               <form onSubmit={handleAddTeamMember} className="space-y-4 text-xs">
-                
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Nome Completo</label>
+                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                    Nome Completo
+                  </label>
                   <input
                     placeholder="Amanda Silva"
                     value={teamName}
@@ -901,7 +1069,9 @@ function SuperAdminPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">E-mail Corporativo</label>
+                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                    E-mail Corporativo
+                  </label>
                   <input
                     type="email"
                     placeholder="amanda.financeiro@fluency.ai"
@@ -913,10 +1083,12 @@ function SuperAdminPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Cargo / Nível de Acesso</label>
+                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                    Cargo / Nível de Acesso
+                  </label>
                   <select
                     value={teamRole}
-                    onChange={(e) => setTeamRole(e.target.value as any)}
+                    onChange={(e) => setTeamRole(e.target.value as MasterUser["role"])}
                     className="h-10 w-full rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-white outline-none focus:border-primary"
                   >
                     <option value="Administrador">Administrador Geral</option>
@@ -932,10 +1104,8 @@ function SuperAdminPage() {
                 >
                   <UserPlus className="size-4" /> Adicionar Colaborador
                 </button>
-
               </form>
             </GlassCard>
-
           </div>
         </div>
       )}
@@ -951,9 +1121,7 @@ function SuperAdminPage() {
 
           <GlassCard className="p-8 max-w-xl mx-auto border-white/5 bg-neutral-900/40">
             <form onSubmit={handleSaveCustomization} className="space-y-6 text-xs">
-              
               <div className="space-y-4">
-                
                 {/* Logo Text Name */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -965,7 +1133,9 @@ function SuperAdminPage() {
                     className="h-10 w-full rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-white outline-none focus:border-primary"
                     required
                   />
-                  <p className="text-[10px] text-neutral-500">Nome exibido no canto superior esquerdo da barra de navegação principal.</p>
+                  <p className="text-[10px] text-neutral-500">
+                    Nome exibido no canto superior esquerdo da barra de navegação principal.
+                  </p>
                 </div>
 
                 {/* Typography Choice */}
@@ -1005,12 +1175,16 @@ function SuperAdminPage() {
                       className="h-10 flex-1 rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-white outline-none focus:border-primary"
                     />
                   </div>
-                  <p className="text-[10px] text-neutral-500 font-mono">Injeta esta cor primária em todos os botões e elementos de destaque.</p>
+                  <p className="text-[10px] text-neutral-500 font-mono">
+                    Injeta esta cor primária em todos os botões e elementos de destaque.
+                  </p>
                 </div>
 
                 {/* Default Light/Dark Mode */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Modo Inicial do Sistema</label>
+                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                    Modo Inicial do Sistema
+                  </label>
                   <div className="grid grid-cols-2 gap-2 mt-1">
                     <button
                       type="button"
@@ -1036,7 +1210,6 @@ function SuperAdminPage() {
                     </button>
                   </div>
                 </div>
-
               </div>
 
               <div className="pt-2 flex justify-end">
@@ -1047,7 +1220,6 @@ function SuperAdminPage() {
                   <Save className="size-4" /> Salvar Configuração Base
                 </button>
               </div>
-
             </form>
           </GlassCard>
         </div>
@@ -1070,19 +1242,24 @@ function SuperAdminPage() {
               }}
               className="space-y-6 text-xs"
             >
-              
               <div className="flex flex-col sm:flex-row items-center gap-4 border-b border-white/5 pb-6">
-                
                 {/* Profile Picture Mock Selection */}
                 <div className="relative group">
-                  <div className={`size-16 rounded-full border border-primary/20 grid place-items-center text-xl font-bold ${
-                    profileAvatarId === "avatar-1" ? "bg-primary/20 text-primary" :
-                    profileAvatarId === "avatar-2" ? "bg-emerald-500/20 text-emerald-400" :
-                    "bg-indigo-500/20 text-indigo-400"
-                  }`}>
-                    {profileName.split(" ").map(w => w[0]).join("")}
+                  <div
+                    className={`size-16 rounded-full border border-primary/20 grid place-items-center text-xl font-bold ${
+                      profileAvatarId === "avatar-1"
+                        ? "bg-primary/20 text-primary"
+                        : profileAvatarId === "avatar-2"
+                          ? "bg-emerald-500/20 text-emerald-400"
+                          : "bg-indigo-500/20 text-indigo-400"
+                    }`}
+                  >
+                    {profileName
+                      .split(" ")
+                      .map((w) => w[0])
+                      .join("")}
                   </div>
-                  
+
                   <div className="absolute inset-0 bg-black/60 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all cursor-pointer">
                     <Camera className="size-4 text-white" />
                   </div>
@@ -1090,8 +1267,10 @@ function SuperAdminPage() {
 
                 <div>
                   <h4 className="text-sm font-semibold text-white">{profileName}</h4>
-                  <p className="text-[10px] text-neutral-400">Administrador Geral da Plataforma SaaS</p>
-                  
+                  <p className="text-[10px] text-neutral-400">
+                    Administrador Geral da Plataforma SaaS
+                  </p>
+
                   <div className="flex items-center gap-2 mt-2">
                     <span className="text-[10px] text-neutral-500">Avatar:</span>
                     {avatarOptions.map((opt) => (
@@ -1103,12 +1282,13 @@ function SuperAdminPage() {
                           toast.info("Avatar alterado.");
                         }}
                         className={`size-5 rounded-full border cursor-pointer transition-all ${opt.bg} ${
-                          profileAvatarId === opt.id ? "border-primary ring-1 ring-primary" : "border-white/10"
+                          profileAvatarId === opt.id
+                            ? "border-primary ring-1 ring-primary"
+                            : "border-white/10"
                         }`}
                       />
                     ))}
                   </div>
-
                 </div>
               </div>
 
@@ -1140,7 +1320,6 @@ function SuperAdminPage() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                
                 {/* CNPJ or CPF */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -1173,11 +1352,14 @@ function SuperAdminPage() {
                       onClick={() => setShowProfilePassword(!showProfilePassword)}
                       className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white cursor-pointer bg-transparent border-0"
                     >
-                      {showProfilePassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      {showProfilePassword ? (
+                        <EyeOff className="size-4" />
+                      ) : (
+                        <Eye className="size-4" />
+                      )}
                     </button>
                   </div>
                 </div>
-
               </div>
 
               <div className="pt-2 flex justify-end">
@@ -1188,7 +1370,6 @@ function SuperAdminPage() {
                   <Save className="size-4" /> Salvar Alterações Master
                 </button>
               </div>
-
             </form>
           </GlassCard>
         </div>
@@ -1200,29 +1381,64 @@ function SuperAdminPage() {
             <div className="flex items-center justify-between border-b border-white/5 pb-4">
               <div>
                 <h3 className="text-base font-bold text-white">Nova escola e gestor responsável</h3>
-                <p className="mt-1 text-xs text-neutral-400">Cria a escola, a unidade principal e um convite com validade.</p>
+                <p className="mt-1 text-xs text-neutral-400">
+                  Cria a escola, a unidade principal e um convite com validade.
+                </p>
               </div>
-              <button type="button" onClick={() => setIsCreateSchoolOpen(false)} className="text-neutral-400 hover:text-white">
+              <button
+                type="button"
+                onClick={() => setIsCreateSchoolOpen(false)}
+                className="text-neutral-400 hover:text-white"
+              >
                 <X className="size-5" />
               </button>
             </div>
             <form onSubmit={handleCreateSchool} className="mt-6 space-y-5 text-xs">
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="space-y-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Nome da escola</span>
-                  <input required minLength={3} value={newSchool.schoolName} onChange={(event) => setNewSchool({ ...newSchool, schoolName: event.target.value })} className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white outline-none focus:border-primary" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                    Nome da escola
+                  </span>
+                  <input
+                    required
+                    minLength={3}
+                    value={newSchool.schoolName}
+                    onChange={(event) =>
+                      setNewSchool({ ...newSchool, schoolName: event.target.value })
+                    }
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white outline-none focus:border-primary"
+                  />
                 </label>
                 <label className="space-y-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Subdomínio</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                    Subdomínio
+                  </span>
                   <div className="flex items-center rounded-lg border border-white/10 bg-white/5 pr-3 focus-within:border-primary">
-                    <input required pattern="[a-z0-9][a-z0-9-]{1,58}[a-z0-9]" value={newSchool.slug} onChange={(event) => setNewSchool({ ...newSchool, slug: event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })} className="h-10 min-w-0 flex-1 bg-transparent px-3 text-white outline-none" />
+                    <input
+                      required
+                      pattern="[a-z0-9][a-z0-9-]{1,58}[a-z0-9]"
+                      value={newSchool.slug}
+                      onChange={(event) =>
+                        setNewSchool({
+                          ...newSchool,
+                          slug: event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
+                        })
+                      }
+                      className="h-10 min-w-0 flex-1 bg-transparent px-3 text-white outline-none"
+                    />
                     <span className="text-[10px] text-neutral-500">.fluencyai.online</span>
                   </div>
                 </label>
               </div>
               <label className="block space-y-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Plano inicial</span>
-                <select value={newSchool.plan} onChange={(event) => setNewSchool({ ...newSchool, plan: event.target.value })} className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white outline-none focus:border-primary">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                  Plano inicial
+                </span>
+                <select
+                  value={newSchool.plan}
+                  onChange={(event) => setNewSchool({ ...newSchool, plan: event.target.value })}
+                  className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white outline-none focus:border-primary"
+                >
                   <option value="trial">Teste gratuito</option>
                   <option value="essencial">Essencial</option>
                   <option value="profissional">Profissional</option>
@@ -1231,20 +1447,51 @@ function SuperAdminPage() {
               </label>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="space-y-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Nome do gestor</span>
-                  <input required minLength={3} value={newSchool.managerName} onChange={(event) => setNewSchool({ ...newSchool, managerName: event.target.value })} className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white outline-none focus:border-primary" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                    Nome do gestor
+                  </span>
+                  <input
+                    required
+                    minLength={3}
+                    value={newSchool.managerName}
+                    onChange={(event) =>
+                      setNewSchool({ ...newSchool, managerName: event.target.value })
+                    }
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white outline-none focus:border-primary"
+                  />
                 </label>
                 <label className="space-y-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">E-mail do gestor</span>
-                  <input required type="email" value={newSchool.managerEmail} onChange={(event) => setNewSchool({ ...newSchool, managerEmail: event.target.value })} className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white outline-none focus:border-primary" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                    E-mail do gestor
+                  </span>
+                  <input
+                    required
+                    type="email"
+                    value={newSchool.managerEmail}
+                    onChange={(event) =>
+                      setNewSchool({ ...newSchool, managerEmail: event.target.value })
+                    }
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white outline-none focus:border-primary"
+                  />
                 </label>
               </div>
               <div className="rounded-lg border border-primary/15 bg-primary/5 p-3 text-[11px] text-neutral-300">
-                O gestor definirá a própria senha. Enquanto o envio de e-mail não estiver configurado, o link seguro será copiado para você encaminhar manualmente.
+                O gestor definirá a própria senha. Enquanto o envio de e-mail não estiver
+                configurado, o link seguro será copiado para você encaminhar manualmente.
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setIsCreateSchoolOpen(false)} className="rounded-lg border border-white/10 px-4 py-2 text-neutral-300">Cancelar</button>
-                <button disabled={isSavingSchool} type="submit" className="rounded-lg bg-primary px-5 py-2 font-semibold text-primary-foreground disabled:opacity-50">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateSchoolOpen(false)}
+                  className="rounded-lg border border-white/10 px-4 py-2 text-neutral-300"
+                >
+                  Cancelar
+                </button>
+                <button
+                  disabled={isSavingSchool}
+                  type="submit"
+                  className="rounded-lg bg-primary px-5 py-2 font-semibold text-primary-foreground disabled:opacity-50"
+                >
                   {isSavingSchool ? "Criando…" : "Criar escola e convite"}
                 </button>
               </div>
@@ -1257,11 +1504,12 @@ function SuperAdminPage() {
       {isSchoolModalOpen && editingSchool && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="relative w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0d0e14] p-6 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
-            
             <div className="flex items-center justify-between border-b border-white/5 pb-4">
               <div className="flex items-center gap-2">
                 <Building className="size-5 text-primary" />
-                <h3 className="text-base font-bold text-white">Editar Unidade: {editingSchool.name}</h3>
+                <h3 className="text-base font-bold text-white">
+                  Editar Unidade: {editingSchool.name}
+                </h3>
               </div>
               <button
                 type="button"
@@ -1273,12 +1521,12 @@ function SuperAdminPage() {
             </div>
 
             <form onSubmit={handleSaveEditingSchool} className="space-y-6 text-xs">
-              
               <div className="grid gap-4 sm:grid-cols-2">
-                
                 {/* School Name */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Nome da Escola</label>
+                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                    Nome da Escola
+                  </label>
                   <input
                     value={editingSchool.name}
                     onChange={(e) => setEditingSchool({ ...editingSchool, name: e.target.value })}
@@ -1289,19 +1537,24 @@ function SuperAdminPage() {
 
                 {/* Subdomain */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Subdomínio Privado</label>
+                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                    Subdomínio Privado
+                  </label>
                   <input
                     value={editingSchool.subdominio}
-                    onChange={(e) => setEditingSchool({ ...editingSchool, subdominio: e.target.value })}
+                    onChange={(e) =>
+                      setEditingSchool({ ...editingSchool, subdominio: e.target.value })
+                    }
                     className="h-10 w-full rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-white outline-none focus:border-primary"
                     required
                   />
                 </div>
-
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Plano comercial</label>
+                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                  Plano comercial
+                </label>
                 <select
                   value={editingSchool.plan}
                   onChange={(e) => setEditingSchool({ ...editingSchool, plan: e.target.value })}
@@ -1315,13 +1568,19 @@ function SuperAdminPage() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
-                
                 {/* Contract Status */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Status do Contrato</label>
+                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                    Status do Contrato
+                  </label>
                   <select
                     value={editingSchool.status}
-                    onChange={(e) => setEditingSchool({ ...editingSchool, status: e.target.value as any })}
+                    onChange={(e) =>
+                      setEditingSchool({
+                        ...editingSchool,
+                        status: e.target.value as SchoolTenant["status"],
+                      })
+                    }
                     className="h-10 w-full rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-white outline-none focus:border-primary"
                   >
                     <option value="Ativo">Ativo / Regular</option>
@@ -1332,7 +1591,9 @@ function SuperAdminPage() {
 
                 {/* Student Count */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Quantidade de Alunos</label>
+                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                    Quantidade de Alunos
+                  </label>
                   <input
                     type="number"
                     value={editingSchool.studentsCount}
@@ -1343,7 +1604,9 @@ function SuperAdminPage() {
 
                 {/* Teachers Limit */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Unidades cadastradas</label>
+                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                    Unidades cadastradas
+                  </label>
                   <input
                     type="number"
                     value={editingSchool.unitsCount}
@@ -1351,35 +1614,155 @@ function SuperAdminPage() {
                     className="h-10 w-full rounded-lg border border-white/5 bg-white/[0.025] px-3 text-xs text-neutral-400 outline-none"
                   />
                 </div>
-
               </div>
 
               {/* Modules toggles in Popup */}
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Módulos Habilitados (Contrato SaaS)</label>
-                <div className="grid grid-cols-4 gap-3 bg-white/5 p-4 rounded-xl border border-white/5">
-                  {Object.keys(editingSchool.modules).map((mKey) => {
-                    const typedKey = mKey as keyof SchoolTenant["modules"];
-                    return (
-                      <label key={mKey} className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-white">
-                        <input
-                          type="checkbox"
-                          checked={editingSchool.modules[typedKey]}
-                          disabled
-                          title="Catálogo de módulos será conectado no próximo pacote"
-                          className="size-4 rounded border-white/10 bg-white/5 text-primary opacity-50"
-                        />
-                        <span className="uppercase">{mKey}</span>
-                      </label>
-                    );
-                  })}
+                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">
+                  Módulos Habilitados (Contrato SaaS)
+                </label>
+                <div className="grid gap-3 bg-white/5 p-4 rounded-xl border border-white/5 sm:grid-cols-2">
+                  {editingSchool.modules.map((module) => (
+                    <label
+                      key={module.modulo_id}
+                      className="flex items-center justify-between gap-3 text-xs font-semibold text-white"
+                    >
+                      <span>{schoolModuleLabels[module.modulo_id] ?? module.modulo_id}</span>
+                      <input
+                        type="checkbox"
+                        checked={isEnabledModule(module)}
+                        disabled={isSavingSchool}
+                        onChange={() => void handleToggleSchoolModule(module)}
+                        className="size-4 rounded border-white/10 bg-white/5 text-primary"
+                      />
+                    </label>
+                  ))}
                 </div>
+                <p className="text-[10px] text-neutral-500">
+                  A alteração fica registrada na auditoria. A composição de preço será calculada
+                  pelo catálogo na etapa de cobrança.
+                </p>
+              </div>
+
+              <div className="space-y-3 border-t border-white/5 pt-5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                    Usuários e acessos da escola
+                  </label>
+                  <span className="text-[10px] text-neutral-500">
+                    {editingSchool.members.length} ativo(s) ·{" "}
+                    {editingSchool.invites.filter((invite) => invite.status === "pendente").length}{" "}
+                    convite(s)
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {editingSchool.members.map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.025] p-3"
+                    >
+                      <div>
+                        <p className="font-semibold text-white">
+                          {member.nome || "Usuário da escola"}
+                        </p>
+                        <p className="text-[10px] text-neutral-500">
+                          {member.email || "E-mail indisponível"}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <select
+                          aria-label={`Nível de acesso de ${member.nome || member.email || "usuário"}`}
+                          value={member.papel}
+                          onChange={(event) =>
+                            void handleUpdateSchoolMember(member, { role: event.target.value })
+                          }
+                          className="h-8 rounded-md border border-white/5 bg-[#15161c] px-2 text-[10px] text-white"
+                        >
+                          <option value="gestor">Gestor</option>
+                          <option value="secretaria">Secretaria</option>
+                          <option value="financeiro">Financeiro</option>
+                          <option value="pedagogico">Pedagógico</option>
+                          <option value="comercial">Comercial</option>
+                          <option value="professor">Professor</option>
+                        </select>
+                        <select
+                          aria-label={`Status de ${member.nome || member.email || "usuário"}`}
+                          value={member.status}
+                          onChange={(event) =>
+                            void handleUpdateSchoolMember(member, { status: event.target.value })
+                          }
+                          className="h-8 rounded-md border border-white/5 bg-[#15161c] px-2 text-[10px] text-white"
+                        >
+                          <option value="ativo">Ativo</option>
+                          <option value="suspenso">Suspenso</option>
+                          <option value="inativo">Inativo</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                  {editingSchool.invites
+                    .filter((invite) => invite.status === "pendente")
+                    .map((invite) => (
+                      <div
+                        key={invite.id}
+                        className="flex items-center justify-between rounded-lg border border-amber-500/15 bg-amber-500/5 p-3"
+                      >
+                        <div>
+                          <p className="font-semibold text-white">{invite.nome || invite.email}</p>
+                          <p className="text-[10px] text-neutral-500">{invite.email}</p>
+                        </div>
+                        <span className="text-[10px] font-semibold uppercase text-amber-300">
+                          Convite pendente · {invite.papel}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+                <div className="grid gap-2 rounded-xl border border-white/5 bg-white/[0.025] p-3 sm:grid-cols-[1fr_1fr_150px_auto]">
+                  <input
+                    value={schoolInvite.name}
+                    onChange={(e) => setSchoolInvite({ ...schoolInvite, name: e.target.value })}
+                    placeholder="Nome completo"
+                    className="h-10 rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-white outline-none focus:border-primary"
+                  />
+                  <input
+                    type="email"
+                    value={schoolInvite.email}
+                    onChange={(e) => setSchoolInvite({ ...schoolInvite, email: e.target.value })}
+                    placeholder="E-mail de acesso"
+                    className="h-10 rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-white outline-none focus:border-primary"
+                  />
+                  <select
+                    value={schoolInvite.role}
+                    onChange={(e) => setSchoolInvite({ ...schoolInvite, role: e.target.value })}
+                    className="h-10 rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-white outline-none focus:border-primary"
+                  >
+                    <option value="gestor">Gestor</option>
+                    <option value="secretaria">Secretaria</option>
+                    <option value="financeiro">Financeiro</option>
+                    <option value="pedagogico">Pedagógico</option>
+                    <option value="comercial">Comercial</option>
+                    <option value="professor">Professor</option>
+                  </select>
+                  <button
+                    type="button"
+                    disabled={isInvitingSchoolUser}
+                    onClick={() => void handleCreateSchoolInvite()}
+                    className="h-10 rounded-lg bg-primary px-4 font-semibold text-primary-foreground disabled:opacity-50"
+                  >
+                    {isInvitingSchoolUser ? "Criando…" : "Convidar"}
+                  </button>
+                </div>
+                <p className="text-[10px] text-neutral-500">
+                  A pessoa cria a própria senha pelo link seguro. Nenhuma senha é exibida ou
+                  armazenada pelo Console Master.
+                </p>
               </div>
 
               {/* B2B Subscription Payment History */}
               <div className="space-y-2.5">
                 <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <FileText className="size-4 text-neutral-400" /> Histórico de Faturas do SaaS (B2B Billing)
+                  <FileText className="size-4 text-neutral-400" /> Histórico de Faturas do SaaS (B2B
+                  Billing)
                 </label>
                 <div className="border border-white/5 rounded-xl overflow-hidden bg-[#0d0e14]">
                   <table className="w-full text-left text-xs">
@@ -1427,7 +1810,6 @@ function SuperAdminPage() {
                   Salvar Escola
                 </button>
               </div>
-
             </form>
           </div>
         </div>
@@ -1437,7 +1819,6 @@ function SuperAdminPage() {
       {isTeamModalOpen && editingTeamMember && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d0e14] p-6 shadow-2xl space-y-6">
-            
             <div className="flex items-center justify-between border-b border-white/5 pb-4">
               <div className="flex items-center gap-2">
                 <Users className="size-5 text-primary" />
@@ -1453,13 +1834,16 @@ function SuperAdminPage() {
             </div>
 
             <form onSubmit={handleSaveEditingTeamMember} className="space-y-4 text-xs">
-              
               {/* Name */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Nome Completo</label>
+                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                  Nome Completo
+                </label>
                 <input
                   value={editingTeamMember.name}
-                  onChange={(e) => setEditingTeamMember({ ...editingTeamMember, name: e.target.value })}
+                  onChange={(e) =>
+                    setEditingTeamMember({ ...editingTeamMember, name: e.target.value })
+                  }
                   className="h-10 w-full rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-white outline-none focus:border-primary"
                   required
                 />
@@ -1467,11 +1851,15 @@ function SuperAdminPage() {
 
               {/* Email */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">E-mail Corporativo</label>
+                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                  E-mail Corporativo
+                </label>
                 <input
                   type="email"
                   value={editingTeamMember.email}
-                  onChange={(e) => setEditingTeamMember({ ...editingTeamMember, email: e.target.value })}
+                  onChange={(e) =>
+                    setEditingTeamMember({ ...editingTeamMember, email: e.target.value })
+                  }
                   className="h-10 w-full rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-white outline-none focus:border-primary"
                   required
                 />
@@ -1479,10 +1867,17 @@ function SuperAdminPage() {
 
               {/* Role */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Cargo Master</label>
+                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                  Cargo Master
+                </label>
                 <select
                   value={editingTeamMember.role}
-                  onChange={(e) => setEditingTeamMember({ ...editingTeamMember, role: e.target.value as any })}
+                  onChange={(e) =>
+                    setEditingTeamMember({
+                      ...editingTeamMember,
+                      role: e.target.value as MasterUser["role"],
+                    })
+                  }
                   className="h-10 w-full rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-white outline-none focus:border-primary"
                 >
                   <option value="Administrador">Administrador Geral</option>
@@ -1494,7 +1889,9 @@ function SuperAdminPage() {
 
               {/* Status active/inactive switch */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Situação da Conta</label>
+                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                  Situação da Conta
+                </label>
                 <div className="grid grid-cols-2 gap-2 mt-1">
                   <button
                     type="button"
@@ -1543,12 +1940,10 @@ function SuperAdminPage() {
                   Salvar Colaborador
                 </button>
               </div>
-
             </form>
           </div>
         </div>
       )}
-
     </div>
   );
 }

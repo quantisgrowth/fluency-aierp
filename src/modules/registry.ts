@@ -4,10 +4,14 @@ import {
   Kanban,
   HeartPulse,
   ClipboardList,
+  BookOpenCheck,
+  Landmark,
+  ReceiptText,
   type LucideIcon,
 } from "lucide-react";
 
-export type ModuleId = "core" | "financeiro" | "crm" | "success" | "captacao";
+export type ModuleId =
+  "core" | "financeiro" | "crm" | "success" | "captacao" | "portal_aluno" | "asaas" | "nota_fiscal";
 
 export type ModuleDef = {
   id: ModuleId;
@@ -82,7 +86,39 @@ export const MODULES: ModuleDef[] = [
     locked: false,
     features: ["Formulários estilo Tally", "Testes de nível CEFR", "Conversão automática de Leads"],
   },
+  {
+    id: "portal_aluno",
+    name: "Portal do Aluno",
+    tagline: "Experiência do aluno",
+    description: "Acompanhamento de notas, tarefas, presença, trilhas e acesso dos responsáveis.",
+    tier: "Experiência",
+    price: 149,
+    icon: BookOpenCheck,
+    locked: false,
+    features: ["Notas e frequência", "Tarefas e trilhas", "Acesso de responsáveis"],
+  },
+  {
+    id: "asaas",
+    name: "Integração ASAAS",
+    tagline: "Cobrança recorrente",
+    description: "Cobranças por Pix, boleto e cartão, conciliação e atualização por webhooks.",
+    tier: "Integração",
+    price: 99,
+    icon: Landmark,
+    locked: false,
+    features: ["Assinaturas", "Pix e boleto", "Conciliação por webhook"],
+  },
+  {
+    id: "nota_fiscal",
+    name: "Emissão de Nota Fiscal",
+    tagline: "Integração fiscal",
+    description: "Emissão e acompanhamento de documentos fiscais por provedor integrado.",
+    tier: "Integração",
+    price: 99,
+    icon: ReceiptText,
+    locked: false,
+    features: ["Emissão fiscal", "Acompanhamento", "Histórico por escola"],
+  },
 ];
 
-export const moduleById = (id: ModuleId) =>
-  MODULES.find((m) => m.id === id) as ModuleDef;
+export const moduleById = (id: ModuleId) => MODULES.find((m) => m.id === id) as ModuleDef;

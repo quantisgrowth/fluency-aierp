@@ -8,9 +8,9 @@ import {
   type ReactNode,
 } from "react";
 import { MODULES, type ModuleId } from "./registry";
+import { supabase } from "@/lib/supabase";
 
-const STORAGE_KEY = "fluency-ai:modules";
-const DEFAULT_ACTIVE: ModuleId[] = ["core", "financeiro", "crm", "success"];
+const DEFAULT_ACTIVE: ModuleId[] = ["core"];
 
 type ModuleContextValue = {
   active: ModuleId[];
@@ -25,30 +25,38 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   const [active, setActive] = useState<ModuleId[]>(DEFAULT_ACTIVE);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as ModuleId[];
-        if (Array.isArray(parsed)) setActive([...new Set([...parsed, "core" as ModuleId])]);
-      }
-    } catch {
-      /* ignore */
-    }
+    let mounted = true;
+    const loadContractedModules = async () => {
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user) return;
+      const { data: membership } = await supabase
+        .from("escola_membros")
+        .select("escola_id")
+        .eq("user_id", authData.user.id)
+        .eq("status", "ativo")
+        .limit(1)
+        .maybeSingle();
+      if (!membership) return;
+      const { data: modules, error } = await supabase
+        .from("escola_modulos")
+        .select("modulo_id,status,fim_em")
+        .eq("escola_id", membership.escola_id)
+        .in("status", ["trial", "ativo", "cortesia"]);
+      if (error || !mounted) return;
+      const now = Date.now();
+      const enabled = (modules ?? [])
+        .filter((item) => !item.fim_em || new Date(item.fim_em).getTime() > now)
+        .map((item) => item.modulo_id)
+        .filter((id): id is ModuleId => MODULES.some((module) => module.id === id));
+      setActive([...new Set(enabled)]);
+    };
+    void loadContractedModules();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  const toggle = useCallback((id: ModuleId) => {
-    setActive((prev) => {
-      const def = MODULES.find((m) => m.id === id);
-      if (def?.locked) return prev;
-      const next = prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id];
-      try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      } catch {
-        /* ignore */
-      }
-      return next;
-    });
-  }, []);
+  const toggle = useCallback((_id: ModuleId) => {}, []);
 
   const value = useMemo<ModuleContextValue>(() => {
     const isActive = (id: ModuleId) => active.includes(id);

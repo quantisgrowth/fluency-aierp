@@ -14,6 +14,43 @@ export type MasterSchool = {
   units_count: number;
   managers_count: number;
   pending_invites_count: number;
+  modules: MasterSchoolModule[];
+  members: MasterSchoolMember[];
+  units: MasterSchoolUnit[];
+  invites: MasterSchoolInvite[];
+};
+
+export type MasterSchoolModule = {
+  escola_id: string;
+  modulo_id: string;
+  status: "disponivel" | "trial" | "ativo" | "cortesia" | "suspenso" | "cancelado";
+  preco_contratado: number;
+  desconto: number;
+  origem: string;
+};
+
+export type MasterSchoolMember = {
+  id: string;
+  escola_id: string;
+  user_id: string;
+  nome: string | null;
+  email: string | null;
+  papel: string;
+  status: string;
+  created_at: string;
+  unit_ids: string[];
+};
+
+export type MasterSchoolUnit = { id: string; escola_id: string; nome: string; status: string };
+export type MasterSchoolInvite = {
+  id: string;
+  escola_id: string;
+  nome: string | null;
+  email: string;
+  papel: string;
+  status: string;
+  expires_at: string;
+  created_at: string;
 };
 
 export type MasterTeamMember = {
@@ -52,7 +89,13 @@ export type CreateSchoolInput = {
 };
 
 type MasterAction =
-  "overview" | "create_school" | "update_school" | "create_invite" | "cancel_invite";
+  | "overview"
+  | "create_school"
+  | "update_school"
+  | "set_school_module"
+  | "create_invite"
+  | "update_member"
+  | "cancel_invite";
 
 async function invokeMaster<T>(action: MasterAction, payload: Record<string, unknown> = {}) {
   const { data, error } = await supabase.functions.invoke("master-admin", {
@@ -73,8 +116,21 @@ export const masterAdmin = {
       school_id: schoolId,
       changes,
     }),
+  setSchoolModule: (schoolId: string, moduleId: string, active: boolean) =>
+    invokeMaster<{ module: MasterSchoolModule }>("set_school_module", {
+      school_id: schoolId,
+      module_id: moduleId,
+      status: active ? "ativo" : "disponivel",
+    }),
   createInvite: (input: Record<string, unknown>) =>
     invokeMaster<{ invite_id: string; invite_url: string }>("create_invite", { input }),
+  updateMember: (input: {
+    school_id: string;
+    member_id: string;
+    role: string;
+    status: string;
+    unit_ids?: string[];
+  }) => invokeMaster<{ member: MasterSchoolMember }>("update_member", input),
   cancelInvite: (inviteId: string) =>
     invokeMaster<{ invite_id: string }>("cancel_invite", { invite_id: inviteId }),
 };
