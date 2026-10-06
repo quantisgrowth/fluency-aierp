@@ -39,7 +39,10 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Acesso ao Sistema — Fluency AI" },
-      { name: "description", content: "Acesso para equipe escolar e portal gamificado do aluno com autenticação segura." },
+      {
+        name: "description",
+        content: "Acesso para equipe escolar e portal gamificado do aluno com autenticação segura.",
+      },
     ],
   }),
   component: LoginPage,
@@ -144,9 +147,10 @@ function LoginPage() {
       if (membershipError) throw new Error("Não foi possível validar o vínculo com a escola.");
       const roles = (memberships ?? []).map((member) => member.papel);
       const portalRoles = ["aluno", "responsavel"];
-      const chosenRoles = portalType === "aluno"
-        ? roles.filter((role) => portalRoles.includes(role))
-        : roles.filter((role) => !portalRoles.includes(role));
+      const chosenRoles =
+        portalType === "aluno"
+          ? roles.filter((role) => portalRoles.includes(role))
+          : roles.filter((role) => !portalRoles.includes(role));
       if (chosenRoles.length === 0) {
         if (portalType !== "aluno" && roles.length === 0) {
           window.location.href = "/cadastro";
@@ -210,7 +214,9 @@ function LoginPage() {
           </span>
           <div>
             <h1 className="text-base font-bold tracking-tight text-white">Fluency AI</h1>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 font-semibold">Sistema de Gestão & Portal Escolar</p>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 font-semibold">
+              Sistema de Gestão & Portal Escolar
+            </p>
           </div>
         </div>
 
@@ -224,7 +230,8 @@ function LoginPage() {
               Tudo o que sua escola precisa para crescer com controle.
             </h2>
             <p className="text-xs text-neutral-400 leading-relaxed">
-              Integração ponta a ponta entre captação de leads, contratos por hora/aula ou turma, DRE em tempo real e portal do aluno gamificado.
+              Integração ponta a ponta entre captação de leads, contratos por hora/aula ou turma,
+              DRE em tempo real e portal do aluno gamificado.
             </p>
           </div>
 
@@ -258,7 +265,9 @@ function LoginPage() {
                   </div>
                   <ChevronRight
                     className={`size-4 text-neutral-500 transition-all ${
-                      active ? "translate-x-0.5 opacity-100 text-primary" : "opacity-0 group-hover:opacity-100"
+                      active
+                        ? "translate-x-0.5 opacity-100 text-primary"
+                        : "opacity-0 group-hover:opacity-100"
                     }`}
                   />
                 </button>
@@ -298,7 +307,6 @@ function LoginPage() {
         {/* Center card form */}
         <div className="relative z-10 mx-auto w-full max-w-[440px] py-10">
           <div className="rounded-2xl border border-white/10 bg-neutral-900/70 p-8 shadow-2xl backdrop-blur-xl space-y-6">
-            
             {/* 2-Way Portal Switcher: Equipe da Escola vs Área do Aluno */}
             <div className="grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-white/5 p-1 shadow-inner text-center">
               <button
@@ -407,35 +415,42 @@ function LoginPage() {
               /* Standard Login Form */
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-                    {portalType === "escola" ? "E-mail Institucional" : "E-mail ou Matrícula do Aluno"}
+                  <Label
+                    htmlFor="email"
+                    className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider"
+                  >
+                    {portalType === "escola"
+                      ? "E-mail Institucional"
+                      : "E-mail ou Matrícula do Aluno"}
                   </Label>
                   <Input
                     id="email"
-                    placeholder={portalType === "escola" ? "nome@escola.com.br" : "aluno@escola.com.br"}
+                    placeholder={
+                      portalType === "escola" ? "nome@escola.com.br" : "aluno@escola.com.br"
+                    }
                     className="h-11 border-white/10 bg-white/5 px-3.5 text-white placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary text-xs font-medium"
                     disabled={isLoading}
                     {...register("email")}
                   />
                   {errors.email && (
-                    <p className="text-[11px] font-medium text-rose-400 mt-1">{errors.email.message}</p>
+                    <p className="text-[11px] font-medium text-rose-400 mt-1">
+                      {errors.email.message}
+                    </p>
                   )}
                 </div>
 
                 {authMethod === "password" && (
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="password" className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                      <Label
+                        htmlFor="password"
+                        className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider"
+                      >
                         Senha de acesso
                       </Label>
                       <a
-                        href="#recuperar"
+                        href="/recuperar-senha"
                         className="text-xs font-semibold text-primary hover:underline"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setAuthMethod("magic_link");
-                          toast.info("Você pode acessar diretamente recebendo um link mágico no seu e-mail.");
-                        }}
                       >
                         Esqueceu a senha?
                       </a>
@@ -458,7 +473,9 @@ function LoginPage() {
                       </button>
                     </div>
                     {errors.password && (
-                      <p className="text-[11px] font-medium text-rose-400 mt-1">{errors.password.message}</p>
+                      <p className="text-[11px] font-medium text-rose-400 mt-1">
+                        {errors.password.message}
+                      </p>
                     )}
                   </div>
                 )}
@@ -471,10 +488,10 @@ function LoginPage() {
                   {isLoading
                     ? "Processando..."
                     : authMethod === "magic_link"
-                    ? "Enviar Link Mágico por E-mail"
-                    : portalType === "escola"
-                    ? "Entrar no Painel da Escola"
-                    : "Entrar no Espaço do Aluno"}
+                      ? "Enviar Link Mágico por E-mail"
+                      : portalType === "escola"
+                        ? "Entrar no Painel da Escola"
+                        : "Entrar no Espaço do Aluno"}
                 </Button>
               </form>
             )}

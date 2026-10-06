@@ -21,6 +21,7 @@ import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import { useUser } from "@/modules/user-context";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/perfil")({
   head: () => ({
@@ -55,6 +56,7 @@ function PerfilPage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   const {
     register,
@@ -127,8 +129,8 @@ function PerfilPage() {
   const getPasswordStrength = (pwd: string) => {
     if (!pwd) return { score: 0, label: "", color: "" };
     let score = 0;
-    if (pwd.length >= 6) score += 1;
     if (pwd.length >= 8) score += 1;
+    if (pwd.length >= 12) score += 1;
     if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score += 1;
     if (/[0-9]/.test(pwd) || /[^A-Za-z0-9]/.test(pwd)) score += 1;
 
@@ -139,7 +141,7 @@ function PerfilPage() {
 
   const passwordStrength = getPasswordStrength(newPassword);
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -147,8 +149,8 @@ function PerfilPage() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      toast.error("A nova senha deve ter pelo menos 6 caracteres.");
+    if (newPassword.length < 12) {
+      toast.error("A nova senha deve ter pelo menos 12 caracteres.");
       return;
     }
 
@@ -157,13 +159,28 @@ function PerfilPage() {
       return;
     }
 
-    toast.success("Senha atualizada com sucesso!", {
-      description: "Utilize sua nova senha no seu próximo login.",
-    });
-
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
+    setIsUpdatingPassword(true);
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user?.email) throw new Error("Sua sessão não pôde ser validada.");
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: userData.user.email,
+        password: currentPassword,
+      });
+      if (verifyError) throw new Error("A senha atual está incorreta.");
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+      if (updateError) throw updateError;
+      toast.success("Senha atualizada com sucesso!", {
+        description: "Utilize sua nova senha no seu próximo login.",
+      });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Não foi possível atualizar a senha.");
+    } finally {
+      setIsUpdatingPassword(false);
+    }
   };
 
   return (
@@ -250,13 +267,18 @@ function PerfilPage() {
           <GlassCard className="p-6 space-y-6">
             <div>
               <h3 className="text-sm font-semibold text-foreground">Informações Pessoais</h3>
-              <p className="text-xs text-muted-foreground">Altere suas credenciais e iniciais de exibição do cabeçalho.</p>
+              <p className="text-xs text-muted-foreground">
+                Altere suas credenciais e iniciais de exibição do cabeçalho.
+              </p>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label htmlFor="name" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <label
+                    htmlFor="name"
+                    className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5"
+                  >
                     <User className="size-3.5" /> Nome Completo
                   </label>
                   <input
@@ -272,7 +294,10 @@ function PerfilPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label htmlFor="avatar" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <label
+                    htmlFor="avatar"
+                    className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                  >
                     Sigla / Iniciais (Cabeçalho)
                   </label>
                   <input
@@ -291,7 +316,10 @@ function PerfilPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label htmlFor="email" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <label
+                    htmlFor="email"
+                    className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5"
+                  >
                     <Mail className="size-3.5" /> E-mail
                   </label>
                   <input
@@ -308,7 +336,10 @@ function PerfilPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label htmlFor="phone" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <label
+                    htmlFor="phone"
+                    className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5"
+                  >
                     <Phone className="size-3.5" /> Celular / WhatsApp
                   </label>
                   <input
@@ -332,9 +363,24 @@ function PerfilPage() {
               >
                 {isSaving ? (
                   <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-current"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
                     </svg>
                     <span>Salvando...</span>
                   </>
@@ -353,13 +399,18 @@ function PerfilPage() {
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Lock className="size-4 text-primary" /> Segurança & Senha
               </h3>
-              <p className="text-xs text-muted-foreground">Altere sua senha de acesso à plataforma de gestão.</p>
+              <p className="text-xs text-muted-foreground">
+                Altere sua senha de acesso à plataforma de gestão.
+              </p>
             </div>
 
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
               {/* Senha Atual */}
               <div className="space-y-1.5">
-                <label htmlFor="currentPassword" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <label
+                  htmlFor="currentPassword"
+                  className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                >
                   Senha Atual
                 </label>
                 <div className="relative">
@@ -378,7 +429,11 @@ function PerfilPage() {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
                     title={showCurrentPassword ? "Ocultar senha" : "Ver senha"}
                   >
-                    {showCurrentPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    {showCurrentPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -386,7 +441,10 @@ function PerfilPage() {
               {/* Nova Senha e Confirmar Senha */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label htmlFor="newPassword" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <label
+                    htmlFor="newPassword"
+                    className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                  >
                     Nova Senha
                   </label>
                   <div className="relative">
@@ -396,7 +454,7 @@ function PerfilPage() {
                       type={showNewPassword ? "text" : "password"}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Mínimo 6 caracteres"
+                      placeholder="Mínimo 12 caracteres"
                       className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 pr-10 text-sm text-foreground outline-none focus:border-primary transition-colors"
                     />
                     <button
@@ -411,7 +469,10 @@ function PerfilPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label htmlFor="confirmPassword" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <label
+                    htmlFor="confirmPassword"
+                    className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                  >
                     Confirmar Nova Senha
                   </label>
                   <div className="relative">
@@ -430,7 +491,11 @@ function PerfilPage() {
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
                       title={showConfirmPassword ? "Ocultar senha" : "Ver senha"}
                     >
-                      {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      {showConfirmPassword ? (
+                        <EyeOff className="size-4" />
+                      ) : (
+                        <Eye className="size-4" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -448,17 +513,23 @@ function PerfilPage() {
                   <div className="flex gap-1.5 h-1.5 w-full">
                     <div
                       className={`flex-1 rounded-full transition-all duration-300 ${
-                        passwordStrength.score >= 1 ? passwordStrength.color.split(" ")[0] : "bg-white/10"
+                        passwordStrength.score >= 1
+                          ? passwordStrength.color.split(" ")[0]
+                          : "bg-white/10"
                       }`}
                     />
                     <div
                       className={`flex-1 rounded-full transition-all duration-300 ${
-                        passwordStrength.score >= 2 ? passwordStrength.color.split(" ")[0] : "bg-white/10"
+                        passwordStrength.score >= 2
+                          ? passwordStrength.color.split(" ")[0]
+                          : "bg-white/10"
                       }`}
                     />
                     <div
                       className={`flex-1 rounded-full transition-all duration-300 ${
-                        passwordStrength.score >= 3 ? passwordStrength.color.split(" ")[0] : "bg-white/10"
+                        passwordStrength.score >= 3
+                          ? passwordStrength.color.split(" ")[0]
+                          : "bg-white/10"
                       }`}
                     />
                   </div>
@@ -477,9 +548,11 @@ function PerfilPage() {
 
               <button
                 type="submit"
+                disabled={isUpdatingPassword}
                 className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all shadow cursor-pointer text-center flex items-center justify-center gap-2"
               >
-                <ShieldCheck className="size-4" /> Alterar Senha de Gestor
+                <ShieldCheck className="size-4" />{" "}
+                {isUpdatingPassword ? "Atualizando…" : "Alterar Senha de Gestor"}
               </button>
             </form>
           </GlassCard>

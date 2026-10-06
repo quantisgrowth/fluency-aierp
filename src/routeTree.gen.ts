@@ -19,6 +19,8 @@ import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as LeadsRouteImport } from './routes/leads'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ManagerRouteImport } from './routes/manager'
+import { Route as RecuperarSenhaRouteImport } from './routes/recuperar-senha'
+import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as RetencaoRouteImport } from './routes/retencao'
 import { Route as SuperAdminRouteImport } from './routes/super-admin'
 import { Route as TurmasRouteImport } from './routes/turmas'
@@ -78,6 +80,16 @@ const LoginRoute = LoginRouteImport.update({
 const ManagerRoute = ManagerRouteImport.update({
   id: '/manager',
   path: '/manager',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecuperarSenhaRoute = RecuperarSenhaRouteImport.update({
+  id: '/recuperar-senha',
+  path: '/recuperar-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
+  id: '/redefinir-senha',
+  path: '/redefinir-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RetencaoRoute = RetencaoRouteImport.update({
@@ -142,6 +154,8 @@ export interface FileRoutesByFullPath {
   '/leads': typeof LeadsRoute
   '/login': typeof LoginRoute
   '/manager': typeof ManagerRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/retencao': typeof RetencaoRoute
   '/super-admin': typeof SuperAdminRoute
   '/turmas': typeof TurmasRoute
@@ -164,6 +178,8 @@ export interface FileRoutesByTo {
   '/leads': typeof LeadsRoute
   '/login': typeof LoginRoute
   '/manager': typeof ManagerRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/retencao': typeof RetencaoRoute
   '/super-admin': typeof SuperAdminRoute
   '/turmas': typeof TurmasRoute
@@ -187,6 +203,8 @@ export interface FileRoutesById {
   '/leads': typeof LeadsRoute
   '/login': typeof LoginRoute
   '/manager': typeof ManagerRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/retencao': typeof RetencaoRoute
   '/super-admin': typeof SuperAdminRoute
   '/turmas': typeof TurmasRoute
@@ -211,6 +229,8 @@ export interface FileRouteTypes {
     | '/leads'
     | '/login'
     | '/manager'
+    | '/recuperar-senha'
+    | '/redefinir-senha'
     | '/retencao'
     | '/super-admin'
     | '/turmas'
@@ -233,6 +253,8 @@ export interface FileRouteTypes {
     | '/leads'
     | '/login'
     | '/manager'
+    | '/recuperar-senha'
+    | '/redefinir-senha'
     | '/retencao'
     | '/super-admin'
     | '/turmas'
@@ -255,6 +277,8 @@ export interface FileRouteTypes {
     | '/leads'
     | '/login'
     | '/manager'
+    | '/recuperar-senha'
+    | '/redefinir-senha'
     | '/retencao'
     | '/super-admin'
     | '/turmas'
@@ -278,6 +302,8 @@ export interface RootRouteChildren {
   LeadsRoute: typeof LeadsRoute
   LoginRoute: typeof LoginRoute
   ManagerRoute: typeof ManagerRoute
+  RecuperarSenhaRoute: typeof RecuperarSenhaRoute
+  RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   RetencaoRoute: typeof RetencaoRoute
   SuperAdminRoute: typeof SuperAdminRoute
   TurmasRoute: typeof TurmasRoute
@@ -360,6 +386,20 @@ declare module '@tanstack/react-router' {
       path: '/manager'
       fullPath: '/manager'
       preLoaderRoute: typeof ManagerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recuperar-senha': {
+      id: '/recuperar-senha'
+      path: '/recuperar-senha'
+      fullPath: '/recuperar-senha'
+      preLoaderRoute: typeof RecuperarSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/redefinir-senha': {
+      id: '/redefinir-senha'
+      path: '/redefinir-senha'
+      fullPath: '/redefinir-senha'
+      preLoaderRoute: typeof RedefinirSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/retencao': {
@@ -446,6 +486,8 @@ const rootRouteChildren: RootRouteChildren = {
   LeadsRoute: LeadsRoute,
   LoginRoute: LoginRoute,
   ManagerRoute: ManagerRoute,
+  RecuperarSenhaRoute: RecuperarSenhaRoute,
+  RedefinirSenhaRoute: RedefinirSenhaRoute,
   RetencaoRoute: RetencaoRoute,
   SuperAdminRoute: SuperAdminRoute,
   TurmasRoute: TurmasRoute,

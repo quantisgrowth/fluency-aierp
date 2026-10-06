@@ -151,7 +151,12 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const isPublic =
-    pathname === "/login" || pathname === "/cadastro" || pathname === "/manager" || pathname.startsWith("/public/");
+    pathname === "/login" ||
+    pathname === "/cadastro" ||
+    pathname === "/recuperar-senha" ||
+    pathname === "/redefinir-senha" ||
+    pathname === "/manager" ||
+    pathname.startsWith("/public/");
   const isPlatform = pathname === "/super-admin";
   const roles = allowedSchoolRoles(pathname);
 
@@ -161,9 +166,7 @@ function RootComponent() {
         <UserProvider>
           <ModuleProvider>
             {isPublic ? (
-              <AppShell>
-                <Outlet />
-              </AppShell>
+              <Outlet />
             ) : (
               <AuthGuard platformAdmin={isPlatform} allowedRoles={isPlatform ? undefined : roles}>
                 <AppShell>
