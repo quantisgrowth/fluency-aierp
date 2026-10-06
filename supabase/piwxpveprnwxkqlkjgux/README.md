@@ -27,6 +27,15 @@ pasta foram escritos para esse esquema já existente.
    e financeiro da própria escola.
 7. `007_integridade_academica.sql` impede códigos de curso repetidos na mesma
    escola e matrículas ativas duplicadas na mesma turma.
+8. `008_fundacao_multiempresa.sql` foi aplicado em 06/10/2026. Cria
+   convites de acesso, vínculo de membros com unidades, auditoria imutável e
+   autorização da equipe master. A validação confirmou quatro novas tabelas,
+   quatro políticas RLS e preservação dos dados existentes.
+9. `009_operacoes_console_master.sql` está preparado localmente e ainda não foi
+   aplicado. Ele cria operações transacionais para cadastrar e editar escolas,
+   emitir e cancelar convites e concluir o primeiro acesso do gestor. A Edge
+   Function local `master-admin` valida a sessão e a permissão Master antes de
+   consultar dados globais ou chamar essas operações.
 
 Estes arquivos **não estão na pasta de migrações automática** porque
 `supabase/config.toml` referencia outro projeto e as três migrações

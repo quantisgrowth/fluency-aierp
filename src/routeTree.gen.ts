@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AceitarConviteRouteImport } from './routes/aceitar-convite'
 import { Route as AlunosRouteImport } from './routes/alunos'
 import { Route as BoasVindasRouteImport } from './routes/boas-vindas'
 import { Route as CadastroRouteImport } from './routes/cadastro'
@@ -35,6 +36,11 @@ import { Route as PublicTesteNivelRouteImport } from './routes/public/teste-nive
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AceitarConviteRoute = AceitarConviteRouteImport.update({
+  id: '/aceitar-convite',
+  path: '/aceitar-convite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AlunosRoute = AlunosRouteImport.update({
@@ -145,6 +151,7 @@ const PublicTesteNivelRoute = PublicTesteNivelRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/aceitar-convite': typeof AceitarConviteRoute
   '/alunos': typeof AlunosRoute
   '/boas-vindas': typeof BoasVindasRoute
   '/cadastro': typeof CadastroRoute
@@ -169,6 +176,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/aceitar-convite': typeof AceitarConviteRoute
   '/alunos': typeof AlunosRoute
   '/boas-vindas': typeof BoasVindasRoute
   '/cadastro': typeof CadastroRoute
@@ -194,6 +202,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/aceitar-convite': typeof AceitarConviteRoute
   '/alunos': typeof AlunosRoute
   '/boas-vindas': typeof BoasVindasRoute
   '/cadastro': typeof CadastroRoute
@@ -220,6 +229,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/aceitar-convite'
     | '/alunos'
     | '/boas-vindas'
     | '/cadastro'
@@ -244,6 +254,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/aceitar-convite'
     | '/alunos'
     | '/boas-vindas'
     | '/cadastro'
@@ -268,6 +279,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/aceitar-convite'
     | '/alunos'
     | '/boas-vindas'
     | '/cadastro'
@@ -293,6 +305,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AceitarConviteRoute: typeof AceitarConviteRoute
   AlunosRoute: typeof AlunosRoute
   BoasVindasRoute: typeof BoasVindasRoute
   CadastroRoute: typeof CadastroRoute
@@ -323,6 +336,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/aceitar-convite': {
+      id: '/aceitar-convite'
+      path: '/aceitar-convite'
+      fullPath: '/aceitar-convite'
+      preLoaderRoute: typeof AceitarConviteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/alunos': {
@@ -477,6 +497,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AceitarConviteRoute: AceitarConviteRoute,
   AlunosRoute: AlunosRoute,
   BoasVindasRoute: BoasVindasRoute,
   CadastroRoute: CadastroRoute,

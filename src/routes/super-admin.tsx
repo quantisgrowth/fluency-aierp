@@ -33,6 +33,7 @@ import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import { toast } from "sonner";
 import { checkSupabaseConnection } from "@/lib/supabase";
+import { masterAdmin, type MasterAuditLog, type MasterOverview } from "@/lib/master-admin";
 
 export const Route = createFileRoute("/super-admin")({
   head: () => ({
@@ -66,6 +67,11 @@ type SchoolTenant = {
     success: boolean;
   };
   paymentHistory: PaymentLog[];
+  plan: string;
+  rawStatus: "trial" | "ativa" | "vencida" | "suspensa" | "cancelada";
+  unitsCount: number;
+  managersCount: number;
+  pendingInvitesCount: number;
 };
 
 type MasterUser = {
@@ -76,62 +82,46 @@ type MasterUser = {
   status: "Ativo" | "Inativo";
 };
 
-const DEFAULT_SCHOOLS: SchoolTenant[] = [
-  {
-    id: "1",
-    name: "Fluency AI (Original)",
-    subdominio: "original.fluency.ai",
-    status: "Ativo",
-    studentsCount: 482,
-    teachersLimit: 25,
-    modules: { crm: true, financeiro: true, pedagogico: true, success: true },
-    paymentHistory: [
-      { id: "FAT-9921", date: "10/08/2026", amount: 646, status: "Pago", method: "Pix" },
-      { id: "FAT-9801", date: "10/07/2026", amount: 646, status: "Pago", method: "Pix" },
-      { id: "FAT-9610", date: "10/06/2026", amount: 646, status: "Pago", method: "Pix" },
-    ],
-  },
-  {
-    id: "2",
-    name: "Apex English",
-    subdominio: "apex.fluency.ai",
-    status: "Ativo",
-    studentsCount: 210,
-    teachersLimit: 12,
-    modules: { crm: true, financeiro: true, pedagogico: true, success: false },
-    paymentHistory: [
-      { id: "FAT-9922", date: "10/08/2026", amount: 547, status: "Pago", method: "Cartão" },
-      { id: "FAT-9802", date: "10/07/2026", amount: 547, status: "Pago", method: "Cartão" },
-    ],
-  },
-  {
-    id: "3",
-    name: "British Academy",
-    subdominio: "british.fluency.ai",
-    status: "Ativo",
-    studentsCount: 145,
-    teachersLimit: 10,
-    modules: { crm: false, financeiro: true, pedagogico: true, success: true },
-    paymentHistory: [
-      { id: "FAT-9923", date: "08/08/2026", amount: 497, status: "Pago", method: "Boleto" },
-      { id: "FAT-9803", date: "08/07/2026", amount: 497, status: "Pago", method: "Boleto" },
-    ],
-  },
-];
+const roleLabels: Record<string, MasterUser["role"]> = {
+  administrador: "Administrador",
+  financeiro: "Financeiro",
+  tecnico: "Desenvolvedor",
+  suporte: "Desenvolvedor",
+  comercial: "Vendedor",
+};
 
-const DEFAULT_TEAM: MasterUser[] = [
-  { id: "1", name: "Felipe Medeiros", email: "super@fluency.ai", role: "Administrador", status: "Ativo" },
-  { id: "2", name: "Amanda Sales", email: "amanda.financeiro@fluency.ai", role: "Financeiro", status: "Ativo" },
-  { id: "3", name: "Thiago Carvalho", email: "thiago.dev@fluency.ai", role: "Desenvolvedor", status: "Ativo" },
-  { id: "4", name: "Leticia Nunes", email: "leticia.vendas@fluency.ai", role: "Vendedor", status: "Ativo" },
-];
-
-const STORAGE_KEY = "fluency-ai:super-admin:schools";
-const TEAM_STORAGE_KEY = "fluency-ai:super-admin:team";
+function mapOverview(data: MasterOverview) {
+  const schools: SchoolTenant[] = data.schools.map((school) => ({
+    id: school.id,
+    name: school.nome,
+    subdominio: `${school.slug}.fluencyai.online`,
+    status: school.status === "ativa" || school.status === "trial" ? "Ativo" : school.status === "vencida" ? "Atrasado" : "Inativo",
+    rawStatus: school.status,
+    plan: school.plano,
+    studentsCount: school.students_count,
+    teachersLimit: 0,
+    unitsCount: school.units_count,
+    managersCount: school.managers_count,
+    pendingInvitesCount: school.pending_invites_count,
+    modules: { crm: false, financeiro: false, pedagogico: false, success: false },
+    paymentHistory: [],
+  }));
+  const team: MasterUser[] = data.team.map((member) => ({
+    id: member.user_id,
+    name: member.nome || "Nome não informado",
+    email: member.email || "E-mail indisponível",
+    role: roleLabels[member.papel] || "Desenvolvedor",
+    status: member.status === "ativo" ? "Ativo" : "Inativo",
+  }));
+  return { schools, team };
+}
 
 function SuperAdminPage() {
-  const [schools, setSchools] = useState<SchoolTenant[]>(DEFAULT_SCHOOLS);
-  const [team, setTeam] = useState<MasterUser[]>(DEFAULT_TEAM);
+  const [schools, setSchools] = useState<SchoolTenant[]>([]);
+  const [team, setTeam] = useState<MasterUser[]>([]);
+  const [auditLogs, setAuditLogs] = useState<MasterAuditLog[]>([]);
+  const [isLoadingMaster, setIsLoadingMaster] = useState(true);
+  const [masterError, setMasterError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"schools" | "status" | "logs" | "team" | "customization" | "profile">("schools");
 
   // System Health States
@@ -172,6 +162,15 @@ function SuperAdminPage() {
   // Modal Editing States - Schools
   const [isSchoolModalOpen, setIsSchoolModalOpen] = useState(false);
   const [editingSchool, setEditingSchool] = useState<SchoolTenant | null>(null);
+  const [isCreateSchoolOpen, setIsCreateSchoolOpen] = useState(false);
+  const [isSavingSchool, setIsSavingSchool] = useState(false);
+  const [newSchool, setNewSchool] = useState({
+    schoolName: "",
+    slug: "",
+    plan: "trial",
+    managerName: "",
+    managerEmail: "",
+  });
 
   // Modal Editing States - Team Users
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
@@ -202,18 +201,25 @@ function SuperAdminPage() {
     { id: "avatar-3", bg: "bg-indigo-500/20 text-indigo-400" },
   ];
 
-  // Load from local storage
-  useEffect(() => {
+  const loadMasterData = async () => {
+    setIsLoadingMaster(true);
+    setMasterError(null);
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        setSchools(JSON.parse(raw));
-      }
-      const rawTeam = window.localStorage.getItem(TEAM_STORAGE_KEY);
-      if (rawTeam) {
-        setTeam(JSON.parse(rawTeam));
-      }
-      
+      const data = await masterAdmin.overview();
+      const mapped = mapOverview(data);
+      setSchools(mapped.schools);
+      setTeam(mapped.team);
+      setAuditLogs(data.audit_logs);
+    } catch (error) {
+      setMasterError(error instanceof Error ? error.message : "Não foi possível carregar o Console Master.");
+    } finally {
+      setIsLoadingMaster(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadMasterData();
+    try {
       const savedLogo = window.localStorage.getItem("fluency-ai:custom-logo");
       if (savedLogo) setCustomLogoName(savedLogo);
       const savedColor = window.localStorage.getItem("fluency-ai:custom-color");
@@ -223,65 +229,16 @@ function SuperAdminPage() {
     }
   }, []);
 
-  const saveSchools = (next: SchoolTenant[]) => {
-    setSchools(next);
+  const handleToggleStatus = async (schoolId: string) => {
+    const school = schools.find((item) => item.id === schoolId);
+    if (!school) return;
+    const activating = school.status !== "Ativo";
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      /* ignore */
-    }
-  };
-
-  const saveTeam = (next: MasterUser[]) => {
-    setTeam(next);
-    try {
-      window.localStorage.setItem(TEAM_STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      /* ignore */
-    }
-  };
-
-  const handleToggleModule = (schoolId: string, moduleKey: keyof SchoolTenant["modules"]) => {
-    const nextSchools = schools.map((s) => {
-      if (s.id === schoolId) {
-        const nextVal = !s.modules[moduleKey];
-        toast.info(`Módulo ${moduleKey.toUpperCase()} da escola ${s.name} foi ${nextVal ? "ativado" : "desativado"}!`);
-        return {
-          ...s,
-          modules: { ...s.modules, [moduleKey]: nextVal },
-        };
-      }
-      return s;
-    });
-
-    saveSchools(nextSchools);
-    syncOriginalModules(nextSchools, schoolId);
-  };
-
-  const handleToggleStatus = (schoolId: string) => {
-    const nextSchools = schools.map((s) => {
-      if (s.id === schoolId) {
-        const nextStatus = (s.status === "Ativo" ? "Inativo" : "Ativo") as SchoolTenant["status"];
-        toast.success(`Situação da escola ${s.name} alterada para ${nextStatus}!`);
-        return { ...s, status: nextStatus };
-      }
-      return s;
-    });
-    saveSchools(nextSchools);
-  };
-
-  const syncOriginalModules = (list: SchoolTenant[], schoolId: string) => {
-    const activeSchool = list.find((s) => s.id === schoolId);
-    if (activeSchool && activeSchool.name.includes("Fluency AI")) {
-      const activeIds: string[] = ["core"];
-      if (activeSchool.modules.crm) activeIds.push("crm");
-      if (activeSchool.modules.financeiro) activeIds.push("financeiro");
-      if (activeSchool.modules.success) activeIds.push("success");
-      try {
-        window.localStorage.setItem("fluency-ai:modules", JSON.stringify(activeIds));
-      } catch {
-        /* ignore */
-      }
+      await masterAdmin.updateSchool(schoolId, { status: activating ? "ativa" : "suspensa", ativa: activating });
+      await loadMasterData();
+      toast.success(`Situação da escola ${school.name} alterada com sucesso.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível alterar a escola.");
     }
   };
 
@@ -298,11 +255,8 @@ function SuperAdminPage() {
       role: teamRole,
       status: "Ativo",
     };
-    const nextTeam = [...team, newMember];
-    saveTeam(nextTeam);
-    setTeamName("");
-    setTeamEmail("");
-    toast.success(`Colaborador Master "${teamName}" adicionado!`);
+    void newMember;
+    toast.info("O convite da equipe Master será ativado junto do serviço de e-mail transacional.");
   };
 
   const handleDeleteTeamMember = (id: string) => {
@@ -310,9 +264,7 @@ function SuperAdminPage() {
       toast.error("Você não pode deletar o Administrador Principal!");
       return;
     }
-    const nextTeam = team.filter((t) => t.id !== id);
-    saveTeam(nextTeam);
-    toast.success("Membro da equipe master removido.");
+    toast.info("A suspensão do acesso Master será ativada no próximo pacote seguro.");
   };
 
   // Save Customization tab settings
@@ -330,27 +282,59 @@ function SuperAdminPage() {
   };
 
   // Edit modals save triggers
-  const handleSaveEditingSchool = (e: React.FormEvent) => {
+  const handleSaveEditingSchool = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingSchool) return;
 
-    const nextSchools = schools.map((s) => (s.id === editingSchool.id ? editingSchool : s));
-    saveSchools(nextSchools);
-    syncOriginalModules(nextSchools, editingSchool.id);
+    setIsSavingSchool(true);
+    try {
+      await masterAdmin.updateSchool(editingSchool.id, {
+        nome: editingSchool.name,
+        slug: editingSchool.subdominio.split(".")[0],
+        status: editingSchool.status === "Ativo" ? "ativa" : editingSchool.status === "Atrasado" ? "vencida" : "suspensa",
+        ativa: editingSchool.status === "Ativo",
+        plano: editingSchool.plan,
+      });
+      await loadMasterData();
+      setIsSchoolModalOpen(false);
+      toast.success(`Dados da escola "${editingSchool.name}" salvos com sucesso!`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar a escola.");
+    } finally {
+      setIsSavingSchool(false);
+    }
+  };
 
-    setIsSchoolModalOpen(false);
-    toast.success(`Dados da escola "${editingSchool.name}" salvos com sucesso!`);
+  const handleCreateSchool = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSchool(true);
+    try {
+      const result = await masterAdmin.createSchool({
+        school_name: newSchool.schoolName,
+        slug: newSchool.slug,
+        plan: newSchool.plan,
+        manager_name: newSchool.managerName,
+        manager_email: newSchool.managerEmail,
+      });
+      await navigator.clipboard.writeText(result.invite_url);
+      await loadMasterData();
+      setIsCreateSchoolOpen(false);
+      setNewSchool({ schoolName: "", slug: "", plan: "trial", managerName: "", managerEmail: "" });
+      toast.success("Escola criada e link seguro copiado.", {
+        description: "Envie o link ao gestor enquanto o serviço de e-mail não estiver configurado.",
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível criar a escola.");
+    } finally {
+      setIsSavingSchool(false);
+    }
   };
 
   const handleSaveEditingTeamMember = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTeamMember) return;
 
-    const nextTeam = team.map((t) => (t.id === editingTeamMember.id ? editingTeamMember : t));
-    saveTeam(nextTeam);
-
-    setIsTeamModalOpen(false);
-    toast.success(`Dados do colaborador "${editingTeamMember.name}" salvos com sucesso!`);
+    toast.info("A alteração da equipe Master será ativada no próximo pacote seguro.");
   };
 
   const handleToggleHealth = (service: keyof typeof healthStatus) => {
@@ -362,14 +346,6 @@ function SuperAdminPage() {
       toast.success(`Serviço "${service.toUpperCase()}" restabelecido com sucesso.`);
     }
   };
-
-  const totalMRR = schools.filter((s) => s.status === "Ativo").reduce((sum, s) => {
-    let base = 299;
-    if (s.modules.crm) base += 149;
-    if (s.modules.financeiro) base += 199;
-    if (s.modules.success) base += 99;
-    return sum + base;
-  }, 0);
 
   return (
     <div className="min-h-screen w-full bg-[#05060a] text-foreground p-6 sm:p-12 md:max-w-6xl mx-auto space-y-8 animate-in fade-in duration-300">
@@ -435,13 +411,43 @@ function SuperAdminPage() {
             description="Gerencie os planos contratados de cada unidade, libere ou bloqueie funcionalidades sob demanda e acompanhe o MRR consolidado."
           />
 
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="text-xs text-neutral-400">
+              {isLoadingMaster ? "Carregando dados reais do Supabase…" : `${schools.length} escola(s) encontrada(s)`}
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => void loadMasterData()}
+                disabled={isLoadingMaster}
+                className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white hover:bg-white/10 disabled:opacity-50"
+              >
+                Atualizar
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsCreateSchoolOpen(true)}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground"
+              >
+                <UserPlus className="size-4" /> Nova escola e gestor
+              </button>
+            </div>
+          </div>
+
+          {masterError && (
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-xs text-amber-300">
+              <strong>Serviço do Console Master ainda não está ativo no Supabase.</strong>
+              <p className="mt-1">{masterError}</p>
+            </div>
+          )}
+
           {/* General Platform KPIs */}
           <div className="grid gap-4 sm:grid-cols-3">
             <GlassCard className="p-5 flex items-center justify-between border-white/5 bg-neutral-900/40">
               <div>
                 <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Faturamento Recorrente (MRR)</p>
-                <p className="mt-1 text-2xl font-bold text-white">R$ {totalMRR.toLocaleString("pt-BR")},00</p>
-                <p className="text-[10px] text-neutral-500 mt-1">Soma de todas as mensalidades ativas</p>
+                <p className="mt-1 text-2xl font-bold text-white">—</p>
+                <p className="text-[10px] text-neutral-500 mt-1">Será calculado pelo catálogo e cobranças ASAAS</p>
               </div>
               <span className="grid size-10 place-items-center rounded-xl bg-paid/10 border border-paid/20">
                 <Wallet className="size-5 text-paid" />
@@ -522,8 +528,9 @@ function SuperAdminPage() {
                             <input
                               type="checkbox"
                               checked={s.modules.crm}
-                              onChange={() => handleToggleModule(s.id, "crm")}
-                              className="size-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary cursor-pointer"
+                              disabled
+                              title="Catálogo de módulos será conectado no próximo pacote"
+                              className="size-4 rounded border-white/10 bg-white/5 text-primary opacity-50"
                             />
                             <span>CRM</span>
                           </label>
@@ -533,8 +540,9 @@ function SuperAdminPage() {
                             <input
                               type="checkbox"
                               checked={s.modules.financeiro}
-                              onChange={() => handleToggleModule(s.id, "financeiro")}
-                              className="size-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary cursor-pointer"
+                              disabled
+                              title="Catálogo de módulos será conectado no próximo pacote"
+                              className="size-4 rounded border-white/10 bg-white/5 text-primary opacity-50"
                             />
                             <span>Financeiro</span>
                           </label>
@@ -544,8 +552,9 @@ function SuperAdminPage() {
                             <input
                               type="checkbox"
                               checked={s.modules.pedagogico}
-                              onChange={() => handleToggleModule(s.id, "pedagogico")}
-                              className="size-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary cursor-pointer"
+                              disabled
+                              title="Catálogo de módulos será conectado no próximo pacote"
+                              className="size-4 rounded border-white/10 bg-white/5 text-primary opacity-50"
                             />
                             <span>Pedagógico</span>
                           </label>
@@ -555,8 +564,9 @@ function SuperAdminPage() {
                             <input
                               type="checkbox"
                               checked={s.modules.success}
-                              onChange={() => handleToggleModule(s.id, "success")}
-                              className="size-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary cursor-pointer"
+                              disabled
+                              title="Catálogo de módulos será conectado no próximo pacote"
+                              className="size-4 rounded border-white/10 bg-white/5 text-primary opacity-50"
                             />
                             <span>Retenção</span>
                           </label>
@@ -596,6 +606,13 @@ function SuperAdminPage() {
                       </td>
                     </tr>
                   ))}
+                  {!isLoadingMaster && schools.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-10 text-center text-xs text-neutral-400">
+                        Nenhuma escola disponível para esta conta Master.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -736,20 +753,20 @@ function SuperAdminPage() {
             <GlassCard className="p-5 flex flex-col justify-between border-white/5 bg-neutral-900/40 md:col-span-1 space-y-4">
               <div>
                 <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Usuários Ativos Agora</h4>
-                <p className="text-3xl font-extrabold text-white mt-1">36 online</p>
+                <p className="text-3xl font-extrabold text-white mt-1">Não medido</p>
               </div>
               <div className="space-y-2 text-xs text-neutral-400">
                 <div className="flex justify-between">
                   <span>Alunos Conectados:</span>
-                  <span className="font-semibold text-white">28</span>
+                  <span className="font-semibold text-white">—</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Gestores de Escola:</span>
-                  <span className="font-semibold text-white">6</span>
+                  <span className="font-semibold text-white">—</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Colaboradores Master:</span>
-                  <span className="font-semibold text-white">2</span>
+                  <span className="font-semibold text-white">—</span>
                 </div>
               </div>
             </GlassCard>
@@ -762,20 +779,17 @@ function SuperAdminPage() {
               </div>
 
               <div className="space-y-3 font-mono text-[11px] text-neutral-300 max-h-[220px] overflow-y-auto pr-1">
-                {[
-                  { time: "12:44:02", desc: "Colaborador Thiago Carvalho logado como Desenvolvedor (Master)" },
-                  { time: "12:43:18", desc: "Assinatura contratada: escola 'Apex English' ativou módulo CRM Comercial" },
-                  { time: "12:41:40", desc: "Gestor da escola 'British Academy' realizou checkout self-service com sucesso" },
-                  { time: "12:38:05", desc: "Boleto compensado com sucesso na Unidade Jardins (Fluency AI)" },
-                  { time: "12:35:12", desc: "Nivelamento concluído pelo Lead Lucas Oliveira Ramos - Beginner A2" },
-                  { time: "12:30:58", desc: "Backup incremental de tabelas PostgreSQL concluído sem erros" },
-                  { time: "12:15:47", desc: "Ação Administrativa: Status da escola 'Apex English' alterado para ATIVO" },
-                ].map((l, i) => (
-                  <div key={i} className="flex gap-3 items-start border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                    <span className="text-primary font-bold shrink-0">[{l.time}]</span>
-                    <span>{l.desc}</span>
+                {auditLogs.map((log) => (
+                  <div key={log.id} className="flex gap-3 items-start border-b border-white/5 pb-2 last:border-0 last:pb-0">
+                    <span className="text-primary font-bold shrink-0">
+                      [{new Date(log.occurred_at).toLocaleTimeString("pt-BR")}]
+                    </span>
+                    <span>{log.action} · {log.resource_type}{log.resource_id ? ` #${log.resource_id.slice(0, 8)}` : ""}</span>
                   </div>
                 ))}
+                {!isLoadingMaster && auditLogs.length === 0 && (
+                  <p className="text-neutral-500">Nenhum evento de auditoria registrado.</p>
+                )}
               </div>
             </GlassCard>
 
@@ -1180,6 +1194,65 @@ function SuperAdminPage() {
         </div>
       )}
 
+      {isCreateSchoolOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0d0e14] p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/5 pb-4">
+              <div>
+                <h3 className="text-base font-bold text-white">Nova escola e gestor responsável</h3>
+                <p className="mt-1 text-xs text-neutral-400">Cria a escola, a unidade principal e um convite com validade.</p>
+              </div>
+              <button type="button" onClick={() => setIsCreateSchoolOpen(false)} className="text-neutral-400 hover:text-white">
+                <X className="size-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateSchool} className="mt-6 space-y-5 text-xs">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="space-y-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Nome da escola</span>
+                  <input required minLength={3} value={newSchool.schoolName} onChange={(event) => setNewSchool({ ...newSchool, schoolName: event.target.value })} className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white outline-none focus:border-primary" />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Subdomínio</span>
+                  <div className="flex items-center rounded-lg border border-white/10 bg-white/5 pr-3 focus-within:border-primary">
+                    <input required pattern="[a-z0-9][a-z0-9-]{1,58}[a-z0-9]" value={newSchool.slug} onChange={(event) => setNewSchool({ ...newSchool, slug: event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })} className="h-10 min-w-0 flex-1 bg-transparent px-3 text-white outline-none" />
+                    <span className="text-[10px] text-neutral-500">.fluencyai.online</span>
+                  </div>
+                </label>
+              </div>
+              <label className="block space-y-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Plano inicial</span>
+                <select value={newSchool.plan} onChange={(event) => setNewSchool({ ...newSchool, plan: event.target.value })} className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white outline-none focus:border-primary">
+                  <option value="trial">Teste gratuito</option>
+                  <option value="essencial">Essencial</option>
+                  <option value="profissional">Profissional</option>
+                  <option value="enterprise">Enterprise</option>
+                </select>
+              </label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="space-y-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Nome do gestor</span>
+                  <input required minLength={3} value={newSchool.managerName} onChange={(event) => setNewSchool({ ...newSchool, managerName: event.target.value })} className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white outline-none focus:border-primary" />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">E-mail do gestor</span>
+                  <input required type="email" value={newSchool.managerEmail} onChange={(event) => setNewSchool({ ...newSchool, managerEmail: event.target.value })} className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white outline-none focus:border-primary" />
+                </label>
+              </div>
+              <div className="rounded-lg border border-primary/15 bg-primary/5 p-3 text-[11px] text-neutral-300">
+                O gestor definirá a própria senha. Enquanto o envio de e-mail não estiver configurado, o link seguro será copiado para você encaminhar manualmente.
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setIsCreateSchoolOpen(false)} className="rounded-lg border border-white/10 px-4 py-2 text-neutral-300">Cancelar</button>
+                <button disabled={isSavingSchool} type="submit" className="rounded-lg bg-primary px-5 py-2 font-semibold text-primary-foreground disabled:opacity-50">
+                  {isSavingSchool ? "Criando…" : "Criar escola e convite"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* POPUP MODAL: EDIT SCHOOL DETAILS */}
       {isSchoolModalOpen && editingSchool && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -1227,6 +1300,20 @@ function SuperAdminPage() {
 
               </div>
 
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Plano comercial</label>
+                <select
+                  value={editingSchool.plan}
+                  onChange={(e) => setEditingSchool({ ...editingSchool, plan: e.target.value })}
+                  className="h-10 w-full rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-white outline-none focus:border-primary"
+                >
+                  <option value="trial">Teste gratuito</option>
+                  <option value="essencial">Essencial</option>
+                  <option value="profissional">Profissional</option>
+                  <option value="enterprise">Enterprise</option>
+                </select>
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-3">
                 
                 {/* Contract Status */}
@@ -1249,21 +1336,19 @@ function SuperAdminPage() {
                   <input
                     type="number"
                     value={editingSchool.studentsCount}
-                    onChange={(e) => setEditingSchool({ ...editingSchool, studentsCount: Number(e.target.value) })}
-                    className="h-10 w-full rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-white outline-none focus:border-primary"
-                    required
+                    readOnly
+                    className="h-10 w-full rounded-lg border border-white/5 bg-white/[0.025] px-3 text-xs text-neutral-400 outline-none"
                   />
                 </div>
 
                 {/* Teachers Limit */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Limite de Professores</label>
+                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Unidades cadastradas</label>
                   <input
                     type="number"
-                    value={editingSchool.teachersLimit}
-                    onChange={(e) => setEditingSchool({ ...editingSchool, teachersLimit: Number(e.target.value) })}
-                    className="h-10 w-full rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-white outline-none focus:border-primary"
-                    required
+                    value={editingSchool.unitsCount}
+                    readOnly
+                    className="h-10 w-full rounded-lg border border-white/5 bg-white/[0.025] px-3 text-xs text-neutral-400 outline-none"
                   />
                 </div>
 
@@ -1280,14 +1365,9 @@ function SuperAdminPage() {
                         <input
                           type="checkbox"
                           checked={editingSchool.modules[typedKey]}
-                          onChange={(e) => setEditingSchool({
-                            ...editingSchool,
-                            modules: {
-                              ...editingSchool.modules,
-                              [typedKey]: e.target.checked,
-                            },
-                          })}
-                          className="size-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary cursor-pointer"
+                          disabled
+                          title="Catálogo de módulos será conectado no próximo pacote"
+                          className="size-4 rounded border-white/10 bg-white/5 text-primary opacity-50"
                         />
                         <span className="uppercase">{mKey}</span>
                       </label>
