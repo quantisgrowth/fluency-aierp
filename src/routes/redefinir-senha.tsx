@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,11 +6,16 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/redefinir-senha")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    origem: search.origem === "manager" ? ("manager" as const) : undefined,
+  }),
   head: () => ({ meta: [{ title: "Definir nova senha — Fluency AI" }] }),
   component: ResetPasswordPage,
 });
 
 function ResetPasswordPage() {
+  const { origem } = Route.useSearch();
+  const isManager = origem === "manager";
   const [ready, setReady] = useState(false);
   const [validSession, setValidSession] = useState(false);
   const [password, setPassword] = useState("");
@@ -76,18 +81,21 @@ function ResetPasswordPage() {
         ) : done ? (
           <div className="space-y-3">
             <p>Senha atualizada com sucesso.</p>
-            <Link to="/login" className="text-primary underline">
-              Entrar com a nova senha
-            </Link>
+            <a href={isManager ? "/manager" : "/login"} className="text-primary underline">
+              Entrar com a nova senha{isManager ? " master" : ""}
+            </a>
           </div>
         ) : !validSession ? (
           <div className="space-y-3">
             <p role="alert" className="text-rose-300">
               O link é inválido ou expirou.
             </p>
-            <Link to="/recuperar-senha" className="text-primary underline">
+            <a
+              href={isManager ? "/recuperar-senha?origem=manager" : "/recuperar-senha"}
+              className="text-primary underline"
+            >
               Solicitar outro link
-            </Link>
+            </a>
           </div>
         ) : (
           <form onSubmit={submit} className="space-y-4">

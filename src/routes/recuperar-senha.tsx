@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,11 +6,16 @@ import { Label } from "@/components/ui/label";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/recuperar-senha")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    origem: search.origem === "manager" ? ("manager" as const) : undefined,
+  }),
   head: () => ({ meta: [{ title: "Recuperar senha — Fluency AI" }] }),
   component: RecoverPasswordPage,
 });
 
 function RecoverPasswordPage() {
+  const { origem } = Route.useSearch();
+  const isManager = origem === "manager";
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -26,7 +31,7 @@ function RecoverPasswordPage() {
     setBusy(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/redefinir-senha`,
+        redirectTo: `${window.location.origin}/redefinir-senha${isManager ? "?origem=manager" : ""}`,
       });
       if (error) throw error;
       setSent(true);
@@ -42,7 +47,9 @@ function RecoverPasswordPage() {
       <div className="w-full max-w-md space-y-6 rounded-2xl border border-white/10 bg-neutral-900 p-8">
         <div className="space-y-2">
           <p className="text-sm font-semibold text-primary">Fluency AI</p>
-          <h1 className="text-2xl font-bold">Recuperar senha</h1>
+          <h1 className="text-2xl font-bold">
+            {isManager ? "Recuperar senha master" : "Recuperar senha"}
+          </h1>
           <p className="text-sm text-neutral-400">
             Enviaremos um link seguro para você definir uma nova senha.
           </p>
@@ -61,9 +68,9 @@ function RecoverPasswordPage() {
               Se o endereço estiver cadastrado, o link de recuperação será enviado. Verifique também
               a pasta de spam.
             </p>
-            <Link to="/login" className="text-primary underline">
-              Voltar ao login
-            </Link>
+            <a href={isManager ? "/manager" : "/login"} className="text-primary underline">
+              Voltar ao login{isManager ? " master" : ""}
+            </a>
           </div>
         ) : (
           <form onSubmit={submit} className="space-y-4">
@@ -83,9 +90,12 @@ function RecoverPasswordPage() {
             </Button>
           </form>
         )}
-        <Link to="/login" className="block text-center text-sm text-neutral-400 hover:text-white">
-          Voltar ao login
-        </Link>
+        <a
+          href={isManager ? "/manager" : "/login"}
+          className="block text-center text-sm text-neutral-400 hover:text-white"
+        >
+          Voltar ao login{isManager ? " master" : ""}
+        </a>
       </div>
     </main>
   );

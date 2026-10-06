@@ -34,7 +34,10 @@ export const Route = createFileRoute("/manager")({
   head: () => ({
     meta: [
       { title: "Portal do Administrador Master — Fluency AI" },
-      { name: "description", content: "Acesso administrativo master à gestão de franqueadoras e unidades da plataforma." },
+      {
+        name: "description",
+        content: "Acesso administrativo master à gestão de franqueadoras e unidades da plataforma.",
+      },
     ],
   }),
   component: ManagerLoginPage,
@@ -114,7 +117,6 @@ function ManagerLoginPage() {
       {/* Center Console Modal */}
       <div className="relative z-10 w-full max-w-[460px] animate-in fade-in zoom-in-95 duration-300">
         <div className="rounded-3xl border border-amber-500/30 bg-neutral-950/85 p-8 sm:p-10 shadow-[0_0_50px_rgba(245,158,11,0.1)] backdrop-blur-2xl space-y-7 text-white">
-          
           {/* Header */}
           <div className="flex flex-col items-center text-center space-y-3">
             <span className="grid size-14 place-items-center rounded-2xl border border-amber-500/30 bg-amber-500/10 text-amber-400 shadow-inner">
@@ -124,7 +126,9 @@ function ManagerLoginPage() {
               <span className="rounded-full bg-amber-500/10 px-3 py-0.5 text-[9px] font-bold uppercase tracking-widest text-amber-400 border border-amber-500/20">
                 Plataforma Global
               </span>
-              <h1 className="text-2xl font-extrabold tracking-tight mt-1.5">Console do Administrador</h1>
+              <h1 className="text-2xl font-extrabold tracking-tight mt-1.5">
+                Console do Administrador
+              </h1>
               <p className="text-xs text-neutral-400 mt-0.5">
                 Controle master de franquias, unidades escolares e faturamento.
               </p>
@@ -134,7 +138,10 @@ function ManagerLoginPage() {
           {/* Master Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+              <Label
+                htmlFor="email"
+                className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider"
+              >
                 E-mail de Acesso Master
               </Label>
               <Input
@@ -150,7 +157,10 @@ function ManagerLoginPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+              <Label
+                htmlFor="password"
+                className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider"
+              >
                 Chave de Segurança / Senha Master
               </Label>
               <div className="relative">
@@ -171,8 +181,18 @@ function ManagerLoginPage() {
                 </button>
               </div>
               {errors.password && (
-                <p className="text-[11px] font-medium text-rose-400 mt-1">{errors.password.message}</p>
+                <p className="text-[11px] font-medium text-rose-400 mt-1">
+                  {errors.password.message}
+                </p>
               )}
+              <div className="flex justify-end pt-1">
+                <a
+                  href="/recuperar-senha?origem=manager"
+                  className="text-[11px] font-semibold text-amber-400 transition-colors hover:text-amber-300 hover:underline"
+                >
+                  Esqueceu a senha master?
+                </a>
+              </div>
             </div>
 
             <Button
