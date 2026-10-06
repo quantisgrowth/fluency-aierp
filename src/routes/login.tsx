@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { rememberSchoolAccess } from "@/lib/auth-access-cache";
 import { Mail, CheckCircle2, KeyRound } from "lucide-react";
 
 // Form validation schema
@@ -52,6 +53,7 @@ type ModuleId = "core" | "financeiro" | "crm" | "success";
 type AuthMethod = "password" | "magic_link";
 
 function LoginPage() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModule, setSelectedModule] = useState<ModuleId>("core");
@@ -59,6 +61,7 @@ function LoginPage() {
   const [portalType, setPortalType] = useState<"escola" | "aluno">("escola");
   const [authMethod, setAuthMethod] = useState<AuthMethod>("password");
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [loginStep, setLoginStep] = useState("Entrar no Painel da Escola");
 
   useEffect(() => {
     const isCurrentlyDark = document.documentElement.classList.contains("dark");
@@ -124,6 +127,7 @@ function LoginPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
+    setLoginStep("Autenticando com segurança…");
 
     try {
       if (authMethod === "magic_link") {
@@ -139,6 +143,7 @@ function LoginPage() {
       });
       if (error || !signedIn.user) throw new Error("Credenciais inválidas.");
 
+      setLoginStep("Validando acesso à escola…");
       const { data: memberships, error: membershipError } = await supabase
         .from("escola_membros")
         .select("papel")
@@ -146,6 +151,7 @@ function LoginPage() {
         .eq("status", "ativo");
       if (membershipError) throw new Error("Não foi possível validar o vínculo com a escola.");
       const roles = (memberships ?? []).map((member) => member.papel);
+      rememberSchoolAccess(signedIn.user.id, roles);
       const portalRoles = ["aluno", "responsavel"];
       const chosenRoles =
         portalType === "aluno"
@@ -153,18 +159,21 @@ function LoginPage() {
           : roles.filter((role) => !portalRoles.includes(role));
       if (chosenRoles.length === 0) {
         if (portalType !== "aluno" && roles.length === 0) {
-          window.location.href = "/cadastro";
+          setLoginStep("Preparando seu cadastro…");
+          await navigate({ to: "/cadastro" });
           return;
         }
         await supabase.auth.signOut();
         throw new Error("Esta conta não tem acesso ativo ao portal selecionado.");
       }
-      window.location.href = portalType === "aluno" ? "/portal/aluno" : "/boas-vindas";
+      setLoginStep("Abrindo seu ambiente…");
+      await navigate({ to: portalType === "aluno" ? "/portal/aluno" : "/boas-vindas" });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro no login.";
       toast.error(msg);
     } finally {
       setIsLoading(false);
+      setLoginStep("Entrar no Painel da Escola");
     }
   };
 
@@ -486,7 +495,9 @@ function LoginPage() {
                   disabled={isLoading}
                 >
                   {isLoading
-                    ? "Processando..."
+                    ? authMethod === "password"
+                      ? loginStep
+                      : "Enviando link…"
                     : authMethod === "magic_link"
                       ? "Enviar Link Mágico por E-mail"
                       : portalType === "escola"

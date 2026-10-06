@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
+import { rememberPlatformAccess } from "@/lib/auth-access-cache";
 
 // Form validation schema
 const loginSchema = z.object({
@@ -44,9 +45,11 @@ export const Route = createFileRoute("/manager")({
 });
 
 function ManagerLoginPage() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isDark, setIsDark] = useState(true);
+  const [loginStep, setLoginStep] = useState("Acessar Painel Super Administrador");
 
   useEffect(() => {
     const isCurrentlyDark = document.documentElement.classList.contains("dark");
@@ -74,12 +77,14 @@ function ManagerLoginPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
+    setLoginStep("Autenticando com segurança…");
     try {
       const { data: signedIn, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
       if (error || !signedIn.user) throw new Error("Credenciais inválidas.");
+      setLoginStep("Validando permissão master…");
       const { data: admin, error: accessError } = await supabase
         .from("platform_admins")
         .select("user_id")
@@ -89,11 +94,14 @@ function ManagerLoginPage() {
         await supabase.auth.signOut();
         throw new Error("Esta conta não possui acesso à administração da plataforma.");
       }
-      window.location.href = "/super-admin";
+      rememberPlatformAccess(signedIn.user.id, true);
+      setLoginStep("Abrindo console master…");
+      await navigate({ to: "/super-admin" });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível entrar.");
     } finally {
       setIsLoading(false);
+      setLoginStep("Acessar Painel Super Administrador");
     }
   };
 
@@ -201,7 +209,7 @@ function ManagerLoginPage() {
               disabled={isLoading}
             >
               {isLoading ? (
-                <span>Autenticando Console Master...</span>
+                <span>{loginStep}</span>
               ) : (
                 <>
                   <span>Acessar Painel Super Administrador</span>

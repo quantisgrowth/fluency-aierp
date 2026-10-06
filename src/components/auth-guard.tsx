@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/lib/supabase";
+import { clearAccessSnapshot, readAccessSnapshot } from "@/lib/auth-access-cache";
 
 type Props = {
   children: ReactNode;
@@ -16,6 +17,22 @@ export function AuthGuard({ children, platformAdmin = false, allowedRoles }: Pro
   useEffect(() => {
     let active = true;
     async function check() {
+      const cached = readAccessSnapshot();
+      if (cached) {
+        if (platformAdmin && cached.platformAdmin !== undefined) {
+          setStatus(cached.platformAdmin ? "allowed" : "denied");
+          return;
+        }
+        if (!platformAdmin && cached.schoolRoles) {
+          const roles = allowedRolesKey ? allowedRolesKey.split(",") : null;
+          setStatus(
+            cached.schoolRoles.some((role) => !roles || roles.includes(role))
+              ? "allowed"
+              : "denied",
+          );
+          return;
+        }
+      }
       const {
         data: { user },
         error,
@@ -58,7 +75,10 @@ export function AuthGuard({ children, platformAdmin = false, allowedRoles }: Pro
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_OUT" && active) setStatus("login");
+      if (event === "SIGNED_OUT" && active) {
+        clearAccessSnapshot();
+        setStatus("login");
+      }
     });
     return () => {
       active = false;
