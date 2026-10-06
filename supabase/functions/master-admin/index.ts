@@ -257,6 +257,15 @@ Deno.serve(async (request) => {
       return json({ member: data }, 200, origin);
     }
 
+    if (action === "remove_member") {
+      const { data, error } = await userClient.rpc("master_remove_school_member", {
+        _school_id: body.school_id,
+        _member_id: body.member_id,
+      });
+      if (error) throw error;
+      return json({ member_id: data }, 200, origin);
+    }
+
     if (action === "cancel_invite") {
       const { data, error } = await userClient.rpc("master_cancel_invite", {
         _invite_id: body.invite_id,

@@ -95,6 +95,7 @@ type MasterAction =
   | "set_school_module"
   | "create_invite"
   | "update_member"
+  | "remove_member"
   | "cancel_invite";
 
 async function invokeMaster<T>(action: MasterAction, payload: Record<string, unknown> = {}) {
@@ -131,6 +132,11 @@ export const masterAdmin = {
     status: string;
     unit_ids?: string[];
   }) => invokeMaster<{ member: MasterSchoolMember }>("update_member", input),
+  removeMember: (schoolId: string, memberId: string) =>
+    invokeMaster<{ member_id: string }>("remove_member", {
+      school_id: schoolId,
+      member_id: memberId,
+    }),
   cancelInvite: (inviteId: string) =>
     invokeMaster<{ invite_id: string }>("cancel_invite", { invite_id: inviteId }),
 };

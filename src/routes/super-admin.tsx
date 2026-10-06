@@ -28,6 +28,7 @@ import {
   Palette,
   Type,
   Layout,
+  Trash2,
 } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
@@ -455,6 +456,29 @@ function SuperAdminPage() {
     }
   };
 
+  const handleRemoveSchoolMember = async (member: MasterSchoolMember) => {
+    if (!editingSchool) return;
+    const identifiedAs = member.email || member.nome || "este usuário";
+    if (
+      !window.confirm(
+        `Remover ${identifiedAs} desta escola? A conta Master e o login de autenticação serão preservados.`,
+      )
+    ) {
+      return;
+    }
+    try {
+      await masterAdmin.removeMember(editingSchool.id, member.id);
+      setEditingSchool({
+        ...editingSchool,
+        members: editingSchool.members.filter((item) => item.id !== member.id),
+      });
+      await loadMasterData();
+      toast.success("Usuário removido da escola. A conta de autenticação foi preservada.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível remover o usuário.");
+    }
+  };
+
   const handleSaveEditingTeamMember = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTeamMember) return;
@@ -473,7 +497,7 @@ function SuperAdminPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#05060a] text-foreground p-6 sm:p-12 md:max-w-6xl mx-auto space-y-8 animate-in fade-in duration-300">
+    <div className="mx-auto min-h-screen w-full max-w-[1600px] space-y-8 bg-[#05060a] p-4 text-foreground animate-in fade-in duration-300 sm:p-6 lg:p-8 2xl:px-12">
       {/* Header bar */}
       <div className="flex items-center justify-between border-b border-white/5 pb-4">
         <div className="flex items-center gap-2.5">
@@ -1502,8 +1526,8 @@ function SuperAdminPage() {
 
       {/* POPUP MODAL: EDIT SCHOOL DETAILS */}
       {isSchoolModalOpen && editingSchool && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0d0e14] p-6 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 backdrop-blur-sm animate-in fade-in duration-200 sm:p-5">
+          <div className="relative max-h-[94vh] w-full max-w-5xl space-y-6 overflow-y-auto rounded-2xl border border-white/10 bg-[#0d0e14] p-4 shadow-2xl sm:p-6 lg:p-8">
             <div className="flex items-center justify-between border-b border-white/5 pb-4">
               <div className="flex items-center gap-2">
                 <Building className="size-5 text-primary" />
@@ -1659,7 +1683,7 @@ function SuperAdminPage() {
                   {editingSchool.members.map((member) => (
                     <div
                       key={member.id}
-                      className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.025] p-3"
+                      className="flex flex-col gap-3 rounded-lg border border-white/5 bg-white/[0.025] p-3 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div>
                         <p className="font-semibold text-white">
@@ -1669,7 +1693,7 @@ function SuperAdminPage() {
                           {member.email || "E-mail indisponível"}
                         </p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <select
                           aria-label={`Nível de acesso de ${member.nome || member.email || "usuário"}`}
                           value={member.papel}
@@ -1697,6 +1721,14 @@ function SuperAdminPage() {
                           <option value="suspenso">Suspenso</option>
                           <option value="inativo">Inativo</option>
                         </select>
+                        <button
+                          type="button"
+                          onClick={() => void handleRemoveSchoolMember(member)}
+                          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-red-500/20 bg-red-500/10 px-2.5 text-[10px] font-semibold text-red-300 transition-colors hover:bg-red-500/20"
+                          title="Remover o vínculo com esta escola"
+                        >
+                          <Trash2 className="size-3" /> Remover
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -1717,7 +1749,7 @@ function SuperAdminPage() {
                       </div>
                     ))}
                 </div>
-                <div className="grid gap-2 rounded-xl border border-white/5 bg-white/[0.025] p-3 sm:grid-cols-[1fr_1fr_150px_auto]">
+                <div className="grid gap-2 rounded-xl border border-white/5 bg-white/[0.025] p-3 md:grid-cols-2 xl:grid-cols-[1fr_1fr_150px_auto]">
                   <input
                     value={schoolInvite.name}
                     onChange={(e) => setSchoolInvite({ ...schoolInvite, name: e.target.value })}
