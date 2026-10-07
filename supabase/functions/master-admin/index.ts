@@ -209,6 +209,64 @@ Deno.serve(async (request) => {
       );
     }
 
+    if (action === "list_audit_logs") {
+      const filters = body.filters ?? {};
+      const page = Math.max(Number(filters.page ?? 1), 1);
+      const pageSize = Math.min(Math.max(Number(filters.page_size ?? 20), 1), 500);
+      const start = (page - 1) * pageSize;
+      let query = adminClient
+        .from("audit_logs")
+        .select(
+          "id,escola_id,actor_user_id,actor_kind,action,resource_type,resource_id,before_data,after_data,metadata,occurred_at",
+          { count: "exact" },
+        );
+      if (filters.school_id) query = query.eq("escola_id", filters.school_id);
+      if (filters.actor_user_id) query = query.eq("actor_user_id", filters.actor_user_id);
+      if (filters.action)
+        query = query.ilike("action", `%${String(filters.action).replaceAll("%", "")}%`);
+      if (filters.from) query = query.gte("occurred_at", `${filters.from}T00:00:00.000Z`);
+      if (filters.to) query = query.lte("occurred_at", `${filters.to}T23:59:59.999Z`);
+      const { data, error, count } = await query
+        .order("occurred_at", { ascending: false })
+        .range(start, start + pageSize - 1);
+      if (error) throw error;
+      const actors = new Map<string, { name: string | null; email: string | null }>();
+      await Promise.all(
+        [...new Set((data ?? []).map((log) => log.actor_user_id).filter(Boolean))].map(
+          async (id) => {
+            const [{ data: authUser }, { data: platform }, { data: profile }] = await Promise.all([
+              adminClient.auth.admin.getUserById(String(id)),
+              adminClient.from("platform_admins").select("nome").eq("user_id", id).maybeSingle(),
+              adminClient
+                .from("usuarios")
+                .select("nome,email")
+                .eq("auth_user_id", id)
+                .limit(1)
+                .maybeSingle(),
+            ]);
+            actors.set(String(id), {
+              name: platform?.nome ?? profile?.nome ?? null,
+              email: authUser.user?.email ?? profile?.email ?? null,
+            });
+          },
+        ),
+      );
+      return json(
+        {
+          logs: (data ?? []).map((log) => ({
+            ...log,
+            actor_name: log.actor_user_id ? (actors.get(log.actor_user_id)?.name ?? null) : null,
+            actor_email: log.actor_user_id ? (actors.get(log.actor_user_id)?.email ?? null) : null,
+          })),
+          total: count ?? 0,
+          page,
+          page_size: pageSize,
+        },
+        200,
+        origin,
+      );
+    }
+
     if (action === "create_school") {
       const input = body.input ?? {};
       const token = createToken();

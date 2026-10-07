@@ -87,7 +87,28 @@ export type MasterAuditLog = {
   resource_type: string;
   resource_id: string | null;
   metadata: Record<string, unknown>;
+  before_data: Record<string, unknown> | null;
+  after_data: Record<string, unknown> | null;
+  actor_name?: string | null;
+  actor_email?: string | null;
   occurred_at: string;
+};
+
+export type MasterAuditFilters = {
+  school_id?: string;
+  actor_user_id?: string;
+  action?: string;
+  from?: string;
+  to?: string;
+  page?: number;
+  page_size?: number;
+};
+
+export type MasterAuditPage = {
+  logs: MasterAuditLog[];
+  total: number;
+  page: number;
+  page_size: number;
 };
 
 export type MasterModuleCatalog = {
@@ -185,6 +206,7 @@ type MasterAction =
   | "update_team_member"
   | "remove_team_member"
   | "create_team_invite"
+  | "list_audit_logs"
   | "cancel_invite";
 
 async function invokeMaster<T>(action: MasterAction, payload: Record<string, unknown> = {}) {
@@ -251,6 +273,8 @@ export const masterAdmin = {
     invokeMaster<{ user_id: string }>("remove_team_member", { user_id: userId }),
   createTeamInvite: (input: { name: string; email: string; role: string }) =>
     invokeMaster<{ member: MasterTeamMember; invite_url: string }>("create_team_invite", { input }),
+  listAuditLogs: (filters: MasterAuditFilters) =>
+    invokeMaster<MasterAuditPage>("list_audit_logs", { filters }),
   cancelInvite: (inviteId: string) =>
     invokeMaster<{ invite_id: string }>("cancel_invite", { invite_id: inviteId }),
 };

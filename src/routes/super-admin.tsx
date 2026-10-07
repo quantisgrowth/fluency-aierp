@@ -31,6 +31,8 @@ import {
   Trash2,
   BadgePercent,
   Package,
+  Download,
+  Search,
 } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
@@ -189,6 +191,17 @@ function SuperAdminPage() {
   const [moduleCatalog, setModuleCatalog] = useState<MasterModuleCatalog[]>([]);
   const [coupons, setCoupons] = useState<MasterCoupon[]>([]);
   const [auditLogs, setAuditLogs] = useState<MasterAuditLog[]>([]);
+  const [auditTotal, setAuditTotal] = useState(0);
+  const [auditPage, setAuditPage] = useState(1);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [selectedAuditLog, setSelectedAuditLog] = useState<MasterAuditLog | null>(null);
+  const [auditFilters, setAuditFilters] = useState({
+    school_id: "",
+    actor_user_id: "",
+    action: "",
+    from: "",
+    to: "",
+  });
   const [mrr, setMrr] = useState(0);
   const [isLoadingMaster, setIsLoadingMaster] = useState(true);
   const [masterError, setMasterError] = useState<string | null>(null);
@@ -315,6 +328,74 @@ function SuperAdminPage() {
     }
   };
 
+  const loadAuditLogs = async (page = auditPage) => {
+    setAuditLoading(true);
+    try {
+      const result = await masterAdmin.listAuditLogs({
+        ...auditFilters,
+        school_id: auditFilters.school_id || undefined,
+        actor_user_id: auditFilters.actor_user_id || undefined,
+        action: auditFilters.action || undefined,
+        from: auditFilters.from || undefined,
+        to: auditFilters.to || undefined,
+        page,
+        page_size: 20,
+      });
+      setAuditLogs(result.logs);
+      setAuditTotal(result.total);
+      setAuditPage(result.page);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Não foi possível consultar a auditoria.",
+      );
+    } finally {
+      setAuditLoading(false);
+    }
+  };
+
+  const exportAuditLogs = async () => {
+    try {
+      const result = await masterAdmin.listAuditLogs({
+        ...auditFilters,
+        school_id: auditFilters.school_id || undefined,
+        actor_user_id: auditFilters.actor_user_id || undefined,
+        action: auditFilters.action || undefined,
+        from: auditFilters.from || undefined,
+        to: auditFilters.to || undefined,
+        page: 1,
+        page_size: 500,
+      });
+      const escape = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+      const rows = result.logs.map((log) =>
+        [
+          log.occurred_at,
+          log.actor_name ?? log.actor_email ?? log.actor_kind,
+          schools.find((school) => school.id === log.escola_id)?.name ?? "Plataforma",
+          log.action,
+          log.resource_type,
+          log.resource_id ?? "",
+          JSON.stringify(log.metadata ?? {}),
+        ]
+          .map(escape)
+          .join(","),
+      );
+      const csv = ["data,usuario,escola,acao,recurso,recurso_id,metadata", ...rows].join("\n");
+      const url = URL.createObjectURL(
+        new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `auditoria-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success(`${result.logs.length} registros exportados.`);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Não foi possível exportar os registros.",
+      );
+    }
+  };
+
   useEffect(() => {
     void loadMasterData();
     try {
@@ -326,6 +407,12 @@ function SuperAdminPage() {
       /* ignore */
     }
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "logs") void loadAuditLogs(1);
+    // A consulta é refeita ao abrir a aba; filtros são aplicados pelo botão.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const handleToggleStatus = async (schoolId: string) => {
     const school = schools.find((item) => item.id === schoolId);
@@ -1245,66 +1332,235 @@ function SuperAdminPage() {
         <div className="space-y-6">
           <SectionHeader
             eyebrow="Logs Gerais 360"
-            title="Ticker de Histórico & Usuários Online"
-            description="Monitore as conexões ativas na plataforma e o histórico de auditoria técnica geral do backoffice."
+            title="Histórico e Auditoria da Plataforma"
+            description="Consulte as operações realizadas na plataforma, identifique o responsável e exporte evidências para análise."
           />
 
-          <div className="grid gap-6 md:grid-cols-3">
-            {/* Online stats */}
-            <GlassCard className="p-5 flex flex-col justify-between border-white/5 bg-neutral-900/40 md:col-span-1 space-y-4">
-              <div>
-                <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
-                  Usuários Ativos Agora
-                </h4>
-                <p className="text-3xl font-extrabold text-white mt-1">Não medido</p>
+          <GlassCard className="space-y-4 border-white/5 bg-neutral-900/40 p-5">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+              <select
+                value={auditFilters.school_id}
+                onChange={(e) => setAuditFilters({ ...auditFilters, school_id: e.target.value })}
+                className="h-10 rounded-lg border border-white/5 bg-[#15161c] px-3 text-xs text-white"
+              >
+                <option value="">Todas as escolas</option>
+                {schools.map((school) => (
+                  <option key={school.id} value={school.id}>
+                    {school.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={auditFilters.actor_user_id}
+                onChange={(e) =>
+                  setAuditFilters({ ...auditFilters, actor_user_id: e.target.value })
+                }
+                className="h-10 rounded-lg border border-white/5 bg-[#15161c] px-3 text-xs text-white"
+              >
+                <option value="">Todos os usuários</option>
+                {team.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}
+                  </option>
+                ))}
+                {schools
+                  .flatMap((school) => school.members)
+                  .filter(
+                    (member, index, list) =>
+                      list.findIndex((item) => item.user_id === member.user_id) === index,
+                  )
+                  .map((member) => (
+                    <option key={member.user_id} value={member.user_id}>
+                      {member.nome || member.email || "Usuário escolar"}
+                    </option>
+                  ))}
+              </select>
+              <input
+                value={auditFilters.action}
+                onChange={(e) => setAuditFilters({ ...auditFilters, action: e.target.value })}
+                placeholder="Ação: school, invite…"
+                className="h-10 rounded-lg border border-white/5 bg-[#15161c] px-3 text-xs text-white"
+              />
+              <input
+                type="date"
+                value={auditFilters.from}
+                onChange={(e) => setAuditFilters({ ...auditFilters, from: e.target.value })}
+                className="h-10 rounded-lg border border-white/5 bg-[#15161c] px-3 text-xs text-white"
+              />
+              <input
+                type="date"
+                value={auditFilters.to}
+                onChange={(e) => setAuditFilters({ ...auditFilters, to: e.target.value })}
+                className="h-10 rounded-lg border border-white/5 bg-[#15161c] px-3 text-xs text-white"
+              />
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-neutral-400">{auditTotal} evento(s) encontrado(s)</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => void exportAuditLogs()}
+                  className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/10 px-3 text-xs text-white hover:bg-white/5"
+                >
+                  <Download className="size-3.5" /> Exportar CSV
+                </button>
+                <button
+                  type="button"
+                  disabled={auditLoading}
+                  onClick={() => void loadAuditLogs(1)}
+                  className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                >
+                  <Search className="size-3.5" />{" "}
+                  {auditLoading ? "Consultando…" : "Aplicar filtros"}
+                </button>
               </div>
-              <div className="space-y-2 text-xs text-neutral-400">
-                <div className="flex justify-between">
-                  <span>Alunos Conectados:</span>
-                  <span className="font-semibold text-white">—</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Gestores de Escola:</span>
-                  <span className="font-semibold text-white">—</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Colaboradores Master:</span>
-                  <span className="font-semibold text-white">—</span>
-                </div>
-              </div>
-            </GlassCard>
+            </div>
+          </GlassCard>
 
-            {/* Audit Logs list */}
-            <GlassCard className="p-6 border-white/5 bg-neutral-900/40 md:col-span-2 space-y-4">
+          <GlassCard className="overflow-hidden border-white/5 bg-neutral-900/40">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-white/5 text-[9px] uppercase tracking-wider text-neutral-400">
+                  <tr>
+                    <th className="px-4 py-3">Data e hora</th>
+                    <th className="px-4 py-3">Usuário</th>
+                    <th className="px-4 py-3">Escola</th>
+                    <th className="px-4 py-3">Ação</th>
+                    <th className="px-4 py-3">Recurso</th>
+                    <th className="px-4 py-3 text-right">Detalhes</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {auditLogs.map((log) => (
+                    <tr key={log.id} className="hover:bg-white/[0.02]">
+                      <td className="whitespace-nowrap px-4 py-3 text-neutral-300">
+                        {new Date(log.occurred_at).toLocaleString("pt-BR")}
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="text-white">{log.actor_name || log.actor_kind}</p>
+                        <p className="text-[9px] text-neutral-500">
+                          {log.actor_email || log.actor_user_id?.slice(0, 8) || "Sistema"}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3 text-neutral-300">
+                        {schools.find((school) => school.id === log.escola_id)?.name ||
+                          "Plataforma"}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-primary">{log.action}</td>
+                      <td className="px-4 py-3 text-neutral-300">
+                        {log.resource_type}
+                        {log.resource_id ? ` · ${log.resource_id.slice(0, 8)}` : ""}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAuditLog(log)}
+                          className="rounded-md border border-white/10 px-2.5 py-1 text-[10px] text-white hover:bg-white/5"
+                        >
+                          Visualizar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {!auditLoading && auditLogs.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-10 text-center text-neutral-500">
+                        Nenhum evento encontrado com esses filtros.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex items-center justify-between border-t border-white/5 p-4 text-xs text-neutral-400">
+              <span>
+                Página {auditPage} de {Math.max(1, Math.ceil(auditTotal / 20))}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={auditPage <= 1 || auditLoading}
+                  onClick={() => void loadAuditLogs(auditPage - 1)}
+                  className="rounded-md border border-white/10 px-3 py-1.5 disabled:opacity-30"
+                >
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  disabled={auditPage * 20 >= auditTotal || auditLoading}
+                  onClick={() => void loadAuditLogs(auditPage + 1)}
+                  className="rounded-md border border-white/10 px-3 py-1.5 disabled:opacity-30"
+                >
+                  Próxima
+                </button>
+              </div>
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {selectedAuditLog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-white/10 bg-[#0d0e14] p-6 shadow-2xl">
+            <div className="mb-5 flex items-center justify-between">
               <div>
-                <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
-                  Histórico de Auditoria Geral (Audit Logs)
-                </h4>
-                <p className="text-[10px] text-neutral-500 mt-0.5">
-                  Eventos mais recentes processados no cluster
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                  Evento de auditoria
+                </p>
+                <h3 className="text-lg font-bold text-white">{selectedAuditLog.action}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedAuditLog(null)}
+                className="text-neutral-400 hover:text-white"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            <div className="grid gap-3 text-xs sm:grid-cols-2">
+              <div className="rounded-lg bg-white/5 p-3">
+                <p className="text-[9px] uppercase text-neutral-500">Data e hora</p>
+                <p className="mt-1 text-white">
+                  {new Date(selectedAuditLog.occurred_at).toLocaleString("pt-BR")}
                 </p>
               </div>
-
-              <div className="space-y-3 font-mono text-[11px] text-neutral-300 max-h-[220px] overflow-y-auto pr-1">
-                {auditLogs.map((log) => (
-                  <div
-                    key={log.id}
-                    className="flex gap-3 items-start border-b border-white/5 pb-2 last:border-0 last:pb-0"
-                  >
-                    <span className="text-primary font-bold shrink-0">
-                      [{new Date(log.occurred_at).toLocaleTimeString("pt-BR")}]
-                    </span>
-                    <span>
-                      {log.action} · {log.resource_type}
-                      {log.resource_id ? ` #${log.resource_id.slice(0, 8)}` : ""}
-                    </span>
-                  </div>
-                ))}
-                {!isLoadingMaster && auditLogs.length === 0 && (
-                  <p className="text-neutral-500">Nenhum evento de auditoria registrado.</p>
-                )}
+              <div className="rounded-lg bg-white/5 p-3">
+                <p className="text-[9px] uppercase text-neutral-500">Responsável</p>
+                <p className="mt-1 text-white">
+                  {selectedAuditLog.actor_name ||
+                    selectedAuditLog.actor_email ||
+                    selectedAuditLog.actor_kind}
+                </p>
               </div>
-            </GlassCard>
+              <div className="rounded-lg bg-white/5 p-3">
+                <p className="text-[9px] uppercase text-neutral-500">Escola</p>
+                <p className="mt-1 text-white">
+                  {schools.find((school) => school.id === selectedAuditLog.escola_id)?.name ||
+                    "Plataforma"}
+                </p>
+              </div>
+              <div className="rounded-lg bg-white/5 p-3">
+                <p className="text-[9px] uppercase text-neutral-500">Recurso</p>
+                <p className="mt-1 text-white">
+                  {selectedAuditLog.resource_type} ·{" "}
+                  {selectedAuditLog.resource_id || "sem identificador"}
+                </p>
+              </div>
+            </div>
+            {[
+              { label: "Dados anteriores", data: selectedAuditLog.before_data },
+              { label: "Dados posteriores", data: selectedAuditLog.after_data },
+              { label: "Metadados", data: selectedAuditLog.metadata },
+            ].map((item) => (
+              <div key={item.label} className="mt-4">
+                <p className="mb-2 text-[10px] font-bold uppercase text-neutral-400">
+                  {item.label}
+                </p>
+                <pre className="max-h-56 overflow-auto rounded-xl border border-white/5 bg-black/30 p-4 text-[10px] leading-relaxed text-neutral-300">
+                  {JSON.stringify(item.data ?? {}, null, 2)}
+                </pre>
+              </div>
+            ))}
           </div>
         </div>
       )}
