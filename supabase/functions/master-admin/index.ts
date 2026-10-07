@@ -102,6 +102,7 @@ Deno.serve(async (request) => {
         adminClient.from("plano_modulos").select("plano_id,modulo_id,incluido,preco_adicional"),
         adminClient.from("cupons_desconto").select("*").order("created_at", { ascending: false }),
         adminClient.from("cupom_planos").select("cupom_id,plano_id"),
+        adminClient.from("contratos_escola").select("*"),
         adminClient
           .from("audit_logs")
           .select(
@@ -128,6 +129,7 @@ Deno.serve(async (request) => {
         planModulesResult,
         couponsResult,
         couponPlansResult,
+        contractsResult,
         logsResult,
       ] = results;
       const failed = results.find((result) => result.error);
@@ -178,6 +180,7 @@ Deno.serve(async (request) => {
           }),
         units: (schoolUnitsResult.data ?? []).filter((row) => row.escola_id === school.id),
         invites: (schoolInvitesResult.data ?? []).filter((row) => row.escola_id === school.id),
+        contract: (contractsResult.data ?? []).find((row) => row.escola_id === school.id) ?? null,
       }));
       const plans = (planCatalogResult.data ?? []).map((plan) => ({
         ...plan,
@@ -196,6 +199,9 @@ Deno.serve(async (request) => {
           plans,
           module_catalog: moduleCatalogResult.data ?? [],
           coupons,
+          mrr: (contractsResult.data ?? [])
+            .filter((contract) => ["trial", "ativo"].includes(contract.status))
+            .reduce((total, contract) => total + Number(contract.mrr ?? 0), 0),
           audit_logs: logsResult.data ?? [],
         },
         200,
@@ -315,6 +321,85 @@ Deno.serve(async (request) => {
       });
       if (error) throw error;
       return json({ coupon: data }, 200, origin);
+    }
+
+    if (action === "save_contract") {
+      const { data, error } = await userClient.rpc("master_save_contract", {
+        _school_id: body.school_id,
+        _plan_id: body.plan_id,
+        _cycle: body.cycle ?? "mensal",
+        _additional_units: Number(body.additional_units ?? 0),
+        _student_blocks: Number(body.student_blocks ?? 0),
+      });
+      if (error) throw error;
+      return json({ contract: data }, 200, origin);
+    }
+
+    if (action === "update_team_member") {
+      const roleMap: Record<string, string> = {
+        Administrador: "administrador",
+        Financeiro: "financeiro",
+        Desenvolvedor: "tecnico",
+        Vendedor: "comercial",
+      };
+      const { data, error } = await userClient.rpc("master_update_platform_admin", {
+        _user_id: body.user_id,
+        _name: body.name,
+        _role: roleMap[String(body.role)] ?? body.role,
+        _status: body.status === "Ativo" ? "ativo" : "inativo",
+      });
+      if (error) throw error;
+      return json({ member: data }, 200, origin);
+    }
+
+    if (action === "remove_team_member") {
+      const { data, error } = await userClient.rpc("master_remove_platform_admin", {
+        _user_id: body.user_id,
+      });
+      if (error) throw error;
+      return json({ user_id: data }, 200, origin);
+    }
+
+    if (action === "create_team_invite") {
+      const input = body.input ?? {};
+      const roleMap: Record<string, string> = {
+        Administrador: "administrador",
+        Financeiro: "financeiro",
+        Desenvolvedor: "tecnico",
+        Vendedor: "comercial",
+      };
+      const email = String(input.email ?? "")
+        .trim()
+        .toLowerCase();
+      const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+        type: "invite",
+        email,
+        options: { redirectTo: `${appUrl}/redefinir-senha` },
+      });
+      if (linkError) throw linkError;
+      const userId = linkData.user?.id;
+      if (!userId) throw new Error("Não foi possível preparar o acesso Master");
+      const { data, error } = await adminClient
+        .from("platform_admins")
+        .upsert({
+          user_id: userId,
+          nome: String(input.name ?? "").trim(),
+          papel: roleMap[String(input.role)] ?? "suporte",
+          status: "ativo",
+          updated_at: new Date().toISOString(),
+        })
+        .select("user_id,nome,papel,status")
+        .single();
+      if (error) throw error;
+      await adminClient.from("audit_logs").insert({
+        actor_user_id: authData.user.id,
+        actor_kind: "plataforma",
+        action: "platform_admin.invited",
+        resource_type: "platform_admin",
+        resource_id: userId,
+        metadata: { email },
+      });
+      return json({ member: data, invite_url: linkData.properties.action_link }, 201, origin);
     }
 
     if (action === "cancel_invite") {

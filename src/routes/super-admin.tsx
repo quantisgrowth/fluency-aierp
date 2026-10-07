@@ -40,6 +40,7 @@ import {
   masterAdmin,
   type MasterAuditLog,
   type MasterCoupon,
+  type MasterContract,
   type MasterModuleCatalog,
   type MasterOverview,
   type MasterPlan,
@@ -85,6 +86,7 @@ type SchoolTenant = {
   unitsCount: number;
   managersCount: number;
   pendingInvitesCount: number;
+  contract: MasterContract | null;
 };
 
 type MasterUser = {
@@ -167,6 +169,7 @@ function mapOverview(data: MasterOverview) {
     members: school.members ?? [],
     units: school.units ?? [],
     invites: school.invites ?? [],
+    contract: school.contract ?? null,
     paymentHistory: [],
   }));
   const team: MasterUser[] = data.team.map((member) => ({
@@ -186,6 +189,7 @@ function SuperAdminPage() {
   const [moduleCatalog, setModuleCatalog] = useState<MasterModuleCatalog[]>([]);
   const [coupons, setCoupons] = useState<MasterCoupon[]>([]);
   const [auditLogs, setAuditLogs] = useState<MasterAuditLog[]>([]);
+  const [mrr, setMrr] = useState(0);
   const [isLoadingMaster, setIsLoadingMaster] = useState(true);
   const [masterError, setMasterError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<MasterTab>("schools");
@@ -301,6 +305,7 @@ function SuperAdminPage() {
       setModuleCatalog(data.module_catalog ?? []);
       setCoupons(data.coupons ?? []);
       setAuditLogs(data.audit_logs);
+      setMrr(Number(data.mrr ?? 0));
     } catch (error) {
       setMasterError(
         error instanceof Error ? error.message : "Não foi possível carregar o Console Master.",
@@ -338,29 +343,40 @@ function SuperAdminPage() {
     }
   };
 
-  const handleAddTeamMember = (e: React.FormEvent) => {
+  const handleAddTeamMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!teamName.trim() || !teamEmail.trim()) {
       toast.error("Por favor, preencha todos os campos do colaborador!");
       return;
     }
-    const newMember: MasterUser = {
-      id: "master-" + Date.now(),
-      name: teamName,
-      email: teamEmail,
-      role: teamRole,
-      status: "Ativo",
-    };
-    void newMember;
-    toast.info("O convite da equipe Master será ativado junto do serviço de e-mail transacional.");
+    try {
+      const result = await masterAdmin.createTeamInvite({
+        name: teamName,
+        email: teamEmail,
+        role: teamRole,
+      });
+      await navigator.clipboard.writeText(result.invite_url);
+      setTeamName("");
+      setTeamEmail("");
+      await loadMasterData();
+      toast.success("Acesso Master criado e link seguro copiado.", {
+        description:
+          "Envie o link ao colaborador. O envio automático de e-mail será configurado depois.",
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível criar o colaborador.");
+    }
   };
 
-  const handleDeleteTeamMember = (id: string) => {
-    if (id === "1") {
-      toast.error("Você não pode deletar o Administrador Principal!");
-      return;
+  const handleDeleteTeamMember = async (id: string) => {
+    if (!window.confirm("Desativar o acesso deste colaborador Master?")) return;
+    try {
+      await masterAdmin.removeTeamMember(id);
+      await loadMasterData();
+      toast.success("Acesso Master desativado.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível desativar o acesso.");
     }
-    toast.info("A suspensão do acesso Master será ativada no próximo pacote seguro.");
   };
 
   // Save Customization tab settings
@@ -395,6 +411,13 @@ function SuperAdminPage() {
               : "suspensa",
         ativa: editingSchool.status === "Ativo",
         plano: editingSchool.plan,
+      });
+      await masterAdmin.saveContract({
+        school_id: editingSchool.id,
+        plan_id: editingSchool.plan,
+        cycle: editingSchool.contract?.ciclo ?? "mensal",
+        additional_units: editingSchool.contract?.unidades_adicionais ?? 0,
+        student_blocks: editingSchool.contract?.blocos_100_alunos ?? 0,
       });
       await loadMasterData();
       setIsSchoolModalOpen(false);
@@ -477,7 +500,10 @@ function SuperAdminPage() {
       await navigator.clipboard.writeText(result.invite_url);
       setSchoolInvite({ name: "", email: "", role: "gestor" });
       await loadMasterData();
-      toast.success("Convite criado e link seguro copiado.");
+      toast.success("Convite criado e link seguro copiado.", {
+        description:
+          "O sistema ainda não envia este e-mail automaticamente. Envie o link copiado ao usuário.",
+      });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível criar o convite.");
     } finally {
@@ -588,7 +614,14 @@ function SuperAdminPage() {
     setIsSavingCoupon(true);
     try {
       const { plan_ids, ...data } = couponForm;
-      await masterAdmin.saveCoupon(null, data, plan_ids);
+      await masterAdmin.saveCoupon(
+        null,
+        {
+          ...data,
+          duracao_meses: couponForm.duracao === "meses" ? couponForm.duracao_meses : null,
+        },
+        plan_ids,
+      );
       await loadMasterData();
       setIsCouponModalOpen(false);
       setCouponForm({
@@ -614,11 +647,25 @@ function SuperAdminPage() {
     }
   };
 
-  const handleSaveEditingTeamMember = (e: React.FormEvent) => {
+  const handleSaveEditingTeamMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTeamMember) return;
 
-    toast.info("A alteração da equipe Master será ativada no próximo pacote seguro.");
+    try {
+      await masterAdmin.updateTeamMember({
+        user_id: editingTeamMember.id,
+        name: editingTeamMember.name,
+        role: editingTeamMember.role,
+        status: editingTeamMember.status,
+      });
+      await loadMasterData();
+      setIsTeamModalOpen(false);
+      toast.success("Colaborador Master atualizado.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Não foi possível salvar o colaborador.",
+      );
+    }
   };
 
   const handleToggleHealth = (service: keyof typeof healthStatus) => {
@@ -639,6 +686,20 @@ function SuperAdminPage() {
         { id: "profissional", nome: "Profissional" },
         { id: "enterprise", nome: "Enterprise" },
       ];
+  const selectedPlan = editingSchool ? plans.find((plan) => plan.id === editingSchool.plan) : null;
+  const contractCycle = editingSchool?.contract?.ciclo ?? "mensal";
+  const extraUnits = editingSchool?.contract?.unidades_adicionais ?? 0;
+  const studentBlocks = editingSchool?.contract?.blocos_100_alunos ?? 0;
+  const monthlyExtras = selectedPlan
+    ? extraUnits * Number(selectedPlan.preco_unidade_adicional) +
+      studentBlocks * Number(selectedPlan.preco_100_alunos_adicionais)
+    : 0;
+  const contractTotal = selectedPlan
+    ? contractCycle === "anual"
+      ? Number(selectedPlan.preco_anual ?? Number(selectedPlan.preco_base) * 12) +
+        monthlyExtras * 12
+      : Number(selectedPlan.preco_base) + monthlyExtras
+    : 0;
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[1600px] space-y-8 bg-[#05060a] p-4 text-foreground animate-in fade-in duration-300 sm:p-6 lg:p-8 2xl:px-12">
@@ -745,9 +806,11 @@ function SuperAdminPage() {
                 <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
                   Faturamento Recorrente (MRR)
                 </p>
-                <p className="mt-1 text-2xl font-bold text-white">—</p>
+                <p className="mt-1 text-2xl font-bold text-white">
+                  {mrr.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                </p>
                 <p className="text-[10px] text-neutral-500 mt-1">
-                  Será calculado pelo catálogo e cobranças ASAAS
+                  Contratos ativos convertidos para valor mensal
                 </p>
               </div>
               <span className="grid size-10 place-items-center rounded-xl bg-paid/10 border border-paid/20">
@@ -1860,6 +1923,122 @@ function SuperAdminPage() {
                   ))}
                 </select>
               </div>
+
+              {selectedPlan && (
+                <div className="grid gap-3 rounded-xl border border-primary/15 bg-primary/5 p-4 sm:grid-cols-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-bold uppercase text-neutral-400">Ciclo</label>
+                    <select
+                      value={contractCycle}
+                      onChange={(e) =>
+                        setEditingSchool({
+                          ...editingSchool,
+                          contract: {
+                            ...(editingSchool.contract ?? {
+                              id: "",
+                              escola_id: editingSchool.id,
+                              plano_id: editingSchool.plan,
+                              plano_versao: selectedPlan.versao,
+                              status: "ativo",
+                              valor_base: 0,
+                              valor_adicionais: 0,
+                              valor_total: 0,
+                              mrr: 0,
+                              proxima_cobranca: null,
+                            }),
+                            ciclo: e.target.value as "mensal" | "anual",
+                            unidades_adicionais: extraUnits,
+                            blocos_100_alunos: studentBlocks,
+                          },
+                        })
+                      }
+                      className="h-9 w-full rounded-lg border border-white/5 bg-[#15161c] px-2 text-white"
+                    >
+                      <option value="mensal">Mensal</option>
+                      <option value="anual">Anual</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-bold uppercase text-neutral-400">
+                      Unidades extras
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={extraUnits}
+                      onChange={(e) =>
+                        setEditingSchool({
+                          ...editingSchool,
+                          contract: {
+                            ...(editingSchool.contract as MasterContract),
+                            ciclo: contractCycle,
+                            unidades_adicionais: Math.max(0, Number(e.target.value)),
+                            blocos_100_alunos: studentBlocks,
+                          },
+                        })
+                      }
+                      className="h-9 w-full rounded-lg border border-white/5 bg-[#15161c] px-2 text-white"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-bold uppercase text-neutral-400">
+                      Blocos de 100 alunos
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={studentBlocks}
+                      onChange={(e) =>
+                        setEditingSchool({
+                          ...editingSchool,
+                          contract: {
+                            ...(editingSchool.contract as MasterContract),
+                            ciclo: contractCycle,
+                            unidades_adicionais: extraUnits,
+                            blocos_100_alunos: Math.max(0, Number(e.target.value)),
+                          },
+                        })
+                      }
+                      className="h-9 w-full rounded-lg border border-white/5 bg-[#15161c] px-2 text-white"
+                    />
+                  </div>
+                  <div className="rounded-lg border border-primary/20 bg-black/20 p-3">
+                    <p className="text-[9px] uppercase text-neutral-400">Valor do contrato</p>
+                    <p className="mt-1 text-lg font-bold text-primary">
+                      {contractTotal.toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      })}
+                      <span className="text-[9px] font-normal text-neutral-400">
+                        /{contractCycle === "anual" ? "ano" : "mês"}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="sm:col-span-4 flex flex-wrap gap-2 text-[9px]">
+                    <span
+                      className={`rounded-full px-2 py-1 ${selectedPlan.limite_alunos !== null && editingSchool.studentsCount > selectedPlan.limite_alunos + studentBlocks * 100 ? "bg-red-500/15 text-red-300" : "bg-white/5 text-neutral-400"}`}
+                    >
+                      Alunos: {editingSchool.studentsCount}/
+                      {selectedPlan.limite_alunos === null
+                        ? "∞"
+                        : selectedPlan.limite_alunos + studentBlocks * 100}
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-1 ${selectedPlan.limite_unidades !== null && editingSchool.unitsCount > selectedPlan.limite_unidades + extraUnits ? "bg-red-500/15 text-red-300" : "bg-white/5 text-neutral-400"}`}
+                    >
+                      Unidades: {editingSchool.unitsCount}/
+                      {selectedPlan.limite_unidades === null
+                        ? "∞"
+                        : selectedPlan.limite_unidades + extraUnits}
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-1 ${selectedPlan.limite_usuarios !== null && editingSchool.members.length > selectedPlan.limite_usuarios ? "bg-red-500/15 text-red-300" : "bg-white/5 text-neutral-400"}`}
+                    >
+                      Usuários: {editingSchool.members.length}/{selectedPlan.limite_usuarios ?? "∞"}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="grid gap-4 sm:grid-cols-3">
                 {/* Contract Status */}

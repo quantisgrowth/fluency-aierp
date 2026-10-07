@@ -18,6 +18,23 @@ export type MasterSchool = {
   members: MasterSchoolMember[];
   units: MasterSchoolUnit[];
   invites: MasterSchoolInvite[];
+  contract: MasterContract | null;
+};
+
+export type MasterContract = {
+  id: string;
+  escola_id: string;
+  plano_id: string;
+  plano_versao: number;
+  ciclo: "mensal" | "anual";
+  status: "trial" | "ativo" | "inadimplente" | "suspenso" | "cancelado";
+  unidades_adicionais: number;
+  blocos_100_alunos: number;
+  valor_base: number;
+  valor_adicionais: number;
+  valor_total: number;
+  mrr: number;
+  proxima_cobranca: string | null;
 };
 
 export type MasterSchoolModule = {
@@ -142,6 +159,7 @@ export type MasterOverview = {
   module_catalog: MasterModuleCatalog[];
   coupons: MasterCoupon[];
   audit_logs: MasterAuditLog[];
+  mrr: number;
 };
 
 export type CreateSchoolInput = {
@@ -163,6 +181,10 @@ type MasterAction =
   | "remove_member"
   | "save_plan"
   | "save_coupon"
+  | "save_contract"
+  | "update_team_member"
+  | "remove_team_member"
+  | "create_team_invite"
   | "cancel_invite";
 
 async function invokeMaster<T>(action: MasterAction, payload: Record<string, unknown> = {}) {
@@ -216,6 +238,19 @@ export const masterAdmin = {
       data,
       plan_ids: planIds,
     }),
+  saveContract: (input: {
+    school_id: string;
+    plan_id: string;
+    cycle: "mensal" | "anual";
+    additional_units: number;
+    student_blocks: number;
+  }) => invokeMaster<{ contract: MasterContract }>("save_contract", input),
+  updateTeamMember: (input: { user_id: string; name: string; role: string; status: string }) =>
+    invokeMaster<{ member: MasterTeamMember }>("update_team_member", input),
+  removeTeamMember: (userId: string) =>
+    invokeMaster<{ user_id: string }>("remove_team_member", { user_id: userId }),
+  createTeamInvite: (input: { name: string; email: string; role: string }) =>
+    invokeMaster<{ member: MasterTeamMember; invite_url: string }>("create_team_invite", { input }),
   cancelInvite: (inviteId: string) =>
     invokeMaster<{ invite_id: string }>("cancel_invite", { invite_id: inviteId }),
 };
