@@ -29,6 +29,8 @@ import {
   Type,
   Layout,
   Trash2,
+  BadgePercent,
+  Package,
 } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
@@ -37,7 +39,11 @@ import { checkSupabaseConnection } from "@/lib/supabase";
 import {
   masterAdmin,
   type MasterAuditLog,
+  type MasterCoupon,
+  type MasterModuleCatalog,
   type MasterOverview,
+  type MasterPlan,
+  type MasterPlanModule,
   type MasterSchoolInvite,
   type MasterSchoolMember,
   type MasterSchoolModule,
@@ -89,7 +95,7 @@ type MasterUser = {
   status: "Ativo" | "Inativo";
 };
 
-type MasterTab = "schools" | "status" | "logs" | "team" | "customization" | "profile";
+type MasterTab = "schools" | "plans" | "status" | "logs" | "team" | "customization" | "profile";
 
 const roleLabels: Record<string, MasterUser["role"]> = {
   administrador: "Administrador",
@@ -112,6 +118,32 @@ const schoolModuleLabels: Record<string, string> = {
 
 const isEnabledModule = (module: MasterSchoolModule) =>
   ["trial", "ativo", "cortesia"].includes(module.status);
+
+const emptyPlan = (): MasterPlan => ({
+  id: "",
+  nome: "",
+  descricao: "",
+  destaque: null,
+  recomendado: false,
+  preco_base: 0,
+  preco_anual: null,
+  taxa_implantacao: 0,
+  limite_alunos: 50,
+  limite_professores: 10,
+  limite_unidades: 1,
+  limite_usuarios: 3,
+  armazenamento_mb: 1024,
+  trial_dias: 0,
+  desconto_anual: 15,
+  preco_unidade_adicional: 99,
+  preco_100_alunos_adicionais: 79,
+  white_label: false,
+  dominio_personalizado: false,
+  suporte: "email",
+  ativo: true,
+  versao: 0,
+  modules: [],
+});
 
 function mapOverview(data: MasterOverview) {
   const schools: SchoolTenant[] = data.schools.map((school) => ({
@@ -150,6 +182,9 @@ function mapOverview(data: MasterOverview) {
 function SuperAdminPage() {
   const [schools, setSchools] = useState<SchoolTenant[]>([]);
   const [team, setTeam] = useState<MasterUser[]>([]);
+  const [plans, setPlans] = useState<MasterPlan[]>([]);
+  const [moduleCatalog, setModuleCatalog] = useState<MasterModuleCatalog[]>([]);
+  const [coupons, setCoupons] = useState<MasterCoupon[]>([]);
   const [auditLogs, setAuditLogs] = useState<MasterAuditLog[]>([]);
   const [isLoadingMaster, setIsLoadingMaster] = useState(true);
   const [masterError, setMasterError] = useState<string | null>(null);
@@ -204,6 +239,26 @@ function SuperAdminPage() {
   });
   const [schoolInvite, setSchoolInvite] = useState({ name: "", email: "", role: "gestor" });
   const [isInvitingSchoolUser, setIsInvitingSchoolUser] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<MasterPlan | null>(null);
+  const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+  const [isSavingPlan, setIsSavingPlan] = useState(false);
+  const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
+  const [isSavingCoupon, setIsSavingCoupon] = useState(false);
+  const [couponForm, setCouponForm] = useState({
+    codigo: "",
+    nome: "",
+    tipo: "percentual" as MasterCoupon["tipo"],
+    valor: 10,
+    duracao: "primeira_cobranca" as MasterCoupon["duracao"],
+    duracao_meses: 3,
+    limite_usos: "",
+    fim_em: "",
+    ciclo: "ambos" as MasterCoupon["ciclo"],
+    somente_novos_clientes: true,
+    cumulativo: false,
+    ativo: true,
+    plan_ids: [] as string[],
+  });
 
   // Modal Editing States - Team Users
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
@@ -242,6 +297,9 @@ function SuperAdminPage() {
       const mapped = mapOverview(data);
       setSchools(mapped.schools);
       setTeam(mapped.team);
+      setPlans(data.plans ?? []);
+      setModuleCatalog(data.module_catalog ?? []);
+      setCoupons(data.coupons ?? []);
       setAuditLogs(data.audit_logs);
     } catch (error) {
       setMasterError(
@@ -479,6 +537,83 @@ function SuperAdminPage() {
     }
   };
 
+  const openPlanEditor = (plan?: MasterPlan) => {
+    const base = plan ? { ...plan } : emptyPlan();
+    base.modules = moduleCatalog.map((module) => {
+      const current = plan?.modules.find((item) => item.modulo_id === module.id);
+      return (
+        current ?? {
+          plano_id: plan?.id ?? "",
+          modulo_id: module.id,
+          incluido: false,
+          preco_adicional: module.preco_base,
+        }
+      );
+    });
+    setEditingPlan(base);
+    setIsPlanModalOpen(true);
+  };
+
+  const handleSavePlan = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingPlan) return;
+    const planId = editingPlan.id
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, "_");
+    if (!planId || !editingPlan.nome.trim()) {
+      toast.error("Informe o código e o nome do plano.");
+      return;
+    }
+    setIsSavingPlan(true);
+    try {
+      const { modules, id: _id, versao: _version, ...changes } = editingPlan;
+      await masterAdmin.savePlan(
+        planId,
+        changes,
+        modules.map((module) => ({ ...module, plano_id: planId })),
+      );
+      await loadMasterData();
+      setIsPlanModalOpen(false);
+      toast.success("Plano salvo e nova versão registrada.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar o plano.");
+    } finally {
+      setIsSavingPlan(false);
+    }
+  };
+
+  const handleSaveCoupon = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsSavingCoupon(true);
+    try {
+      const { plan_ids, ...data } = couponForm;
+      await masterAdmin.saveCoupon(null, data, plan_ids);
+      await loadMasterData();
+      setIsCouponModalOpen(false);
+      setCouponForm({
+        codigo: "",
+        nome: "",
+        tipo: "percentual",
+        valor: 10,
+        duracao: "primeira_cobranca",
+        duracao_meses: 3,
+        limite_usos: "",
+        fim_em: "",
+        ciclo: "ambos",
+        somente_novos_clientes: true,
+        cumulativo: false,
+        ativo: true,
+        plan_ids: [],
+      });
+      toast.success("Cupom salvo com sucesso.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar o cupom.");
+    } finally {
+      setIsSavingCoupon(false);
+    }
+  };
+
   const handleSaveEditingTeamMember = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTeamMember) return;
@@ -495,6 +630,15 @@ function SuperAdminPage() {
       toast.success(`Serviço "${service.toUpperCase()}" restabelecido com sucesso.`);
     }
   };
+
+  const planOptions = plans.length
+    ? plans.filter((plan) => plan.ativo).map((plan) => ({ id: plan.id, nome: plan.nome }))
+    : [
+        { id: "trial", nome: "Teste gratuito" },
+        { id: "essencial", nome: "Essencial" },
+        { id: "profissional", nome: "Profissional" },
+        { id: "enterprise", nome: "Enterprise" },
+      ];
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[1600px] space-y-8 bg-[#05060a] p-4 text-foreground animate-in fade-in duration-300 sm:p-6 lg:p-8 2xl:px-12">
@@ -529,6 +673,7 @@ function SuperAdminPage() {
       <div className="flex border-b border-white/5 gap-6 sm:gap-8 overflow-x-auto pb-0.5">
         {[
           { id: "schools", label: "Escolas", icon: Building },
+          { id: "plans", label: "Planos e Cupons", icon: BadgePercent },
           { id: "status", label: "Status da Plataforma", icon: Activity },
           { id: "logs", label: "Histórico & Logs", icon: Terminal },
           { id: "team", label: "Equipe Master", icon: Users },
@@ -743,6 +888,129 @@ function SuperAdminPage() {
                     <tr>
                       <td colSpan={6} className="px-6 py-10 text-center text-xs text-neutral-400">
                         Nenhuma escola disponível para esta conta Master.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {activeTab === "plans" && (
+        <div className="space-y-6">
+          <SectionHeader
+            eyebrow="Catálogo comercial"
+            title="Planos e Cupons"
+            description="Configure preços, limites, módulos e descontos sem alterar silenciosamente os contratos já faturados."
+          />
+          <div className="flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setIsCouponModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white hover:bg-white/10"
+            >
+              <BadgePercent className="size-4" /> Novo cupom
+            </button>
+            <button
+              type="button"
+              onClick={() => openPlanEditor()}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground"
+            >
+              <Package className="size-4" /> Novo plano
+            </button>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {plans.map((plan) => (
+              <GlassCard
+                key={plan.id}
+                className={`flex flex-col gap-4 p-5 ${plan.recomendado ? "border-primary/40 bg-primary/5" : "border-white/5 bg-neutral-900/40"}`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                      {plan.destaque || `Versão ${plan.versao}`}
+                    </p>
+                    <h3 className="mt-1 text-lg font-bold text-white">{plan.nome}</h3>
+                  </div>
+                  <span
+                    className={`rounded-full px-2 py-1 text-[9px] font-bold ${plan.ativo ? "bg-emerald-500/10 text-emerald-300" : "bg-white/5 text-neutral-400"}`}
+                  >
+                    {plan.ativo ? "ATIVO" : "ARQUIVADO"}
+                  </span>
+                </div>
+                <p className="min-h-10 text-xs text-neutral-400">{plan.descricao}</p>
+                <div>
+                  <span className="text-2xl font-bold text-white">
+                    R$ {Number(plan.preco_base).toFixed(2).replace(".", ",")}
+                  </span>
+                  <span className="text-xs text-neutral-500">/mês</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[10px] text-neutral-300">
+                  <span>{plan.limite_alunos ?? "∞"} alunos</span>
+                  <span>{plan.limite_unidades ?? "∞"} unidades</span>
+                  <span>{plan.limite_usuarios ?? "∞"} usuários</span>
+                  <span>{plan.modules.filter((item) => item.incluido).length} módulos</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openPlanEditor(plan)}
+                  className="mt-auto rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
+                >
+                  Configurar plano
+                </button>
+              </GlassCard>
+            ))}
+          </div>
+          <GlassCard className="overflow-hidden border-white/5 bg-neutral-900/40">
+            <div className="border-b border-white/5 p-4">
+              <h3 className="font-bold text-white">Cupons cadastrados</h3>
+              <p className="text-[10px] text-neutral-500">
+                Descontos promocionais com validade e limites controlados.
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-white/5 text-[9px] uppercase text-neutral-400">
+                  <tr>
+                    <th className="px-4 py-3">Código</th>
+                    <th className="px-4 py-3">Desconto</th>
+                    <th className="px-4 py-3">Duração</th>
+                    <th className="px-4 py-3">Planos</th>
+                    <th className="px-4 py-3">Uso</th>
+                    <th className="px-4 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {coupons.map((coupon) => (
+                    <tr key={coupon.id}>
+                      <td className="px-4 py-3 font-mono font-bold text-primary">
+                        {coupon.codigo}
+                      </td>
+                      <td className="px-4 py-3 text-white">
+                        {coupon.tipo === "percentual" ? `${coupon.valor}%` : `R$ ${coupon.valor}`}
+                      </td>
+                      <td className="px-4 py-3 text-neutral-300">
+                        {coupon.duracao === "meses"
+                          ? `${coupon.duracao_meses} meses`
+                          : coupon.duracao.replace("_", " ")}
+                      </td>
+                      <td className="px-4 py-3 text-neutral-300">
+                        {coupon.plan_ids.length ? coupon.plan_ids.join(", ") : "Todos"}
+                      </td>
+                      <td className="px-4 py-3 text-neutral-300">
+                        {coupon.usos}/{coupon.limite_usos ?? "∞"}
+                      </td>
+                      <td className="px-4 py-3 text-neutral-300">
+                        {coupon.ativo ? "Ativo" : "Pausado"}
+                      </td>
+                    </tr>
+                  ))}
+                  {!coupons.length && (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-8 text-center text-neutral-500">
+                        Nenhum cupom cadastrado.
                       </td>
                     </tr>
                   )}
@@ -1463,10 +1731,11 @@ function SuperAdminPage() {
                   onChange={(event) => setNewSchool({ ...newSchool, plan: event.target.value })}
                   className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white outline-none focus:border-primary"
                 >
-                  <option value="trial">Teste gratuito</option>
-                  <option value="essencial">Essencial</option>
-                  <option value="profissional">Profissional</option>
-                  <option value="enterprise">Enterprise</option>
+                  {planOptions.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.nome}
+                    </option>
+                  ))}
                 </select>
               </label>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -1584,10 +1853,11 @@ function SuperAdminPage() {
                   onChange={(e) => setEditingSchool({ ...editingSchool, plan: e.target.value })}
                   className="h-10 w-full rounded-lg border border-white/5 bg-white/5 px-3 text-xs text-white outline-none focus:border-primary"
                 >
-                  <option value="trial">Teste gratuito</option>
-                  <option value="essencial">Essencial</option>
-                  <option value="profissional">Profissional</option>
-                  <option value="enterprise">Enterprise</option>
+                  {planOptions.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.nome}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -1645,22 +1915,37 @@ function SuperAdminPage() {
                 <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">
                   Módulos Habilitados (Contrato SaaS)
                 </label>
-                <div className="grid gap-3 bg-white/5 p-4 rounded-xl border border-white/5 sm:grid-cols-2">
-                  {editingSchool.modules.map((module) => (
-                    <label
-                      key={module.modulo_id}
-                      className="flex items-center justify-between gap-3 text-xs font-semibold text-white"
-                    >
-                      <span>{schoolModuleLabels[module.modulo_id] ?? module.modulo_id}</span>
-                      <input
-                        type="checkbox"
-                        checked={isEnabledModule(module)}
-                        disabled={isSavingSchool}
-                        onChange={() => void handleToggleSchoolModule(module)}
-                        className="size-4 rounded border-white/10 bg-white/5 text-primary"
-                      />
-                    </label>
-                  ))}
+                <div className="grid gap-2 rounded-xl border border-white/5 bg-white/[0.025] p-3 sm:grid-cols-2 xl:grid-cols-4">
+                  {editingSchool.modules.map((module) => {
+                    const definition = moduleCatalog.find((item) => item.id === module.modulo_id);
+                    const enabled = isEnabledModule(module);
+                    return (
+                      <label
+                        key={module.modulo_id}
+                        className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${enabled ? "border-primary/25 bg-primary/10" : "border-white/5 bg-white/[0.025] hover:bg-white/5"}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={enabled}
+                          disabled={isSavingSchool}
+                          onChange={() => void handleToggleSchoolModule(module)}
+                          className="size-4 shrink-0 rounded border-white/10 bg-white/5 text-primary"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-xs font-semibold text-white">
+                            {schoolModuleLabels[module.modulo_id] ?? module.modulo_id}
+                          </span>
+                          <span className="mt-0.5 block text-[9px] uppercase tracking-wide text-neutral-500">
+                            {enabled
+                              ? module.status
+                              : definition?.requer_configuracao
+                                ? "Requer configuração"
+                                : "Disponível"}
+                          </span>
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
                 <p className="text-[10px] text-neutral-500">
                   A alteração fica registrada na auditoria. A composição de preço será calculada
@@ -1840,6 +2125,461 @@ function SuperAdminPage() {
                   className="rounded-lg bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/95 transition-all cursor-pointer"
                 >
                   Salvar Escola
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isPlanModalOpen && editingPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 backdrop-blur-sm sm:p-5">
+          <div className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-2xl border border-white/10 bg-[#0d0e14] p-4 shadow-2xl sm:p-6">
+            <div className="mb-5 flex items-center justify-between border-b border-white/5 pb-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                  Configuração comercial
+                </p>
+                <h3 className="text-lg font-bold text-white">{editingPlan.nome || "Novo plano"}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPlanModalOpen(false)}
+                className="text-neutral-400 hover:text-white"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSavePlan} className="space-y-6 text-xs">
+              <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <label className="space-y-1">
+                  <span className="text-[10px] font-bold uppercase text-neutral-400">
+                    Código interno
+                  </span>
+                  <input
+                    value={editingPlan.id}
+                    disabled={editingPlan.versao > 0}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, id: e.target.value })}
+                    placeholder="ex: profissional"
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white disabled:opacity-50"
+                    required
+                  />
+                </label>
+                <label className="space-y-1 xl:col-span-2">
+                  <span className="text-[10px] font-bold uppercase text-neutral-400">
+                    Nome do plano
+                  </span>
+                  <input
+                    value={editingPlan.nome}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, nome: e.target.value })}
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white"
+                    required
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className="text-[10px] font-bold uppercase text-neutral-400">Destaque</span>
+                  <input
+                    value={editingPlan.destaque ?? ""}
+                    onChange={(e) =>
+                      setEditingPlan({ ...editingPlan, destaque: e.target.value || null })
+                    }
+                    placeholder="Mais escolhido"
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white"
+                  />
+                </label>
+                <label className="space-y-1 md:col-span-2 xl:col-span-4">
+                  <span className="text-[10px] font-bold uppercase text-neutral-400">
+                    Descrição
+                  </span>
+                  <textarea
+                    value={editingPlan.descricao ?? ""}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, descricao: e.target.value })}
+                    className="min-h-20 w-full rounded-lg border border-white/10 bg-white/5 p-3 text-white"
+                  />
+                </label>
+              </section>
+              <section>
+                <h4 className="mb-3 font-bold text-white">Preços e ciclo</h4>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                  {[
+                    ["Mensal", "preco_base"],
+                    ["Anual", "preco_anual"],
+                    ["Implantação", "taxa_implantacao"],
+                    ["Unidade extra", "preco_unidade_adicional"],
+                    ["+100 alunos", "preco_100_alunos_adicionais"],
+                  ].map(([label, key]) => (
+                    <label key={key} className="space-y-1">
+                      <span className="text-[10px] uppercase text-neutral-400">{label}</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={(editingPlan[key as keyof MasterPlan] as number | null) ?? ""}
+                        onChange={(e) =>
+                          setEditingPlan({
+                            ...editingPlan,
+                            [key]: e.target.value === "" ? null : Number(e.target.value),
+                          })
+                        }
+                        className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white"
+                      />
+                    </label>
+                  ))}
+                </div>
+              </section>
+              <section>
+                <h4 className="mb-3 font-bold text-white">Limites do plano</h4>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                  {[
+                    ["Alunos", "limite_alunos"],
+                    ["Usuários", "limite_usuarios"],
+                    ["Professores", "limite_professores"],
+                    ["Unidades", "limite_unidades"],
+                    ["Trial (dias)", "trial_dias"],
+                  ].map(([label, key]) => (
+                    <label key={key} className="space-y-1">
+                      <span className="text-[10px] uppercase text-neutral-400">{label}</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={(editingPlan[key as keyof MasterPlan] as number | null) ?? ""}
+                        onChange={(e) =>
+                          setEditingPlan({
+                            ...editingPlan,
+                            [key]: e.target.value === "" ? null : Number(e.target.value),
+                          })
+                        }
+                        className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white"
+                      />
+                    </label>
+                  ))}
+                </div>
+              </section>
+              <section>
+                <div className="mb-3 flex items-center justify-between">
+                  <h4 className="font-bold text-white">Módulos do plano</h4>
+                  <span className="text-[10px] text-neutral-500">
+                    Incluído ou vendido como adicional
+                  </span>
+                </div>
+                <div className="grid gap-2 md:grid-cols-2">
+                  {moduleCatalog.map((module) => {
+                    const current = editingPlan.modules.find(
+                      (item) => item.modulo_id === module.id,
+                    );
+                    if (!current) return null;
+                    return (
+                      <div
+                        key={module.id}
+                        className={`grid grid-cols-[1fr_auto_110px] items-center gap-3 rounded-lg border p-3 ${current.incluido ? "border-primary/25 bg-primary/10" : "border-white/5 bg-white/[0.025]"}`}
+                      >
+                        <div>
+                          <p className="font-semibold text-white">{module.nome}</p>
+                          <p className="text-[9px] text-neutral-500">{module.descricao}</p>
+                        </div>
+                        <label className="flex items-center gap-1.5 text-[10px] text-neutral-300">
+                          <input
+                            type="checkbox"
+                            checked={current.incluido}
+                            onChange={(e) =>
+                              setEditingPlan({
+                                ...editingPlan,
+                                modules: editingPlan.modules.map((item) =>
+                                  item.modulo_id === module.id
+                                    ? { ...item, incluido: e.target.checked }
+                                    : item,
+                                ),
+                              })
+                            }
+                          />{" "}
+                          Incluído
+                        </label>
+                        <input
+                          aria-label={`Preço adicional de ${module.nome}`}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={current.preco_adicional ?? ""}
+                          onChange={(e) =>
+                            setEditingPlan({
+                              ...editingPlan,
+                              modules: editingPlan.modules.map((item) =>
+                                item.modulo_id === module.id
+                                  ? {
+                                      ...item,
+                                      preco_adicional:
+                                        e.target.value === "" ? null : Number(e.target.value),
+                                    }
+                                  : item,
+                              ),
+                            })
+                          }
+                          className="h-8 rounded-md border border-white/10 bg-white/5 px-2 text-right text-white"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+              <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <label className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/[0.025] p-3 text-white">
+                  <input
+                    type="checkbox"
+                    checked={editingPlan.recomendado}
+                    onChange={(e) =>
+                      setEditingPlan({ ...editingPlan, recomendado: e.target.checked })
+                    }
+                  />{" "}
+                  Plano recomendado
+                </label>
+                <label className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/[0.025] p-3 text-white">
+                  <input
+                    type="checkbox"
+                    checked={editingPlan.white_label}
+                    onChange={(e) =>
+                      setEditingPlan({ ...editingPlan, white_label: e.target.checked })
+                    }
+                  />{" "}
+                  White label
+                </label>
+                <label className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/[0.025] p-3 text-white">
+                  <input
+                    type="checkbox"
+                    checked={editingPlan.dominio_personalizado}
+                    onChange={(e) =>
+                      setEditingPlan({ ...editingPlan, dominio_personalizado: e.target.checked })
+                    }
+                  />{" "}
+                  Domínio próprio
+                </label>
+                <label className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/[0.025] p-3 text-white">
+                  <input
+                    type="checkbox"
+                    checked={editingPlan.ativo}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, ativo: e.target.checked })}
+                  />{" "}
+                  Plano ativo
+                </label>
+              </section>
+              <div className="flex items-center justify-between border-t border-white/5 pt-4">
+                <p className="text-[10px] text-neutral-500">
+                  Ao salvar, uma nova versão é registrada na auditoria.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsPlanModalOpen(false)}
+                    className="rounded-lg border border-white/10 px-4 py-2 text-white"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    disabled={isSavingPlan}
+                    type="submit"
+                    className="rounded-lg bg-primary px-5 py-2 font-semibold text-primary-foreground disabled:opacity-50"
+                  >
+                    {isSavingPlan ? "Salvando…" : "Salvar plano"}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isCouponModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0d0e14] p-6 shadow-2xl">
+            <div className="mb-5 flex items-center justify-between border-b border-white/5 pb-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                  Campanha comercial
+                </p>
+                <h3 className="text-lg font-bold text-white">Novo cupom</h3>
+              </div>
+              <button type="button" onClick={() => setIsCouponModalOpen(false)}>
+                <X className="size-5 text-neutral-400" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveCoupon} className="space-y-5 text-xs">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="space-y-1">
+                  <span className="text-[10px] uppercase text-neutral-400">Código</span>
+                  <input
+                    value={couponForm.codigo}
+                    onChange={(e) =>
+                      setCouponForm({ ...couponForm, codigo: e.target.value.toUpperCase() })
+                    }
+                    placeholder="LANCAMENTO20"
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 font-mono text-white"
+                    required
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className="text-[10px] uppercase text-neutral-400">Nome da campanha</span>
+                  <input
+                    value={couponForm.nome}
+                    onChange={(e) => setCouponForm({ ...couponForm, nome: e.target.value })}
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white"
+                    required
+                  />
+                </label>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <label className="space-y-1">
+                  <span className="text-[10px] uppercase text-neutral-400">Tipo</span>
+                  <select
+                    value={couponForm.tipo}
+                    onChange={(e) =>
+                      setCouponForm({ ...couponForm, tipo: e.target.value as MasterCoupon["tipo"] })
+                    }
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white"
+                  >
+                    <option value="percentual">Percentual</option>
+                    <option value="valor_fixo">Valor fixo</option>
+                  </select>
+                </label>
+                <label className="space-y-1">
+                  <span className="text-[10px] uppercase text-neutral-400">Valor</span>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={couponForm.valor}
+                    onChange={(e) =>
+                      setCouponForm({ ...couponForm, valor: Number(e.target.value) })
+                    }
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white"
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className="text-[10px] uppercase text-neutral-400">Ciclo</span>
+                  <select
+                    value={couponForm.ciclo}
+                    onChange={(e) =>
+                      setCouponForm({
+                        ...couponForm,
+                        ciclo: e.target.value as MasterCoupon["ciclo"],
+                      })
+                    }
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white"
+                  >
+                    <option value="ambos">Mensal e anual</option>
+                    <option value="mensal">Mensal</option>
+                    <option value="anual">Anual</option>
+                  </select>
+                </label>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <label className="space-y-1">
+                  <span className="text-[10px] uppercase text-neutral-400">Duração</span>
+                  <select
+                    value={couponForm.duracao}
+                    onChange={(e) =>
+                      setCouponForm({
+                        ...couponForm,
+                        duracao: e.target.value as MasterCoupon["duracao"],
+                      })
+                    }
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white"
+                  >
+                    <option value="primeira_cobranca">Primeira cobrança</option>
+                    <option value="meses">Por meses</option>
+                    <option value="permanente">Permanente</option>
+                  </select>
+                </label>
+                <label className="space-y-1">
+                  <span className="text-[10px] uppercase text-neutral-400">Meses</span>
+                  <input
+                    disabled={couponForm.duracao !== "meses"}
+                    type="number"
+                    min="1"
+                    max="36"
+                    value={couponForm.duracao_meses}
+                    onChange={(e) =>
+                      setCouponForm({ ...couponForm, duracao_meses: Number(e.target.value) })
+                    }
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white disabled:opacity-40"
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className="text-[10px] uppercase text-neutral-400">Limite de usos</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={couponForm.limite_usos}
+                    onChange={(e) => setCouponForm({ ...couponForm, limite_usos: e.target.value })}
+                    placeholder="Ilimitado"
+                    className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white"
+                  />
+                </label>
+              </div>
+              <div>
+                <p className="mb-2 text-[10px] font-bold uppercase text-neutral-400">
+                  Planos permitidos
+                </p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {plans
+                    .filter((plan) => plan.ativo)
+                    .map((plan) => (
+                      <label
+                        key={plan.id}
+                        className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/[0.025] p-3 text-white"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={couponForm.plan_ids.includes(plan.id)}
+                          onChange={(e) =>
+                            setCouponForm({
+                              ...couponForm,
+                              plan_ids: e.target.checked
+                                ? [...couponForm.plan_ids, plan.id]
+                                : couponForm.plan_ids.filter((id) => id !== plan.id),
+                            })
+                          }
+                        />
+                        {plan.nome}
+                      </label>
+                    ))}
+                </div>
+                <p className="mt-1 text-[9px] text-neutral-500">
+                  Nenhuma seleção significa todos os planos.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <label className="flex items-center gap-2 text-white">
+                  <input
+                    type="checkbox"
+                    checked={couponForm.somente_novos_clientes}
+                    onChange={(e) =>
+                      setCouponForm({ ...couponForm, somente_novos_clientes: e.target.checked })
+                    }
+                  />
+                  Somente novos clientes
+                </label>
+                <label className="flex items-center gap-2 text-white">
+                  <input
+                    type="checkbox"
+                    checked={couponForm.cumulativo}
+                    onChange={(e) => setCouponForm({ ...couponForm, cumulativo: e.target.checked })}
+                  />
+                  Permitir combinação
+                </label>
+              </div>
+              <div className="flex justify-end gap-2 border-t border-white/5 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsCouponModalOpen(false)}
+                  className="rounded-lg border border-white/10 px-4 py-2 text-white"
+                >
+                  Cancelar
+                </button>
+                <button
+                  disabled={isSavingCoupon}
+                  type="submit"
+                  className="rounded-lg bg-primary px-5 py-2 font-semibold text-primary-foreground disabled:opacity-50"
+                >
+                  {isSavingCoupon ? "Salvando…" : "Criar cupom"}
                 </button>
               </div>
             </form>

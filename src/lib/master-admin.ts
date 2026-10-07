@@ -73,9 +73,74 @@ export type MasterAuditLog = {
   occurred_at: string;
 };
 
+export type MasterModuleCatalog = {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  preco_base: number;
+  requer_configuracao: boolean;
+  ativo: boolean;
+  ordem: number;
+};
+
+export type MasterPlanModule = {
+  plano_id: string;
+  modulo_id: string;
+  incluido: boolean;
+  preco_adicional: number | null;
+};
+
+export type MasterPlan = {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  destaque: string | null;
+  recomendado: boolean;
+  preco_base: number;
+  preco_anual: number | null;
+  taxa_implantacao: number;
+  limite_alunos: number | null;
+  limite_professores: number | null;
+  limite_unidades: number | null;
+  limite_usuarios: number | null;
+  armazenamento_mb: number | null;
+  trial_dias: number;
+  desconto_anual: number;
+  preco_unidade_adicional: number;
+  preco_100_alunos_adicionais: number;
+  white_label: boolean;
+  dominio_personalizado: boolean;
+  suporte: "email" | "prioritario" | "dedicado";
+  ativo: boolean;
+  versao: number;
+  modules: MasterPlanModule[];
+};
+
+export type MasterCoupon = {
+  id: string;
+  codigo: string;
+  nome: string;
+  tipo: "percentual" | "valor_fixo";
+  valor: number;
+  duracao: "primeira_cobranca" | "meses" | "permanente";
+  duracao_meses: number | null;
+  inicio_em: string;
+  fim_em: string | null;
+  limite_usos: number | null;
+  usos: number;
+  somente_novos_clientes: boolean;
+  ciclo: "mensal" | "anual" | "ambos";
+  cumulativo: boolean;
+  ativo: boolean;
+  plan_ids: string[];
+};
+
 export type MasterOverview = {
   schools: MasterSchool[];
   team: MasterTeamMember[];
+  plans: MasterPlan[];
+  module_catalog: MasterModuleCatalog[];
+  coupons: MasterCoupon[];
   audit_logs: MasterAuditLog[];
 };
 
@@ -96,6 +161,8 @@ type MasterAction =
   | "create_invite"
   | "update_member"
   | "remove_member"
+  | "save_plan"
+  | "save_coupon"
   | "cancel_invite";
 
 async function invokeMaster<T>(action: MasterAction, payload: Record<string, unknown> = {}) {
@@ -136,6 +203,18 @@ export const masterAdmin = {
     invokeMaster<{ member_id: string }>("remove_member", {
       school_id: schoolId,
       member_id: memberId,
+    }),
+  savePlan: (planId: string, changes: Record<string, unknown>, modules: MasterPlanModule[]) =>
+    invokeMaster<{ plan: MasterPlan }>("save_plan", {
+      plan_id: planId,
+      changes,
+      modules,
+    }),
+  saveCoupon: (couponId: string | null, data: Record<string, unknown>, planIds: string[]) =>
+    invokeMaster<{ coupon: MasterCoupon }>("save_coupon", {
+      coupon_id: couponId,
+      data,
+      plan_ids: planIds,
     }),
   cancelInvite: (inviteId: string) =>
     invokeMaster<{ invite_id: string }>("cancel_invite", { invite_id: inviteId }),

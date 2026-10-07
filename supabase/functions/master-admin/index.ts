@@ -97,6 +97,11 @@ Deno.serve(async (request) => {
           .select("id,escola_id,nome,email,papel,status,expires_at,created_at")
           .order("created_at", { ascending: false }),
         adminClient.from("platform_admins").select("user_id,nome,papel,status").order("created_at"),
+        adminClient.from("modulos_catalogo").select("*").order("ordem"),
+        adminClient.from("planos_catalogo").select("*").order("preco_base"),
+        adminClient.from("plano_modulos").select("plano_id,modulo_id,incluido,preco_adicional"),
+        adminClient.from("cupons_desconto").select("*").order("created_at", { ascending: false }),
+        adminClient.from("cupom_planos").select("cupom_id,plano_id"),
         adminClient
           .from("audit_logs")
           .select(
@@ -118,6 +123,11 @@ Deno.serve(async (request) => {
         memberUnitsResult,
         schoolInvitesResult,
         teamResult,
+        moduleCatalogResult,
+        planCatalogResult,
+        planModulesResult,
+        couponsResult,
+        couponPlansResult,
         logsResult,
       ] = results;
       const failed = results.find((result) => result.error);
@@ -169,7 +179,28 @@ Deno.serve(async (request) => {
         units: (schoolUnitsResult.data ?? []).filter((row) => row.escola_id === school.id),
         invites: (schoolInvitesResult.data ?? []).filter((row) => row.escola_id === school.id),
       }));
-      return json({ schools, team, audit_logs: logsResult.data ?? [] }, 200, origin);
+      const plans = (planCatalogResult.data ?? []).map((plan) => ({
+        ...plan,
+        modules: (planModulesResult.data ?? []).filter((item) => item.plano_id === plan.id),
+      }));
+      const coupons = (couponsResult.data ?? []).map((coupon) => ({
+        ...coupon,
+        plan_ids: (couponPlansResult.data ?? [])
+          .filter((item) => item.cupom_id === coupon.id)
+          .map((item) => item.plano_id),
+      }));
+      return json(
+        {
+          schools,
+          team,
+          plans,
+          module_catalog: moduleCatalogResult.data ?? [],
+          coupons,
+          audit_logs: logsResult.data ?? [],
+        },
+        200,
+        origin,
+      );
     }
 
     if (action === "create_school") {
@@ -264,6 +295,26 @@ Deno.serve(async (request) => {
       });
       if (error) throw error;
       return json({ member_id: data }, 200, origin);
+    }
+
+    if (action === "save_plan") {
+      const { data, error } = await userClient.rpc("master_save_plan", {
+        _plan_id: body.plan_id,
+        _changes: body.changes ?? {},
+        _modules: body.modules ?? [],
+      });
+      if (error) throw error;
+      return json({ plan: data }, 200, origin);
+    }
+
+    if (action === "save_coupon") {
+      const { data, error } = await userClient.rpc("master_save_coupon", {
+        _coupon_id: body.coupon_id ?? null,
+        _data: body.data ?? {},
+        _plan_ids: body.plan_ids ?? [],
+      });
+      if (error) throw error;
+      return json({ coupon: data }, 200, origin);
     }
 
     if (action === "cancel_invite") {
