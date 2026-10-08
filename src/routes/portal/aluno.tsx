@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Flame,
   Coins,
@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { useTenant } from "@/modules/tenant-context";
 import { toast } from "sonner";
+import { ModuleGate } from "@/components/module-gate";
+import { currentSchoolId } from "@/lib/academic";
 
 export const Route = createFileRoute("/portal/aluno")({
   head: () => ({
@@ -29,8 +31,16 @@ export const Route = createFileRoute("/portal/aluno")({
       { name: "description", content: "Portal gamificado do aluno no Fluency AI." },
     ],
   }),
-  component: PortalAlunoPage,
+  component: SchoolStudentPortalPage,
 });
+
+function SchoolStudentPortalPage() {
+  return (
+    <ModuleGate module="portal_aluno">
+      <PortalAlunoPage />
+    </ModuleGate>
+  );
+}
 
 type Task = {
   id: string;
@@ -63,74 +73,28 @@ const REDEMPTIONS_KEY = "fluency-ai:gamification:redemptions";
 
 function PortalAlunoPage() {
   const { tenant } = useTenant();
+  const storageKeys = useRef<{ details: string; challenges: string; rewards: string; redemptions: string } | null>(null);
   
   // Game balances
-  const [xp, setXp] = useState(() => {
-    try {
-      const stored = window.localStorage.getItem("fluency-ai:students:details");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed["Felipe Medeiros"]) return parsed["Felipe Medeiros"].xp;
-      }
-    } catch {}
-    return 1450;
-  });
-
-  const [coins, setCoins] = useState(() => {
-    try {
-      const stored = window.localStorage.getItem("fluency-ai:students:details");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed["Felipe Medeiros"]) return parsed["Felipe Medeiros"].coins;
-      }
-    } catch {}
-    return 380;
-  });
-
-  const [streak, setStreak] = useState(() => {
-    try {
-      const stored = window.localStorage.getItem("fluency-ai:students:details");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed["Felipe Medeiros"]) return parsed["Felipe Medeiros"].streak;
-      }
-    } catch {}
-    return 5;
-  });
+  const [xp, setXp] = useState(0);
+  const [coins, setCoins] = useState(0);
+  const [streak, setStreak] = useState(0);
 
   // Sync state changes back to shared localStorage details
   useEffect(() => {
     try {
-      const stored = window.localStorage.getItem("fluency-ai:students:details");
+      if (!storageKeys.current) return;
+      const stored = window.localStorage.getItem(storageKeys.current.details);
       const parsed = stored ? JSON.parse(stored) : {};
+      if (!parsed.currentStudent) parsed.currentStudent = { xp: 0, coins: 0, streak: 0 };
       
-      if (!parsed["Felipe Medeiros"]) {
-        parsed["Felipe Medeiros"] = {
-          presenca: 90,
-          tarefas: 85,
-          streak: 5,
-          coins: 380,
-          xp: 1450,
-          liga: "Ouro",
-          whats: "5511999991111",
-          historico: [
-            { data: "19/08/2026", texto: "Ingressou no portal do aluno e iniciou os desafios.", autor: "Sistema" }
-          ],
-          financeiro: [
-            { descricao: "Mensalidade Agosto", valor: 380, vencimento: "10/08/2026", situacao: "pago" }
-          ]
-        };
-      }
-      
-      if (parsed["Felipe Medeiros"].xp !== xp || 
-          parsed["Felipe Medeiros"].coins !== coins || 
-          parsed["Felipe Medeiros"].streak !== streak) {
+      if (parsed.currentStudent.xp !== xp || parsed.currentStudent.coins !== coins || parsed.currentStudent.streak !== streak) {
         
-        parsed["Felipe Medeiros"].xp = xp;
-        parsed["Felipe Medeiros"].coins = coins;
-        parsed["Felipe Medeiros"].streak = streak;
+        parsed.currentStudent.xp = xp;
+        parsed.currentStudent.coins = coins;
+        parsed.currentStudent.streak = streak;
         
-        window.localStorage.setItem("fluency-ai:students:details", JSON.stringify(parsed));
+        window.localStorage.setItem(storageKeys.current.details, JSON.stringify(parsed));
         window.dispatchEvent(new Event("storage"));
       }
     } catch {}
@@ -140,13 +104,14 @@ function PortalAlunoPage() {
   useEffect(() => {
     const handleStorageChange = () => {
       try {
-        const storedDetails = window.localStorage.getItem("fluency-ai:students:details");
+        if (!storageKeys.current) return;
+        const storedDetails = window.localStorage.getItem(storageKeys.current.details);
         if (storedDetails) {
           const parsed = JSON.parse(storedDetails);
-          if (parsed["Felipe Medeiros"]) {
-            setXp(parsed["Felipe Medeiros"].xp);
-            setCoins(parsed["Felipe Medeiros"].coins);
-            setStreak(parsed["Felipe Medeiros"].streak);
+          if (parsed.currentStudent) {
+            setXp(parsed.currentStudent.xp || 0);
+            setCoins(parsed.currentStudent.coins || 0);
+            setStreak(parsed.currentStudent.streak || 0);
           }
         }
       } catch {}
@@ -177,45 +142,34 @@ function PortalAlunoPage() {
     { word: "Homework", options: ["Prova", "Lição de casa", "Trabalho"], correct: "Lição de casa" },
   ];
 
-  const [leaderboard, setLeaderboard] = useState([
-    { position: 1, name: "Lucas M.", xp: 2150, active: false },
-    { position: 2, name: "Ana Clara", xp: 1890, active: false },
-    { position: 3, name: "Você", xp: 1450, active: true },
-    { position: 4, name: "Rodrigo F.", xp: 1320, active: false },
-    { position: 5, name: "Gabi Dias", xp: 1100, active: false },
-  ]);
+  const [leaderboard, setLeaderboard] = useState([{ position: 1, name: "Você", xp: 0, active: true }]);
 
   // Sync state on component load and watch changes across tabs
   useEffect(() => {
-    const loadGamification = () => {
+    let active = true;
+    const loadGamification = async () => {
+      const schoolId = await currentSchoolId();
+      if (!active || !schoolId) return;
+      storageKeys.current = {
+        details: `fluency-ai:students:details:v2:${schoolId}`,
+        challenges: `${CHALLENGES_KEY}:v2:${schoolId}`,
+        rewards: `${REWARDS_KEY}:v2:${schoolId}`,
+        redemptions: `${REDEMPTIONS_KEY}:v2:${schoolId}`,
+      };
       try {
-        const rawC = window.localStorage.getItem(CHALLENGES_KEY);
-        if (rawC) {
-          setTasks(JSON.parse(rawC));
-        } else {
-          const defaults = [
-            { id: "1", title: "Praticar pronúncia da Unit 7", xp: 100, coins: 20, frequency: "Diária", completed: false },
-            { id: "2", title: "Enviar lição de casa de ontem", xp: 200, coins: 40, frequency: "Diária", completed: false },
-            { id: "3", title: "Marcar presença na aula de hoje", xp: 150, coins: 30, frequency: "Diária", completed: false },
-          ] as Task[];
-          setTasks(defaults);
-          window.localStorage.setItem(CHALLENGES_KEY, JSON.stringify(defaults));
-        }
+        const rawDetails = window.localStorage.getItem(storageKeys.current.details);
+        const currentStudent = rawDetails ? JSON.parse(rawDetails).currentStudent : null;
+        setXp(currentStudent?.xp || 0);
+        setCoins(currentStudent?.coins || 0);
+        setStreak(currentStudent?.streak || 0);
+        setLeaderboard([{ position: 1, name: "Você", xp: currentStudent?.xp || 0, active: true }]);
+        const rawC = window.localStorage.getItem(storageKeys.current.challenges);
+        setTasks(rawC ? JSON.parse(rawC) : []);
 
-        const rawR = window.localStorage.getItem(REWARDS_KEY);
-        if (rawR) {
-          setRewards(JSON.parse(rawR));
-        } else {
-          const defaults = [
-            { id: "1", name: "Lápis Fluency AI", cost: 100, stock: 50 },
-            { id: "2", name: "Garrafa Térmica Fluency", cost: 800, stock: 15 },
-            { id: "3", name: "1 Aula de Conversação VIP", cost: 500, stock: 99 },
-          ];
-          setRewards(defaults);
-          window.localStorage.setItem(REWARDS_KEY, JSON.stringify(defaults));
-        }
+        const rawR = window.localStorage.getItem(storageKeys.current.rewards);
+        setRewards(rawR ? JSON.parse(rawR) : []);
 
-        const rawRed = window.localStorage.getItem(REDEMPTIONS_KEY);
+        const rawRed = window.localStorage.getItem(storageKeys.current.redemptions);
         if (rawRed) {
           setRedemptions(JSON.parse(rawRed));
         }
@@ -228,15 +182,15 @@ function PortalAlunoPage() {
 
     const handleStorage = (e: StorageEvent) => {
       if (
-        e.key === CHALLENGES_KEY ||
-        e.key === REWARDS_KEY ||
-        e.key === REDEMPTIONS_KEY
+        e.key === storageKeys.current?.challenges ||
+        e.key === storageKeys.current?.rewards ||
+        e.key === storageKeys.current?.redemptions
       ) {
         loadGamification();
       }
     };
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    return () => { active = false; window.removeEventListener("storage", handleStorage); };
   }, []);
 
   const handleTaskComplete = (id: string) => {
@@ -263,7 +217,7 @@ function PortalAlunoPage() {
     });
 
     setTasks(updated);
-    window.localStorage.setItem(CHALLENGES_KEY, JSON.stringify(updated));
+    if (storageKeys.current) window.localStorage.setItem(storageKeys.current.challenges, JSON.stringify(updated));
   };
 
   // Flashcards answer trigger
@@ -321,12 +275,12 @@ function PortalAlunoPage() {
       r.id === item.id ? { ...r, stock: r.stock - 1 } : r
     );
     setRewards(nextRewards);
-    window.localStorage.setItem(REWARDS_KEY, JSON.stringify(nextRewards));
+    if (storageKeys.current) window.localStorage.setItem(storageKeys.current.rewards, JSON.stringify(nextRewards));
 
     // Register Redemption request
     const newRedemption: Redemption = {
       id: "red-" + Date.now(),
-      studentName: "Felipe Medeiros",
+      studentName: "Aluno",
       itemName: item.name,
       cost: item.cost,
       date: new Date().toLocaleDateString("pt-BR"),
@@ -335,7 +289,7 @@ function PortalAlunoPage() {
 
     const nextRed = [newRedemption, ...redemptions];
     setRedemptions(nextRed);
-    window.localStorage.setItem(REDEMPTIONS_KEY, JSON.stringify(nextRed));
+    if (storageKeys.current) window.localStorage.setItem(storageKeys.current.redemptions, JSON.stringify(nextRed));
 
     toast.success("Resgate Solicitado!", {
       description: `Seu pedido de "${item.name}" foi enviado ao coordenador da escola. Fale com seu professor para retirar!`,

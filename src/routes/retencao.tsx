@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   HeartPulse,
   MessageSquare,
@@ -18,7 +18,7 @@ import {
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import { ModuleGate } from "@/components/module-gate";
-import { churnRisk, classDiary } from "@/data/mock";
+import { currentSchoolId } from "@/lib/academic";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/retencao")({
@@ -56,27 +56,18 @@ type Redemption = {
   status: "Pendente" | "Entregue" | "Cancelado";
 };
 
-const DEFAULT_CHALLENGES: Challenge[] = [
-  { id: "1", title: "Praticar pronúncia da Unit 7", xp: 100, coins: 20, frequency: "Diária", completed: false },
-  { id: "2", title: "Enviar lição de casa de ontem", xp: 200, coins: 40, frequency: "Diária", completed: false },
-  { id: "3", title: "Marcar presença na aula de hoje", xp: 150, coins: 30, frequency: "Diária", completed: false },
-];
-
-const DEFAULT_REWARDS: Reward[] = [
-  { id: "1", name: "Lápis Fluency AI", cost: 100, stock: 50 },
-  { id: "2", name: "Garrafa Térmica Fluency", cost: 800, stock: 15 },
-  { id: "3", name: "1 Aula de Conversação VIP", cost: 500, stock: 99 },
-];
-
-const DEFAULT_REDEMPTIONS: Redemption[] = [
-  { id: "red-1", studentName: "Felipe Medeiros", itemName: "Lápis Fluency AI", cost: 100, date: "19/08/2026", status: "Pendente" },
-];
+const DEFAULT_CHALLENGES: Challenge[] = [];
+const DEFAULT_REWARDS: Reward[] = [];
+const DEFAULT_REDEMPTIONS: Redemption[] = [];
+const churnRisk: Array<{ aluno: string; score: number; motivo: string; turma: string }> = [];
+const classDiary: Array<{ turma: string; data: string; conteudo: string; presenca: number }> = [];
 
 const CHALLENGES_KEY = "fluency-ai:gamification:challenges";
 const REWARDS_KEY = "fluency-ai:gamification:rewards";
 const REDEMPTIONS_KEY = "fluency-ai:gamification:redemptions";
 
 function RetencaoPage() {
+  const storageKeys = useRef<{ challenges: string; rewards: string; redemptions: string } | null>(null);
   const [activeTab, setActiveTab] = useState<"churn" | "gamification" | "redemptions">("churn");
   
   // Shared States
@@ -99,15 +90,23 @@ function RetencaoPage() {
   // Load from local storage
   // Load from local storage and sync across tabs
   useEffect(() => {
-    const loadGamificationData = () => {
+    let active = true;
+    const loadGamificationData = async () => {
+      const schoolId = await currentSchoolId();
+      if (!active || !schoolId) return;
+      storageKeys.current = {
+        challenges: `${CHALLENGES_KEY}:v2:${schoolId}`,
+        rewards: `${REWARDS_KEY}:v2:${schoolId}`,
+        redemptions: `${REDEMPTIONS_KEY}:v2:${schoolId}`,
+      };
       try {
-        const rawC = window.localStorage.getItem(CHALLENGES_KEY);
+        const rawC = window.localStorage.getItem(storageKeys.current.challenges);
         if (rawC) setChallenges(JSON.parse(rawC));
         
-        const rawR = window.localStorage.getItem(REWARDS_KEY);
+        const rawR = window.localStorage.getItem(storageKeys.current.rewards);
         if (rawR) setRewards(JSON.parse(rawR));
 
-        const rawRed = window.localStorage.getItem(REDEMPTIONS_KEY);
+        const rawRed = window.localStorage.getItem(storageKeys.current.redemptions);
         if (rawRed) setRedemptions(JSON.parse(rawRed));
       } catch {
         /* ignore */
@@ -118,30 +117,33 @@ function RetencaoPage() {
 
     const handleStorage = (e: StorageEvent) => {
       if (
-        e.key === CHALLENGES_KEY ||
-        e.key === REWARDS_KEY ||
-        e.key === REDEMPTIONS_KEY
+        e.key === storageKeys.current?.challenges ||
+        e.key === storageKeys.current?.rewards ||
+        e.key === storageKeys.current?.redemptions
       ) {
         loadGamificationData();
       }
     };
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    return () => {
+      active = false;
+      window.removeEventListener("storage", handleStorage);
+    };
   }, []);
 
   const saveChallenges = (next: Challenge[]) => {
     setChallenges(next);
-    window.localStorage.setItem(CHALLENGES_KEY, JSON.stringify(next));
+    if (storageKeys.current) window.localStorage.setItem(storageKeys.current.challenges, JSON.stringify(next));
   };
 
   const saveRewards = (next: Reward[]) => {
     setRewards(next);
-    window.localStorage.setItem(REWARDS_KEY, JSON.stringify(next));
+    if (storageKeys.current) window.localStorage.setItem(storageKeys.current.rewards, JSON.stringify(next));
   };
 
   const saveRedemptions = (next: Redemption[]) => {
     setRedemptions(next);
-    window.localStorage.setItem(REDEMPTIONS_KEY, JSON.stringify(next));
+    if (storageKeys.current) window.localStorage.setItem(storageKeys.current.redemptions, JSON.stringify(next));
   };
 
   const handleContactStudent = (aluno: string) => {
@@ -283,6 +285,11 @@ function RetencaoPage() {
               </div>
 
               <ul className="space-y-4">
+                {churnRisk.length === 0 && (
+                  <li className="rounded-xl border border-dashed border-hairline p-5 text-center text-xs text-muted-foreground">
+                    Nenhum alerta de evasão registrado para esta escola.
+                  </li>
+                )}
                 {churnRisk.map((c) => (
                   <li key={c.aluno} className="rounded-xl border border-hairline bg-surface/30 p-4 space-y-3">
                     <div className="flex items-center justify-between text-sm">
@@ -331,6 +338,11 @@ function RetencaoPage() {
               </div>
 
               <ul className="divide-y divide-hairline">
+                {classDiary.length === 0 && (
+                  <li className="rounded-xl border border-dashed border-hairline p-5 text-center text-xs text-muted-foreground">
+                    Nenhum diário de classe registrado para esta escola.
+                  </li>
+                )}
                 {classDiary.map((diary) => (
                   <li key={diary.turma} className="py-3.5 first:pt-0 last:pb-0 space-y-1.5">
                     <div className="flex items-center justify-between text-xs">

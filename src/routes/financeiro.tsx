@@ -79,8 +79,16 @@ export const Route = createFileRoute("/financeiro")({
       { name: "description", content: "DRE Gerencial, Gestão de Custos, Políticas de Precificação e Previsão de Caixa." },
     ],
   }),
-  component: RealFinancePage,
+  component: SchoolFinancePage,
 });
+
+function SchoolFinancePage() {
+  return (
+    <ModuleGate module="financeiro">
+      <RealFinancePage />
+    </ModuleGate>
+  );
+}
 
 const DELINQUENCY_KEY = "fluency-ai:finance:delinquency";
 const COSTS_KEY = "fluency-ai:finance:costs";

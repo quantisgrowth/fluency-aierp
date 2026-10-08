@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AcademicClassesPage } from "@/components/academic-classes-page";
+import { ModuleGate } from "@/components/module-gate";
 import { useState, useEffect } from "react";
 import {
   Search,
@@ -47,8 +48,16 @@ export const Route = createFileRoute("/turmas")({
       { name: "description", content: "Turmas por proficiência e horários." },
     ],
   }),
-  component: AcademicClassesPage,
+  component: SchoolClassesPage,
 });
+
+function SchoolClassesPage() {
+  return (
+    <ModuleGate module="core">
+      <AcademicClassesPage />
+    </ModuleGate>
+  );
+}
 
 type ClassItem = {
   nome: string;

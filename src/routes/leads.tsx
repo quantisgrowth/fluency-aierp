@@ -32,6 +32,7 @@ import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import { toast } from "sonner";
 import { currentSchoolId } from "@/lib/academic";
+import { ModuleGate } from "@/components/module-gate";
 
 export const Route = createFileRoute("/leads")({
   head: () => ({
@@ -40,8 +41,16 @@ export const Route = createFileRoute("/leads")({
       { name: "description", content: "Cadastro centralizado de leads, origens e histórico pedagógico." },
     ],
   }),
-  component: LeadsPage,
+  component: SchoolLeadsPage,
 });
+
+function SchoolLeadsPage() {
+  return (
+    <ModuleGate module="crm">
+      <LeadsPage />
+    </ModuleGate>
+  );
+}
 
 export type Lead = {
   id: string;
@@ -250,8 +259,8 @@ function LeadsPage() {
         storageKeyRef.current = storageKey;
         loadLeads(storageKey);
 
-        const storedSubs = window.localStorage.getItem(`fluency-ai:captacao:submissions:v2:${schoolId}`);
-        const storedQuestions = window.localStorage.getItem(`fluency-ai:captacao:questions:v2:${schoolId}`);
+        const storedSubs = window.localStorage.getItem(`fluency-ai:captacao:submissions:v3:${schoolId}`);
+        const storedQuestions = window.localStorage.getItem(`fluency-ai:captacao:questions:v3:${schoolId}`);
         setSubmissions(storedSubs ? JSON.parse(storedSubs) : []);
         setQuestions(storedQuestions ? JSON.parse(storedQuestions) : []);
       } catch {

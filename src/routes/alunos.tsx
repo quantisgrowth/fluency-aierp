@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AcademicStudentsPage } from "@/components/academic-students-page";
+import { ModuleGate } from "@/components/module-gate";
 import { useState, useEffect } from "react";
 import {
   Search,
@@ -69,8 +70,16 @@ export const Route = createFileRoute("/alunos")({
       { name: "description", content: "Dossiê 360º, contratos por produto, frequência, notas e financeiro do aluno." },
     ],
   }),
-  component: AcademicStudentsPage,
+  component: SchoolStudentsPage,
 });
+
+function SchoolStudentsPage() {
+  return (
+    <ModuleGate module="core">
+      <AcademicStudentsPage />
+    </ModuleGate>
+  );
+}
 
 type Student = {
   nome: string;

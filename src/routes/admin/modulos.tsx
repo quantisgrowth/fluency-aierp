@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   SlidersHorizontal,
   Palette,
@@ -50,6 +50,7 @@ import {
   type SchoolCost,
 } from "@/data/mock";
 import { toast } from "sonner";
+import { currentSchoolId } from "@/lib/academic";
 
 export const Route = createFileRoute("/admin/modulos")({
   head: () => ({
@@ -90,6 +91,7 @@ const MODALITY_LABELS: Record<PricingModelType, { label: string; badgeClass: str
 };
 
 function AdminModulosPage() {
+  const storageKeys = useRef<{ products: string; levels: string; costs: string } | null>(null);
   const { active, toggle: toggleModule, monthlyTotal } = useModules();
   const { tenant, setTenantName, setPrimaryColor, applyPreset } = useTenant();
   const [activeTab, setActiveTab] = useState<"cursos" | "modules" | "branding">("cursos");
@@ -118,14 +120,7 @@ function AdminModulosPage() {
   const [editingProduct, setEditingProduct] = useState<EducationalProduct | null>(null);
 
   // Educational Levels State (Customizable CEFR / School Stages)
-  const [levels, setLevels] = useState<EducationalLevel[]>(() => {
-    try {
-      const stored = window.localStorage.getItem(LEVELS_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [levels, setLevels] = useState<EducationalLevel[]>([]);
 
   // Modal de Gerenciamento de Níveis
   const [isLevelsModalOpen, setIsLevelsModalOpen] = useState(false);
@@ -136,24 +131,10 @@ function AdminModulosPage() {
   const [editingLevelId, setEditingLevelId] = useState<string | null>(null);
 
   // Educational Products State
-  const [products, setProducts] = useState<EducationalProduct[]>(() => {
-    try {
-      const stored = window.localStorage.getItem(PRODUCTS_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [products, setProducts] = useState<EducationalProduct[]>([]);
 
   // School Costs State (for pricing calculation)
-  const [costs] = useState<SchoolCost[]>(() => {
-    try {
-      const stored = window.localStorage.getItem(COSTS_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [costs, setCosts] = useState<SchoolCost[]>([]);
 
   // Course Form States
   const [prodNome, setProdNome] = useState("");
@@ -216,14 +197,34 @@ function AdminModulosPage() {
 
   // Sync to localStorage
   useEffect(() => {
+    let active = true;
+    void currentSchoolId().then((schoolId) => {
+      if (!active || !schoolId) return;
+      storageKeys.current = {
+        products: `${PRODUCTS_KEY}:${schoolId}`,
+        levels: `${LEVELS_KEY}:${schoolId}`,
+        costs: `${COSTS_KEY}:${schoolId}`,
+      };
+      try {
+        setProducts(JSON.parse(window.localStorage.getItem(storageKeys.current.products) || "[]"));
+        setLevels(JSON.parse(window.localStorage.getItem(storageKeys.current.levels) || "[]"));
+        setCosts(JSON.parse(window.localStorage.getItem(storageKeys.current.costs) || "[]"));
+      } catch {
+        setProducts([]); setLevels([]); setCosts([]);
+      }
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
     try {
-      window.localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
+      if (storageKeys.current) window.localStorage.setItem(storageKeys.current.products, JSON.stringify(products));
     } catch {}
   }, [products]);
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(LEVELS_KEY, JSON.stringify(levels));
+      if (storageKeys.current) window.localStorage.setItem(storageKeys.current.levels, JSON.stringify(levels));
     } catch {}
   }, [levels]);
 

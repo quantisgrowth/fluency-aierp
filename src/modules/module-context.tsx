@@ -10,7 +10,7 @@ import {
 import { MODULES, type ModuleId } from "./registry";
 import { supabase } from "@/lib/supabase";
 
-const DEFAULT_ACTIVE: ModuleId[] = ["core"];
+const DEFAULT_ACTIVE: ModuleId[] = [];
 
 type ModuleContextValue = {
   active: ModuleId[];

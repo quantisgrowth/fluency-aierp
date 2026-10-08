@@ -29,6 +29,7 @@ import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import { ModuleGate } from "@/components/module-gate";
 import { toast } from "sonner";
+import { currentSchoolId } from "@/lib/academic";
 import {
   ResponsiveContainer,
   PieChart,
@@ -187,7 +188,8 @@ function CaptacaoPage() {
   
   // Data lists
   const [questions, setQuestions] = useState<Question[]>(DEFAULT_QUESTIONS);
-  const [submissions, setSubmissions] = useState<Submission[]>(DEFAULT_SUBMISSIONS);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [storageSchoolId, setStorageSchoolId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Form Active & Premium states
@@ -219,51 +221,43 @@ function CaptacaoPage() {
   const [calculatedLevel, setCalculatedLevel] = useState("");
   const [calculatedScore, setCalculatedScore] = useState(0);
 
-  // Load from local storage
+  const scopedKey = (base: string, schoolId = storageSchoolId) =>
+    schoolId ? `${base}:v3:${schoolId}` : "";
+
+  // Load only the current school's local configuration and responses.
   useEffect(() => {
-    try {
-      const storedQuestions = window.localStorage.getItem("fluency-ai:captacao:questions");
-      if (storedQuestions) {
-        setQuestions(JSON.parse(storedQuestions));
-      } else {
-        window.localStorage.setItem("fluency-ai:captacao:questions", JSON.stringify(DEFAULT_QUESTIONS));
+    let active = true;
+    void (async () => {
+      try {
+        const schoolId = await currentSchoolId();
+        if (!active) return;
+        setStorageSchoolId(schoolId);
+        const questionKey = scopedKey("fluency-ai:captacao:questions", schoolId);
+        const submissionKey = scopedKey("fluency-ai:captacao:submissions", schoolId);
+        const storedQuestions = window.localStorage.getItem(questionKey);
+        const storedSubmissions = window.localStorage.getItem(submissionKey);
+        setQuestions(storedQuestions ? JSON.parse(storedQuestions) : DEFAULT_QUESTIONS);
+        setSubmissions(storedSubmissions ? JSON.parse(storedSubmissions) : []);
+        if (!storedQuestions) window.localStorage.setItem(questionKey, JSON.stringify(DEFAULT_QUESTIONS));
+
+        const activeNivel = window.localStorage.getItem(scopedKey("fluency-ai:captacao:formStatus:nivelamento", schoolId));
+        const activeMatricula = window.localStorage.getItem(scopedKey("fluency-ai:captacao:formStatus:matricula", schoolId));
+        const unlockedMatricula = window.localStorage.getItem(scopedKey("fluency-ai:captacao:premium-unlocked", schoolId));
+        setIsNivelamentoActive(activeNivel !== null ? JSON.parse(activeNivel) : true);
+        setIsMatriculaActive(activeMatricula !== null ? JSON.parse(activeMatricula) : false);
+        setIsMatriculaUnlocked(unlockedMatricula !== null ? JSON.parse(unlockedMatricula) : false);
+      } catch {
+        if (active) setSubmissions([]);
       }
-
-      const storedSubmissions = window.localStorage.getItem("fluency-ai:captacao:submissions");
-      if (storedSubmissions) {
-        const parsed = JSON.parse(storedSubmissions);
-        const normalized = parsed.map((s: any) => {
-          const defaultMatch = DEFAULT_SUBMISSIONS.find(ds => ds.id === s.id);
-          if (defaultMatch && !s.respostas) {
-            return { ...s, respostas: defaultMatch.respostas };
-          }
-          return s;
-        });
-        setSubmissions(normalized);
-        window.localStorage.setItem("fluency-ai:captacao:submissions", JSON.stringify(normalized));
-      } else {
-        window.localStorage.setItem("fluency-ai:captacao:submissions", JSON.stringify(DEFAULT_SUBMISSIONS));
-      }
-
-      // Load active status and premium status
-      const activeNivel = window.localStorage.getItem("fluency-ai:captacao:formStatus:nivelamento");
-      setIsNivelamentoActive(activeNivel !== null ? JSON.parse(activeNivel) : true);
-
-      const activeMatricula = window.localStorage.getItem("fluency-ai:captacao:formStatus:matricula");
-      setIsMatriculaActive(activeMatricula !== null ? JSON.parse(activeMatricula) : false);
-
-      const unlockedMatricula = window.localStorage.getItem("fluency-ai:captacao:premium-unlocked");
-      setIsMatriculaUnlocked(unlockedMatricula !== null ? JSON.parse(unlockedMatricula) : false);
-    } catch {
-      /* ignore */
-    }
+    })();
+    return () => { active = false; };
   }, []);
 
   // Save changes
   const saveQuestionsList = (next: Question[]) => {
     setQuestions(next);
     try {
-      window.localStorage.setItem("fluency-ai:captacao:questions", JSON.stringify(next));
+      if (storageSchoolId) window.localStorage.setItem(scopedKey("fluency-ai:captacao:questions"), JSON.stringify(next));
     } catch {
       /* ignore */
     }
@@ -272,7 +266,7 @@ function CaptacaoPage() {
   const saveSubmissionsList = (next: Submission[]) => {
     setSubmissions(next);
     try {
-      window.localStorage.setItem("fluency-ai:captacao:submissions", JSON.stringify(next));
+      if (storageSchoolId) window.localStorage.setItem(scopedKey("fluency-ai:captacao:submissions"), JSON.stringify(next));
     } catch {
       /* ignore */
     }
@@ -283,7 +277,7 @@ function CaptacaoPage() {
     const next = !isNivelamentoActive;
     setIsNivelamentoActive(next);
     try {
-      window.localStorage.setItem("fluency-ai:captacao:formStatus:nivelamento", JSON.stringify(next));
+      if (storageSchoolId) window.localStorage.setItem(scopedKey("fluency-ai:captacao:formStatus:nivelamento"), JSON.stringify(next));
       toast.success(next ? "Teste de Nivelamento ativado!" : "Teste de Nivelamento desativado!");
     } catch {
       /* ignore */
@@ -294,7 +288,7 @@ function CaptacaoPage() {
     const next = !isMatriculaActive;
     setIsMatriculaActive(next);
     try {
-      window.localStorage.setItem("fluency-ai:captacao:formStatus:matricula", JSON.stringify(next));
+      if (storageSchoolId) window.localStorage.setItem(scopedKey("fluency-ai:captacao:formStatus:matricula"), JSON.stringify(next));
       toast.success(next ? "Formulário de Pré-Matrícula ativado!" : "Formulário de Pré-Matrícula desativado!");
     } catch {
       /* ignore */
@@ -306,8 +300,10 @@ function CaptacaoPage() {
     setIsMatriculaActive(true);
     setIsUnlockModalOpen(false);
     try {
-      window.localStorage.setItem("fluency-ai:captacao:premium-unlocked", JSON.stringify(true));
-      window.localStorage.setItem("fluency-ai:captacao:formStatus:matricula", JSON.stringify(true));
+      if (storageSchoolId) {
+        window.localStorage.setItem(scopedKey("fluency-ai:captacao:premium-unlocked"), JSON.stringify(true));
+        window.localStorage.setItem(scopedKey("fluency-ai:captacao:formStatus:matricula"), JSON.stringify(true));
+      }
       toast.success("Módulo Premium Pré-Matrícula Online ativado com sucesso!");
     } catch {
       /* ignore */
@@ -460,7 +456,9 @@ function CaptacaoPage() {
 
     // Inject into Leads DB
     try {
-      const rawLeads = window.localStorage.getItem("fluency-ai:leads-db");
+      const rawLeads = storageSchoolId
+        ? window.localStorage.getItem(`fluency-ai:leads-db:v2:${storageSchoolId}`)
+        : null;
       let currentLeads = [];
       if (rawLeads) {
         currentLeads = JSON.parse(rawLeads);
@@ -489,14 +487,16 @@ function CaptacaoPage() {
         anotacoes: `Lead captado automaticamente através do formulário de nivelamento. Resultado: ${level} (${correct}/${questions.length} corretas).`,
         createdAt: new Date().toISOString(),
       };
-      window.localStorage.setItem("fluency-ai:leads-db", JSON.stringify([...currentLeads, newLead]));
+      if (storageSchoolId) window.localStorage.setItem(`fluency-ai:leads-db:v2:${storageSchoolId}`, JSON.stringify([...currentLeads, newLead]));
     } catch (e) {
       console.error(e);
     }
 
     // Inject into CRM Stages
     try {
-      const rawStages = window.localStorage.getItem("fluency-ai:crm:stages");
+      const rawStages = storageSchoolId
+        ? window.localStorage.getItem(`fluency-ai:crm:stages:v3:${storageSchoolId}`)
+        : null;
       if (rawStages) {
         const currentStages = JSON.parse(rawStages);
         const nextStages = currentStages.map((stage: any) => {
@@ -511,7 +511,7 @@ function CaptacaoPage() {
           }
           return stage;
         });
-        window.localStorage.setItem("fluency-ai:crm:stages", JSON.stringify(nextStages));
+        if (storageSchoolId) window.localStorage.setItem(`fluency-ai:crm:stages:v3:${storageSchoolId}`, JSON.stringify(nextStages));
       }
     } catch (e) {
       console.error(e);

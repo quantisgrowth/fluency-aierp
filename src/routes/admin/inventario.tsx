@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Boxes,
   Plus,
@@ -45,6 +45,8 @@ import {
 } from "@/data/mock";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
+import { ModuleGate } from "@/components/module-gate";
+import { currentSchoolId } from "@/lib/academic";
 
 export const Route = createFileRoute("/admin/inventario")({
   head: () => ({
@@ -53,8 +55,16 @@ export const Route = createFileRoute("/admin/inventario")({
       { name: "description", content: "Controle de patrimônio, inventário de equipamentos e gestão de salas de aula." },
     ],
   }),
-  component: InventarioPage,
+  component: SchoolInventoryPage,
 });
+
+function SchoolInventoryPage() {
+  return (
+    <ModuleGate module="core">
+      <InventarioPage />
+    </ModuleGate>
+  );
+}
 
 const ALL_SEGMENTS: InventorySegment[] = [
   "Tecnologia & Audiovisual",
@@ -75,58 +85,53 @@ const SEGMENT_ICONS: Record<InventorySegment, any> = {
 };
 
 function InventarioPage() {
+  const storageKeys = useRef<{ items: string; rooms: string; classes: string; students: string } | null>(null);
   const [activeTab, setActiveTab] = useState<"inventario" | "salas" | "ocupacao">("inventario");
 
   // LocalStorage state for Inventory Items
-  const [items, setItems] = useState<InventoryItem[]>(() => {
-    try {
-      const stored = window.localStorage.getItem("fluency-ai:inventory:items:v2");
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [items, setItems] = useState<InventoryItem[]>([]);
 
   // LocalStorage state for Classrooms
-  const [rooms, setRooms] = useState<Classroom[]>(() => {
-    try {
-      const stored = window.localStorage.getItem("fluency-ai:inventory:rooms:v2");
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [rooms, setRooms] = useState<Classroom[]>([]);
 
   // LocalStorage state for Classes (for mapping occupancy)
-  const [classesList, setClassesList] = useState(() => {
-    try {
-      const stored = window.localStorage.getItem("fluency-ai:classes:list:v2");
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [classesList, setClassesList] = useState<any[]>([]);
 
   // LocalStorage state for Students (for displaying students inside class detail modal)
-  const [studentsList, setStudentsList] = useState(() => {
-    try {
-      const stored = window.localStorage.getItem("fluency-ai:students:list:v2");
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [studentsList, setStudentsList] = useState<any[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    void currentSchoolId().then((schoolId) => {
+      if (!active || !schoolId) return;
+      storageKeys.current = {
+        items: `fluency-ai:inventory:items:v3:${schoolId}`,
+        rooms: `fluency-ai:inventory:rooms:v3:${schoolId}`,
+        classes: `fluency-ai:classes:list:v3:${schoolId}`,
+        students: `fluency-ai:students:list:v3:${schoolId}`,
+      };
+      try {
+        setItems(JSON.parse(window.localStorage.getItem(storageKeys.current.items) || "[]"));
+        setRooms(JSON.parse(window.localStorage.getItem(storageKeys.current.rooms) || "[]"));
+        setClassesList(JSON.parse(window.localStorage.getItem(storageKeys.current.classes) || "[]"));
+        setStudentsList(JSON.parse(window.localStorage.getItem(storageKeys.current.students) || "[]"));
+      } catch {
+        setItems([]); setRooms([]); setClassesList([]); setStudentsList([]);
+      }
+    });
+    return () => { active = false; };
+  }, []);
 
   // Sync to local storage
   useEffect(() => {
     try {
-      window.localStorage.setItem("fluency-ai:inventory:items:v2", JSON.stringify(items));
+      if (storageKeys.current) window.localStorage.setItem(storageKeys.current.items, JSON.stringify(items));
     } catch {}
   }, [items]);
 
   useEffect(() => {
     try {
-      window.localStorage.setItem("fluency-ai:inventory:rooms:v2", JSON.stringify(rooms));
+      if (storageKeys.current) window.localStorage.setItem(storageKeys.current.rooms, JSON.stringify(rooms));
     } catch {}
   }, [rooms]);
 
