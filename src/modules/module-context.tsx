@@ -51,8 +51,13 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
       setActive([...new Set(enabled)]);
     };
     void loadContractedModules();
+    const refresh = () => void loadContractedModules();
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
     return () => {
       mounted = false;
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
     };
   }, []);
 

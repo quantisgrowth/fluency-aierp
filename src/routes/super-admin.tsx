@@ -550,26 +550,34 @@ function SuperAdminPage() {
   const handleToggleSchoolModule = async (module: MasterSchoolModule) => {
     if (!editingSchool) return;
     const enabled = isEnabledModule(module);
+    const nextStatus = enabled ? "disponivel" : "ativo";
+    setEditingSchool((current) =>
+      current
+        ? {
+            ...current,
+            modules: current.modules.map((item) =>
+              item.modulo_id === module.modulo_id ? { ...item, status: nextStatus } : item,
+            ),
+          }
+        : current,
+    );
     setIsSavingSchool(true);
     try {
       await masterAdmin.setSchoolModule(editingSchool.id, module.modulo_id, !enabled);
-      await loadMasterData();
+      toast.success(
+        `${schoolModuleLabels[module.modulo_id] ?? module.modulo_id} ${enabled ? "desabilitado" : "habilitado"}.`,
+      );
+    } catch (error) {
       setEditingSchool((current) =>
         current
           ? {
               ...current,
               modules: current.modules.map((item) =>
-                item.modulo_id === module.modulo_id
-                  ? { ...item, status: enabled ? "disponivel" : "ativo" }
-                  : item,
+                item.modulo_id === module.modulo_id ? { ...item, status: module.status } : item,
               ),
             }
           : current,
       );
-      toast.success(
-        `${schoolModuleLabels[module.modulo_id] ?? module.modulo_id} ${enabled ? "desabilitado" : "habilitado"}.`,
-      );
-    } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível alterar o módulo.");
     } finally {
       setIsSavingSchool(false);

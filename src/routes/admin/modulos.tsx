@@ -43,13 +43,10 @@ import { MODULES } from "@/modules/registry";
 import { useTenant, type TenantPreset } from "@/modules/tenant-context";
 import {
   brl,
-  initialEducationalProducts,
   type EducationalProduct,
   type PricingModelType,
   livrosTrilhas,
-  initialEducationalLevels,
   type EducationalLevel,
-  initialSchoolCosts,
   type SchoolCost,
 } from "@/data/mock";
 import { toast } from "sonner";
@@ -65,9 +62,9 @@ export const Route = createFileRoute("/admin/modulos")({
 });
 
 type ModuleDef = typeof MODULES[0];
-const PRODUCTS_KEY = "fluency-ai:products:catalog";
-const LEVELS_KEY = "fluency-ai:academic:levels";
-const COSTS_KEY = "fluency-ai:finance:costs";
+const PRODUCTS_KEY = "fluency-ai:products:catalog:v2";
+const LEVELS_KEY = "fluency-ai:academic:levels:v2";
+const COSTS_KEY = "fluency-ai:finance:costs:v2";
 
 const MODALITY_LABELS: Record<PricingModelType, { label: string; badgeClass: string; desc: string }> = {
   mensalidade_fixa: {
@@ -124,9 +121,9 @@ function AdminModulosPage() {
   const [levels, setLevels] = useState<EducationalLevel[]>(() => {
     try {
       const stored = window.localStorage.getItem(LEVELS_KEY);
-      return stored ? JSON.parse(stored) : initialEducationalLevels;
+      return stored ? JSON.parse(stored) : [];
     } catch {
-      return initialEducationalLevels;
+      return [];
     }
   });
 
@@ -142,9 +139,9 @@ function AdminModulosPage() {
   const [products, setProducts] = useState<EducationalProduct[]>(() => {
     try {
       const stored = window.localStorage.getItem(PRODUCTS_KEY);
-      return stored ? JSON.parse(stored) : initialEducationalProducts;
+      return stored ? JSON.parse(stored) : [];
     } catch {
-      return initialEducationalProducts;
+      return [];
     }
   });
 
@@ -152,9 +149,9 @@ function AdminModulosPage() {
   const [costs] = useState<SchoolCost[]>(() => {
     try {
       const stored = window.localStorage.getItem(COSTS_KEY);
-      return stored ? JSON.parse(stored) : initialSchoolCosts;
+      return stored ? JSON.parse(stored) : [];
     } catch {
-      return initialSchoolCosts;
+      return [];
     }
   });
 

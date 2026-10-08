@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   CalendarClock,
@@ -21,6 +22,8 @@ import { KpiCard } from "@/components/kit/kpi-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import { StatusPill } from "@/components/kit/status-pill";
 import { useModules } from "@/modules/module-context";
+import { useUser } from "@/modules/user-context";
+import { supabase } from "@/lib/supabase";
 import {
   billingStatus,
   brl,
@@ -51,7 +54,70 @@ export const Route = createFileRoute("/")({
 
 function Dashboard() {
   const { isActive } = useModules();
+  const { adminProfile, activeCompany } = useUser();
   const totalBilling = billingStatus.reduce((s, b) => s + b.value, 0);
+  const [realCounts, setRealCounts] = useState({ students: 0, classes: 0 });
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadRealCounts() {
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user) return;
+      const { data: membership } = await supabase
+        .from("escola_membros")
+        .select("escola_id")
+        .eq("user_id", authData.user.id)
+        .eq("status", "ativo")
+        .limit(1)
+        .maybeSingle();
+      if (!membership) return;
+      const [students, classes] = await Promise.all([
+        supabase.from("alunos").select("id", { count: "exact", head: true }).eq("escola_id", membership.escola_id),
+        supabase.from("turmas").select("id", { count: "exact", head: true }).eq("escola_id", membership.escola_id),
+      ]);
+      if (mounted) setRealCounts({ students: students.count ?? 0, classes: classes.count ?? 0 });
+    }
+    void loadRealCounts();
+    return () => { mounted = false; };
+  }, []);
+
+  // The legacy dashboard below remains available for the design migration,
+  // but authenticated schools must start from a truthful empty state.
+  if (adminProfile.email) {
+    const firstName = adminProfile.name.split(" ")[0] || "Gestor";
+    return (
+      <div className="mx-auto max-w-[1400px] space-y-8">
+        <SectionHeader
+          eyebrow="Visão geral do gestor"
+          title={`Olá, ${firstName}`}
+          description={`Ambiente real de ${activeCompany || "sua escola"}.`}
+        />
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <KpiCard label="Alunos cadastrados" value={String(realCounts.students)} icon={Users} />
+          <KpiCard label="Turmas cadastradas" value={String(realCounts.classes)} icon={CalendarClock} />
+          <KpiCard label="Faturamento registrado" value={brl(0)} icon={Wallet} />
+          <KpiCard label="Pendências financeiras" value={brl(0)} icon={AlertTriangle} />
+        </div>
+        <GlassCard className="p-8">
+          <p className="text-lg font-semibold text-foreground">Seu ambiente está pronto para começar</p>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            Esta escola ainda não possui dados cadastrados. Use as opções abaixo para iniciar a configuração.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link to="/admin/modulos" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+              Cadastrar primeiro curso
+            </Link>
+            <Link to="/turmas" className="rounded-lg border border-hairline px-4 py-2 text-sm font-semibold text-foreground">
+              Criar primeira turma
+            </Link>
+            <Link to="/alunos" className="rounded-lg border border-hairline px-4 py-2 text-sm font-semibold text-foreground">
+              Cadastrar primeiro aluno
+            </Link>
+          </div>
+        </GlassCard>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-8">

@@ -40,7 +40,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: "Visão geral",
     items: [
       { to: "/", label: "Dashboard", icon: LayoutDashboard },
-      { to: "/portal/aluno", label: "Portal do Aluno", icon: GraduationCap },
+      { to: "/portal/aluno", label: "Portal do Aluno", icon: GraduationCap, module: "portal_aluno" },
     ],
   },
   {

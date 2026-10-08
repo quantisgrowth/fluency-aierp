@@ -37,10 +37,6 @@ import {
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import {
-  classrooms as initialClassrooms,
-  inventoryItems as initialInventory,
-  classes as initialClasses,
-  students as initialStudents,
   CLASS_COLOR_THEMES,
   type Classroom,
   type InventoryItem,
@@ -84,53 +80,53 @@ function InventarioPage() {
   // LocalStorage state for Inventory Items
   const [items, setItems] = useState<InventoryItem[]>(() => {
     try {
-      const stored = window.localStorage.getItem("fluency-ai:inventory:items");
-      return stored ? JSON.parse(stored) : initialInventory;
+      const stored = window.localStorage.getItem("fluency-ai:inventory:items:v2");
+      return stored ? JSON.parse(stored) : [];
     } catch {
-      return initialInventory;
+      return [];
     }
   });
 
   // LocalStorage state for Classrooms
   const [rooms, setRooms] = useState<Classroom[]>(() => {
     try {
-      const stored = window.localStorage.getItem("fluency-ai:inventory:rooms");
-      return stored ? JSON.parse(stored) : initialClassrooms;
+      const stored = window.localStorage.getItem("fluency-ai:inventory:rooms:v2");
+      return stored ? JSON.parse(stored) : [];
     } catch {
-      return initialClassrooms;
+      return [];
     }
   });
 
   // LocalStorage state for Classes (for mapping occupancy)
   const [classesList, setClassesList] = useState(() => {
     try {
-      const stored = window.localStorage.getItem("fluency-ai:classes:list");
-      return stored ? JSON.parse(stored) : initialClasses;
+      const stored = window.localStorage.getItem("fluency-ai:classes:list:v2");
+      return stored ? JSON.parse(stored) : [];
     } catch {
-      return initialClasses;
+      return [];
     }
   });
 
   // LocalStorage state for Students (for displaying students inside class detail modal)
   const [studentsList, setStudentsList] = useState(() => {
     try {
-      const stored = window.localStorage.getItem("fluency-ai:students:list");
-      return stored ? JSON.parse(stored) : initialStudents;
+      const stored = window.localStorage.getItem("fluency-ai:students:list:v2");
+      return stored ? JSON.parse(stored) : [];
     } catch {
-      return initialStudents;
+      return [];
     }
   });
 
   // Sync to local storage
   useEffect(() => {
     try {
-      window.localStorage.setItem("fluency-ai:inventory:items", JSON.stringify(items));
+      window.localStorage.setItem("fluency-ai:inventory:items:v2", JSON.stringify(items));
     } catch {}
   }, [items]);
 
   useEffect(() => {
     try {
-      window.localStorage.setItem("fluency-ai:inventory:rooms", JSON.stringify(rooms));
+      window.localStorage.setItem("fluency-ai:inventory:rooms:v2", JSON.stringify(rooms));
     } catch {}
   }, [rooms]);
 
