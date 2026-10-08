@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 export type UserRole = "admin" | "operador" | "professor" | "coordenador";
 
@@ -57,108 +58,85 @@ const STORAGE_PROFILE_KEY = "fluency-ai:profile";
 const STORAGE_ROLE_KEY = "fluency-ai:active-role";
 const STORAGE_COMPANY_KEY = "fluency-ai:active-company";
 
-export const COMPANIES = ["Unidade Pinheiros", "Unidade Jardins", "Unidade Paulista"];
-
-const DEFAULT_USERS: SchoolUser[] = [
-  {
-    id: "1",
-    name: "Julia Kern",
-    email: "julia.kern@fluency.ai",
-    role: "professor",
-    permissions: { crm: false, financeiro: false, pedagogico: true, success: false },
-    companies: ["Unidade Pinheiros"],
-  },
-  {
-    id: "2",
-    name: "Marcos Vidal",
-    email: "marcos.vidal@fluency.ai",
-    role: "professor",
-    permissions: { crm: false, financeiro: false, pedagogico: true, success: false },
-    companies: ["Unidade Pinheiros"],
-  },
-  {
-    id: "3",
-    name: "Ana Beatriz",
-    email: "ana.beatriz@fluency.ai",
-    role: "professor",
-    permissions: { crm: false, financeiro: false, pedagogico: true, success: false },
-    companies: ["Unidade Jardins"],
-  },
-  {
-    id: "4",
-    name: "Peter Hall",
-    email: "peter.hall@fluency.ai",
-    role: "professor",
-    permissions: { crm: false, financeiro: false, pedagogico: true, success: false },
-    companies: ["Unidade Paulista"],
-  },
-  {
-    id: "5",
-    name: "Rodrigo Silva",
-    email: "rodrigo.silva@fluency.ai",
-    role: "operador",
-    permissions: { crm: true, financeiro: true, pedagogico: true, success: false },
-    companies: ["Unidade Pinheiros", "Unidade Jardins"],
-  },
-  {
-    id: "6",
-    name: "Clara Albuquerque",
-    email: "clara.albuquerque@fluency.ai",
-    role: "coordenador",
-    permissions: { crm: false, financeiro: false, pedagogico: true, success: true },
-    companies: ["Unidade Pinheiros", "Unidade Jardins", "Unidade Paulista"],
-  },
-];
-
 const DEFAULT_PROFILE: AdminProfile = {
-  name: "Felipe Medeiros",
-  email: "gestor@fluency.ai",
-  phone: "(11) 98765-4321",
-  avatar: "FM",
+  name: "",
+  email: "",
+  phone: "",
+  avatar: "—",
 };
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [users, setUsers] = useState<SchoolUser[]>(DEFAULT_USERS);
+  const [users, setUsers] = useState<SchoolUser[]>([]);
+  const [companies, setCompanies] = useState<string[]>([]);
+  const [authenticatedUserId, setAuthenticatedUserId] = useState("");
   const [adminProfile, setAdminProfile] = useState<AdminProfile>(DEFAULT_PROFILE);
   const [activeRole, setActiveRoleState] = useState<UserRole>("admin");
-  const [activeCompany, setActiveCompanyState] = useState<string>("Unidade Pinheiros");
+  const [activeCompany, setActiveCompanyState] = useState<string>("");
 
-  // Load from local storage
+  // Load the authenticated user's real school identity. Legacy prototype data
+  // must never cross from one school/account to another through localStorage.
   useEffect(() => {
-    try {
-      const storedUsers = window.localStorage.getItem(STORAGE_USERS_KEY);
-      if (storedUsers) {
-        const parsed = JSON.parse(storedUsers);
-        if (Array.isArray(parsed)) {
-          const normalized: SchoolUser[] = parsed.map((u: any) => ({
-            ...u,
-            companies: Array.isArray(u.companies)
-              ? u.companies
-              : u.company
-                ? [u.company]
-                : [],
-          }));
-          setUsers(normalized);
-        }
-      }
+    let mounted = true;
+    async function loadIdentity() {
+      const { data: authData } = await supabase.auth.getUser();
+      const authUser = authData.user;
+      if (!authUser || !mounted) return;
+      setAuthenticatedUserId(authUser.id);
 
-      const storedProfile = window.localStorage.getItem(STORAGE_PROFILE_KEY);
-      if (storedProfile) {
-        setAdminProfile(JSON.parse(storedProfile));
-      }
+      const { data: membership } = await supabase
+        .from("escola_membros")
+        .select("escola_id,papel")
+        .eq("user_id", authUser.id)
+        .eq("status", "ativo")
+        .limit(1)
+        .maybeSingle();
 
-      const storedRole = window.localStorage.getItem(STORAGE_ROLE_KEY);
-      if (storedRole) {
-        setActiveRoleState(storedRole as UserRole);
-      }
+      const [profileResult, unitsResult] = await Promise.all([
+        supabase
+          .from("usuarios")
+          .select("nome,email,role")
+          .eq("auth_user_id", authUser.id)
+          .maybeSingle(),
+        membership
+          ? supabase.from("unidades").select("nome").eq("escola_id", membership.escola_id).eq("status", "ativa")
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+      if (!mounted) return;
 
-      const storedCompany = window.localStorage.getItem(STORAGE_COMPANY_KEY);
-      if (storedCompany) {
-        setActiveCompanyState(storedCompany);
-      }
-    } catch {
-      /* ignore */
+      const name = profileResult.data?.nome?.trim()
+        || String(authUser.user_metadata?.name || authUser.user_metadata?.full_name || "").trim()
+        || authUser.email?.split("@")[0]
+        || "Usuário";
+      const email = profileResult.data?.email || authUser.email || "";
+      const avatar = name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+      const scopedProfileKey = `${STORAGE_PROFILE_KEY}:${authUser.id}`;
+      let local: Partial<AdminProfile> = {};
+      try {
+        local = JSON.parse(window.localStorage.getItem(scopedProfileKey) || "{}");
+        window.localStorage.removeItem(STORAGE_PROFILE_KEY);
+        window.localStorage.removeItem(STORAGE_USERS_KEY);
+      } catch { /* ignore */ }
+      setAdminProfile({ name, email, phone: "", avatar: avatar || "U", ...local, email });
+
+      const unitNames = (unitsResult.data ?? []).map((unit) => unit.nome);
+      setCompanies(unitNames);
+      setActiveCompanyState((current) => unitNames.includes(current) ? current : (unitNames[0] || ""));
+      const roleMap: Partial<Record<string, UserRole>> = {
+        gestor: "admin",
+        secretaria: "operador",
+        financeiro: "operador",
+        comercial: "operador",
+        pedagogico: "coordenador",
+        professor: "professor",
+      };
+      setActiveRoleState(roleMap[membership?.papel || profileResult.data?.role || ""] || "admin");
+      try {
+        window.localStorage.removeItem(STORAGE_ROLE_KEY);
+        window.localStorage.removeItem(STORAGE_COMPANY_KEY);
+      } catch { /* ignore */ }
     }
+    void loadIdentity();
+    return () => { mounted = false; };
   }, []);
 
   const saveUsers = (nextUsers: SchoolUser[]) => {
@@ -211,7 +189,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setAdminProfile((prev) => {
       const next = { ...prev, ...profile };
       try {
-        window.localStorage.setItem(STORAGE_PROFILE_KEY, JSON.stringify(next));
+        if (authenticatedUserId) {
+          window.localStorage.setItem(`${STORAGE_PROFILE_KEY}:${authenticatedUserId}`, JSON.stringify(next));
+        }
       } catch {
         /* ignore */
       }
@@ -257,7 +237,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     <UserContext.Provider
       value={{
         users,
-        companies: COMPANIES,
+        companies,
         adminProfile,
         activeRole,
         activeCompany,

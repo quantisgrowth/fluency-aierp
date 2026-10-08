@@ -36,7 +36,7 @@ export const Route = createFileRoute("/admin/perfil")({
 const profileSchema = z.object({
   name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres"),
   email: z.string().email("E-mail inválido"),
-  phone: z.string().min(10, "Telefone inválido"),
+  phone: z.string().refine((value) => !value || value.replace(/\D/g, "").length >= 10, "Telefone inválido"),
   avatar: z.string().min(1, "A sigla é obrigatória").max(3, "Máximo de 3 letras"),
 });
 

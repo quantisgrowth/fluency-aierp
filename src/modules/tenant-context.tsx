@@ -5,6 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { supabase } from "@/lib/supabase";
 
 export type TenantPreset = "lumen" | "apex" | "british";
 
@@ -89,15 +90,30 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
   // Load from local storage
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as Tenant;
-        setTenant(parsed);
+    let mounted = true;
+    async function loadTenant() {
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user) return;
+      const { data: membership } = await supabase
+        .from("escola_membros")
+        .select("escola_id")
+        .eq("user_id", authData.user.id)
+        .eq("status", "ativo")
+        .limit(1)
+        .maybeSingle();
+      if (!membership) return;
+      const { data: school } = await supabase
+        .from("escolas")
+        .select("nome")
+        .eq("id", membership.escola_id)
+        .maybeSingle();
+      if (mounted && school?.nome) {
+        setTenant((current) => ({ ...current, name: school.nome, tagline: "Gestão escolar" }));
+        try { window.localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
       }
-    } catch {
-      /* ignore */
     }
+    void loadTenant();
+    return () => { mounted = false; };
   }, []);
 
   // Sync primary color and high-contrast foreground to CSS variables

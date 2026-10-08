@@ -117,7 +117,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { isActive } = useModules();
   const {
     activeRole,
-    setActiveRole,
     adminProfile,
     activeCompany,
     setActiveCompany,
@@ -274,35 +273,30 @@ export function AppShell({ children }: { children: ReactNode }) {
             />
           </div>
           
-          {/* Simulated role switcher in header */}
+          {/* Authenticated role */}
           <div className="flex items-center gap-2">
             <span className="hidden text-xs text-muted-foreground sm:inline">Cargo:</span>
-            <select
-              value={activeRole}
-              onChange={(e) => setActiveRole(e.target.value as any)}
-              className="rounded-lg border border-hairline bg-surface/60 px-2 py-1 text-xs font-semibold text-foreground outline-none cursor-pointer focus:border-primary hover:bg-surface transition-all"
-            >
-              <option value="admin">Administrador</option>
-              <option value="operador">Operador</option>
-              <option value="professor">Professor</option>
-              <option value="coordenador">Coordenador</option>
-            </select>
+            <span className="rounded-lg border border-hairline bg-surface/60 px-2 py-1 text-xs font-semibold text-foreground">
+              {activeRole === "admin" ? "Administrador" : activeRole === "coordenador" ? "Coordenador" : activeRole === "professor" ? "Professor" : "Operador"}
+            </span>
           </div>
 
-          {/* Simulated unit selector in header */}
+          {/* Units belonging to the authenticated school */}
           <div className="flex items-center gap-2">
             <span className="hidden text-xs text-muted-foreground sm:inline">Unidade:</span>
             <select
               value={activeCompany}
               onChange={(e) => setActiveCompany(e.target.value)}
+              disabled={companies.length <= 1}
               className="rounded-lg border border-hairline bg-surface/60 px-2 py-1 text-xs font-semibold text-foreground outline-none cursor-pointer focus:border-primary hover:bg-surface transition-all"
             >
-              <option value="Todas as Unidades">Todas as Unidades</option>
+              {companies.length > 1 && <option value="Todas as Unidades">Todas as Unidades</option>}
               {companies.map((c) => (
                 <option key={c} value={c}>
-                  {c.replace("Unidade ", "")}
+                  {c}
                 </option>
               ))}
+              {companies.length === 0 && <option value="">Sem unidade cadastrada</option>}
             </select>
           </div>
 
@@ -332,8 +326,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
         <main className="flex-1 px-5 py-8 sm:px-8">
           <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-            Área demonstrativa: os números e cadastros exibidos aqui são fictícios.
-            Sua escola real aparece em <Link to="/boas-vindas" className="underline">Seu ambiente</Link>.
+            Alguns painéis ainda estão em modo demonstrativo. Os dados reais da escola serão
+            exibidos apenas nas áreas já conectadas ao ambiente.
           </div>
           {children}
         </main>
