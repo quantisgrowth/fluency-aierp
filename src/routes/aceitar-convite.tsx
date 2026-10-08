@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Building2, Eye, EyeOff, ShieldCheck } from "lucide-react";
@@ -28,7 +28,7 @@ function AcceptInvitePage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const acceptInvite = async () => {
+  const acceptInvite = useCallback(async () => {
     if (!token) throw new Error("O link do convite está incompleto.");
     const { error } = await supabase.rpc("accept_school_invite", {
       _token_hash: await sha256(token),
@@ -37,7 +37,26 @@ function AcceptInvitePage() {
     if (error) throw error;
     toast.success("Convite aceito. Seu acesso à escola está ativo.");
     await navigate({ to: "/boas-vindas" });
-  };
+  }, [name, navigate, token]);
+
+  useEffect(() => {
+    let active = true;
+    async function acceptAuthenticatedInvite() {
+      const { data } = await supabase.auth.getSession();
+      if (!active || !data.session || !token) return;
+      setLoading(true);
+      try {
+        await acceptInvite();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Não foi possível aceitar o convite.");
+        setLoading(false);
+      }
+    }
+    void acceptAuthenticatedInvite();
+    return () => {
+      active = false;
+    };
+  }, [acceptInvite, token]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();

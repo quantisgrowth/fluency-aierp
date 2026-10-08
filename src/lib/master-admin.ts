@@ -222,7 +222,12 @@ async function invokeMaster<T>(action: MasterAction, payload: Record<string, unk
 export const masterAdmin = {
   overview: () => invokeMaster<MasterOverview>("overview"),
   createSchool: (input: CreateSchoolInput) =>
-    invokeMaster<{ school_id: string; invite_url: string }>("create_school", { input }),
+    invokeMaster<{
+      school_id: string;
+      invite_url: string;
+      email_sent: boolean;
+      email_error?: string;
+    }>("create_school", { input }),
   updateSchool: (schoolId: string, changes: Record<string, unknown>) =>
     invokeMaster<{ school: MasterSchool }>("update_school", {
       school_id: schoolId,
@@ -235,7 +240,12 @@ export const masterAdmin = {
       status: active ? "ativo" : "disponivel",
     }),
   createInvite: (input: Record<string, unknown>) =>
-    invokeMaster<{ invite_id: string; invite_url: string }>("create_invite", { input }),
+    invokeMaster<{
+      invite_id: string;
+      invite_url: string;
+      email_sent: boolean;
+      email_error?: string;
+    }>("create_invite", { input }),
   updateMember: (input: {
     school_id: string;
     member_id: string;

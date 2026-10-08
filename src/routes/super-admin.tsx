@@ -531,9 +531,15 @@ function SuperAdminPage() {
       await loadMasterData();
       setIsCreateSchoolOpen(false);
       setNewSchool({ schoolName: "", slug: "", plan: "trial", managerName: "", managerEmail: "" });
-      toast.success("Escola criada e link seguro copiado.", {
-        description: "Envie o link ao gestor enquanto o serviço de e-mail não estiver configurado.",
-      });
+      if (result.email_sent) {
+        toast.success("Escola criada e convite enviado por e-mail.", {
+          description: "O link seguro também foi copiado.",
+        });
+      } else {
+        toast.warning("Escola criada, mas o e-mail não foi entregue.", {
+          description: result.email_error || "O link seguro foi copiado para envio manual.",
+        });
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível criar a escola.");
     } finally {
@@ -587,10 +593,13 @@ function SuperAdminPage() {
       await navigator.clipboard.writeText(result.invite_url);
       setSchoolInvite({ name: "", email: "", role: "gestor" });
       await loadMasterData();
-      toast.success("Convite criado e link seguro copiado.", {
-        description:
-          "O sistema ainda não envia este e-mail automaticamente. Envie o link copiado ao usuário.",
-      });
+      if (result.email_sent) {
+        toast.success("Convite enviado por e-mail e link seguro copiado.");
+      } else {
+        toast.warning("Convite criado, mas o e-mail não foi entregue.", {
+          description: result.email_error || "O link seguro foi copiado para envio manual.",
+        });
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível criar o convite.");
     } finally {

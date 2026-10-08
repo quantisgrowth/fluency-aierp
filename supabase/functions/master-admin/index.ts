@@ -285,8 +285,30 @@ Deno.serve(async (request) => {
       });
       if (error) throw error;
       const result = Array.isArray(data) ? data[0] : data;
+      const inviteUrl = `${appUrl}/aceitar-convite?token=${encodeURIComponent(token)}`;
+      const managerEmail = String(input.manager_email ?? "")
+        .trim()
+        .toLowerCase();
+      const { error: emailError } = await adminClient.auth.admin.inviteUserByEmail(managerEmail, {
+        redirectTo: inviteUrl,
+        data: { name: input.manager_name, school_id: result.school_id, role: "gestor" },
+      });
+      await adminClient.from("audit_logs").insert({
+        escola_id: result.school_id,
+        actor_user_id: authData.user.id,
+        actor_kind: "plataforma",
+        action: emailError ? "invite.email_failed" : "invite.email_sent",
+        resource_type: "convite",
+        resource_id: String(result.invite_id),
+        metadata: { email: managerEmail, error: emailError?.message ?? null },
+      });
       return json(
-        { ...result, invite_url: `${appUrl}/aceitar-convite?token=${encodeURIComponent(token)}` },
+        {
+          ...result,
+          invite_url: inviteUrl,
+          email_sent: !emailError,
+          email_error: emailError?.message,
+        },
         201,
         origin,
       );
@@ -330,10 +352,49 @@ Deno.serve(async (request) => {
         _expires_at: expiresAt,
       });
       if (error) throw error;
+      const inviteUrl = `${appUrl}/aceitar-convite?token=${encodeURIComponent(token)}`;
+      const inviteEmail = String(input.email ?? "")
+        .trim()
+        .toLowerCase();
+      let emailSent = false;
+      let emailError: string | undefined;
+      const { error: authInviteError } = await adminClient.auth.admin.inviteUserByEmail(
+        inviteEmail,
+        {
+          redirectTo: inviteUrl,
+          data: { name: input.name, school_id: input.school_id, role: input.role },
+        },
+      );
+      if (!authInviteError) {
+        emailSent = true;
+      } else if (
+        authInviteError.message.toLowerCase().includes("already") ||
+        authInviteError.message.toLowerCase().includes("registered")
+      ) {
+        const { error: magicLinkError } = await adminClient.auth.signInWithOtp({
+          email: inviteEmail,
+          options: { shouldCreateUser: false, emailRedirectTo: inviteUrl },
+        });
+        emailSent = !magicLinkError;
+        emailError = magicLinkError?.message;
+      } else {
+        emailError = authInviteError.message;
+      }
+      await adminClient.from("audit_logs").insert({
+        escola_id: input.school_id,
+        actor_user_id: authData.user.id,
+        actor_kind: "plataforma",
+        action: emailSent ? "invite.email_sent" : "invite.email_failed",
+        resource_type: "convite",
+        resource_id: String(data),
+        metadata: { email: inviteEmail, error: emailError ?? null },
+      });
       return json(
         {
           invite_id: data,
-          invite_url: `${appUrl}/aceitar-convite?token=${encodeURIComponent(token)}`,
+          invite_url: inviteUrl,
+          email_sent: emailSent,
+          email_error: emailError,
         },
         201,
         origin,

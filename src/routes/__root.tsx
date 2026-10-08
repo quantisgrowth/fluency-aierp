@@ -155,6 +155,7 @@ function RootComponent() {
     pathname === "/cadastro" ||
     pathname === "/recuperar-senha" ||
     pathname === "/redefinir-senha" ||
+    pathname === "/aceitar-convite" ||
     pathname === "/manager" ||
     pathname.startsWith("/public/");
   const isPlatform = pathname === "/super-admin";
