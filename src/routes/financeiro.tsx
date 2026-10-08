@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { RealFinancePage } from "@/components/real-finance-page";
+import { FinanceDashboard } from "@/components/finance-dashboard";
 import { useState, useEffect, useMemo } from "react";
 import {
   Wallet,
@@ -85,7 +85,7 @@ export const Route = createFileRoute("/financeiro")({
 function SchoolFinancePage() {
   return (
     <ModuleGate module="financeiro">
-      <RealFinancePage />
+      <FinanceDashboard />
     </ModuleGate>
   );
 }
