@@ -94,7 +94,9 @@ Deno.serve(async (request) => {
         adminClient.from("escola_membro_unidades").select("escola_membro_id,escola_id,unidade_id"),
         adminClient
           .from("convites_acesso")
-          .select("id,escola_id,nome,email,papel,status,expires_at,created_at")
+          .select(
+            "id,escola_id,nome,email,papel,status,expires_at,created_at,email_status,email_error,email_requested_at",
+          )
           .order("created_at", { ascending: false }),
         adminClient.from("platform_admins").select("user_id,nome,papel,status").order("created_at"),
         adminClient.from("modulos_catalogo").select("*").order("ordem"),
@@ -302,6 +304,14 @@ Deno.serve(async (request) => {
         resource_id: String(result.invite_id),
         metadata: { email: managerEmail, error: emailError?.message ?? null },
       });
+      await adminClient
+        .from("convites_acesso")
+        .update({
+          email_status: emailError ? "falhou" : "enviado",
+          email_error: emailError?.message ?? null,
+          email_requested_at: new Date().toISOString(),
+        })
+        .eq("id", result.invite_id);
       return json(
         {
           ...result,
@@ -389,6 +399,14 @@ Deno.serve(async (request) => {
         resource_id: String(data),
         metadata: { email: inviteEmail, error: emailError ?? null },
       });
+      await adminClient
+        .from("convites_acesso")
+        .update({
+          email_status: emailSent ? "enviado" : "falhou",
+          email_error: emailError ?? null,
+          email_requested_at: new Date().toISOString(),
+        })
+        .eq("id", data);
       return json(
         {
           invite_id: data,

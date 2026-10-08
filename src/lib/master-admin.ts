@@ -68,6 +68,9 @@ export type MasterSchoolInvite = {
   status: string;
   expires_at: string;
   created_at: string;
+  email_status: "nao_solicitado" | "enviado" | "falhou";
+  email_error: string | null;
+  email_requested_at: string | null;
 };
 
 export type MasterTeamMember = {

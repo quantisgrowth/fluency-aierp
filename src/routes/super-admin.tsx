@@ -590,16 +590,46 @@ function SuperAdminPage() {
         role: schoolInvite.role,
         unit_ids: schoolInvite.role === "gestor" ? editingSchool.units.map((unit) => unit.id) : [],
       });
-      await navigator.clipboard.writeText(result.invite_url);
+      const requestedAt = new Date().toISOString();
+      const optimisticInvite: MasterSchoolInvite = {
+        id: result.invite_id,
+        escola_id: editingSchool.id,
+        nome: schoolInvite.name.trim(),
+        email: schoolInvite.email.trim().toLowerCase(),
+        papel: schoolInvite.role,
+        status: "pendente",
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        created_at: requestedAt,
+        email_status: result.email_sent ? "enviado" : "falhou",
+        email_error: result.email_error || null,
+        email_requested_at: requestedAt,
+      };
+      setEditingSchool({
+        ...editingSchool,
+        invites: [optimisticInvite, ...editingSchool.invites],
+      });
       setSchoolInvite({ name: "", email: "", role: "gestor" });
-      await loadMasterData();
+      let linkCopied = false;
+      try {
+        await navigator.clipboard.writeText(result.invite_url);
+        linkCopied = true;
+      } catch {
+        // Clipboard permission is optional and must not turn a created invite into an error.
+      }
       if (result.email_sent) {
-        toast.success("Convite enviado por e-mail e link seguro copiado.");
+        toast.success("Solicitação de e-mail aceita pelo servidor SMTP.", {
+          description: linkCopied ? "O link seguro também foi copiado." : undefined,
+        });
       } else {
-        toast.warning("Convite criado, mas o e-mail não foi entregue.", {
-          description: result.email_error || "O link seguro foi copiado para envio manual.",
+        toast.warning("Convite criado, mas o servidor de e-mail recusou o envio.", {
+          description:
+            result.email_error ||
+            (linkCopied
+              ? "O link seguro foi copiado para envio manual."
+              : "Cancele e recrie o convite após corrigir o SMTP."),
         });
       }
+      void loadMasterData();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível criar o convite.");
     } finally {
@@ -2489,9 +2519,25 @@ function SuperAdminPage() {
                         key={invite.id}
                         className="flex items-center justify-between rounded-lg border border-amber-500/15 bg-amber-500/5 p-3"
                       >
-                        <div>
+                        <div className="min-w-0">
                           <p className="font-semibold text-white">{invite.nome || invite.email}</p>
                           <p className="text-[10px] text-neutral-500">{invite.email}</p>
+                          <p
+                            className={`mt-1 text-[10px] font-medium ${
+                              invite.email_status === "enviado"
+                                ? "text-emerald-400"
+                                : invite.email_status === "falhou"
+                                  ? "text-red-300"
+                                  : "text-neutral-500"
+                            }`}
+                            title={invite.email_error || undefined}
+                          >
+                            {invite.email_status === "enviado"
+                              ? "Solicitação aceita pelo SMTP"
+                              : invite.email_status === "falhou"
+                                ? `Falha no e-mail${invite.email_error ? `: ${invite.email_error}` : ""}`
+                                : "E-mail ainda não solicitado"}
+                          </p>
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="text-[10px] font-semibold uppercase text-amber-300">
