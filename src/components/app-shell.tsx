@@ -325,10 +325,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Link>
         </header>
         <main className="flex-1 px-5 py-8 sm:px-8">
-          <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-            Alguns painéis ainda estão em modo demonstrativo. Os dados reais da escola serão
-            exibidos apenas nas áreas já conectadas ao ambiente.
-          </div>
           {children}
         </main>
       </div>
