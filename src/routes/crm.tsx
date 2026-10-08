@@ -4,7 +4,7 @@ import { Plus, UserPlus, MoveRight, Pencil, X, Search, Check, Copy } from "lucid
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import { ModuleGate } from "@/components/module-gate";
-import { crmStages as initialStages, brl } from "@/data/mock";
+import { brl } from "@/data/mock";
 import { toast } from "sonner";
 import { type Lead, ORIGEM_IDEAS, LEADS_STORAGE_KEY } from "./leads";
 
@@ -30,8 +30,17 @@ type Stage = {
   cards: LeadCard[];
 };
 
+const CRM_STAGES_KEY = "fluency-ai:crm:stages:v2";
+const CRM_LEADS_KEY = `${LEADS_STORAGE_KEY}:v2`;
+const EMPTY_STAGES: Stage[] = [
+  { id: "lead", titulo: "Lead", cards: [] },
+  { id: "contato", titulo: "Contato", cards: [] },
+  { id: "aula-experimental", titulo: "Aula experimental", cards: [] },
+  { id: "matricula", titulo: "Matrícula fechada", cards: [] },
+];
+
 function CrmPage() {
-  const [stages, setStages] = useState<Stage[]>(initialStages);
+  const [stages, setStages] = useState<Stage[]>(EMPTY_STAGES);
   const [leadsDb, setLeadsDb] = useState<Lead[]>([]);
 
   // Edit Lead Modal States
@@ -79,12 +88,12 @@ function CrmPage() {
   useEffect(() => {
     const loadData = () => {
       try {
-        const stored = window.localStorage.getItem(LEADS_STORAGE_KEY);
+        const stored = window.localStorage.getItem(CRM_LEADS_KEY);
         if (stored) {
           setLeadsDb(JSON.parse(stored));
         }
 
-        const storedStages = window.localStorage.getItem("fluency-ai:crm:stages");
+        const storedStages = window.localStorage.getItem(CRM_STAGES_KEY);
         if (storedStages) {
           setStages(JSON.parse(storedStages));
         }
@@ -96,7 +105,7 @@ function CrmPage() {
     loadData();
 
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === LEADS_STORAGE_KEY || e.key === "fluency-ai:crm:stages") {
+      if (e.key === CRM_LEADS_KEY || e.key === CRM_STAGES_KEY) {
         loadData();
       }
     };
@@ -107,7 +116,7 @@ function CrmPage() {
   const saveLeadsDb = (nextLeads: Lead[]) => {
     setLeadsDb(nextLeads);
     try {
-      window.localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(nextLeads));
+      window.localStorage.setItem(CRM_LEADS_KEY, JSON.stringify(nextLeads));
     } catch {
       /* ignore */
     }
@@ -116,7 +125,7 @@ function CrmPage() {
   const saveStages = (nextStages: Stage[]) => {
     setStages(nextStages);
     try {
-      window.localStorage.setItem("fluency-ai:crm:stages", JSON.stringify(nextStages));
+      window.localStorage.setItem(CRM_STAGES_KEY, JSON.stringify(nextStages));
     } catch {
       /* ignore */
     }
