@@ -135,7 +135,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function allowedSchoolRoles(pathname: string): string[] {
   if (pathname === "/boas-vindas") return ["gestor"];
-  if (pathname.startsWith("/portal/")) return ["aluno", "responsavel"];
+  if (pathname.startsWith("/portal/")) return ["gestor", "aluno", "responsavel"];
   if (pathname === "/admin/usuarios" || pathname === "/admin/modulos") return ["gestor"];
   if (pathname === "/financeiro") return ["gestor", "financeiro"];
   if (pathname === "/admin/inventario") return ["gestor", "secretaria", "financeiro"];
