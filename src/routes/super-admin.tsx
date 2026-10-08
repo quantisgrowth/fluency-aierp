@@ -607,6 +607,27 @@ function SuperAdminPage() {
     }
   };
 
+  const handleCancelSchoolInvite = async (invite: MasterSchoolInvite) => {
+    if (!editingSchool) return;
+    if (!window.confirm(`Cancelar o convite pendente enviado para ${invite.email}?`)) return;
+    setIsInvitingSchoolUser(true);
+    try {
+      await masterAdmin.cancelInvite(invite.id);
+      setEditingSchool({
+        ...editingSchool,
+        invites: editingSchool.invites.map((item) =>
+          item.id === invite.id ? { ...item, status: "cancelado" } : item,
+        ),
+      });
+      await loadMasterData();
+      toast.success("Convite cancelado. Agora você pode criar um novo convite para este e-mail.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível cancelar o convite.");
+    } finally {
+      setIsInvitingSchoolUser(false);
+    }
+  };
+
   const handleUpdateSchoolMember = async (
     member: MasterSchoolMember,
     changes: { role?: string; status?: string },
@@ -2472,9 +2493,19 @@ function SuperAdminPage() {
                           <p className="font-semibold text-white">{invite.nome || invite.email}</p>
                           <p className="text-[10px] text-neutral-500">{invite.email}</p>
                         </div>
-                        <span className="text-[10px] font-semibold uppercase text-amber-300">
-                          Convite pendente · {invite.papel}
-                        </span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] font-semibold uppercase text-amber-300">
+                            Convite pendente · {invite.papel}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={isInvitingSchoolUser}
+                            onClick={() => void handleCancelSchoolInvite(invite)}
+                            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-red-500/20 bg-red-500/10 px-2.5 text-[10px] font-semibold text-red-300 transition-colors hover:bg-red-500/20 disabled:opacity-50"
+                          >
+                            <X className="size-3" /> Cancelar
+                          </button>
+                        </div>
                       </div>
                     ))}
                 </div>
