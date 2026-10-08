@@ -129,8 +129,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const isCustomPortal =
     pathname.startsWith("/cadastro") ||
     pathname.startsWith("/boas-vindas") ||
-    pathname === "/alunos" ||
-    pathname === "/turmas" ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/manager") ||
     pathname.startsWith("/super-admin") ||
