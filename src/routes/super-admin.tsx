@@ -33,6 +33,7 @@ import {
   Package,
   Download,
   Search,
+  Loader2,
 } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
@@ -483,7 +484,7 @@ function SuperAdminPage() {
   // Edit modals save triggers
   const handleSaveEditingSchool = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingSchool) return;
+    if (!editingSchool || isSavingSchool) return;
 
     setIsSavingSchool(true);
     try {
@@ -2644,16 +2645,20 @@ function SuperAdminPage() {
               <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
                 <button
                   type="button"
+                  disabled={isSavingSchool}
                   onClick={() => setIsSchoolModalOpen(false)}
-                  className="rounded-lg bg-white/5 px-4 py-2 text-xs font-semibold text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  className="rounded-lg bg-white/5 px-4 py-2 text-xs font-semibold text-white hover:bg-white/10 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/95 transition-all cursor-pointer"
+                  disabled={isSavingSchool}
+                  aria-busy={isSavingSchool}
+                  className="inline-flex min-w-32 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/95 transition-all cursor-pointer disabled:cursor-wait disabled:opacity-70"
                 >
-                  Salvar Escola
+                  {isSavingSchool && <Loader2 className="size-3.5 animate-spin" />}
+                  {isSavingSchool ? "Salvando…" : "Salvar Escola"}
                 </button>
               </div>
             </form>
