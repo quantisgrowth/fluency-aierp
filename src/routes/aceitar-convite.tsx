@@ -28,16 +28,23 @@ function AcceptInvitePage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const acceptInvite = useCallback(async () => {
-    if (!token) throw new Error("O link do convite está incompleto.");
-    const { error } = await supabase.rpc("accept_school_invite", {
-      _token_hash: await sha256(token),
-      _display_name: name,
-    });
-    if (error) throw error;
-    toast.success("Convite aceito. Seu acesso à escola está ativo.");
-    await navigate({ to: "/boas-vindas" });
-  }, [name, navigate, token]);
+  const acceptInvite = useCallback(
+    async (firstAccess = false) => {
+      if (!token) throw new Error("O link do convite está incompleto.");
+      const { error } = await supabase.rpc("accept_school_invite", {
+        _token_hash: await sha256(token),
+        _display_name: name,
+      });
+      if (error) throw error;
+      toast.success("Convite aceito. Seu acesso à escola está ativo.");
+      if (firstAccess) {
+        window.location.assign("/redefinir-senha?convite=1");
+        return;
+      }
+      await navigate({ to: "/boas-vindas" });
+    },
+    [name, navigate, token],
+  );
 
   useEffect(() => {
     let active = true;
@@ -46,7 +53,7 @@ function AcceptInvitePage() {
       if (!active || !data.session || !token) return;
       setLoading(true);
       try {
-        await acceptInvite();
+        await acceptInvite(true);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Não foi possível aceitar o convite.");
         setLoading(false);

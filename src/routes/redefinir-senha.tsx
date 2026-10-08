@@ -8,13 +8,14 @@ import { supabase } from "@/lib/supabase";
 export const Route = createFileRoute("/redefinir-senha")({
   validateSearch: (search: Record<string, unknown>) => ({
     origem: search.origem === "manager" ? ("manager" as const) : undefined,
+    convite: search.convite === "1" ? true : undefined,
   }),
   head: () => ({ meta: [{ title: "Definir nova senha — Fluency AI" }] }),
   component: ResetPasswordPage,
 });
 
 function ResetPasswordPage() {
-  const { origem } = Route.useSearch();
+  const { origem, convite } = Route.useSearch();
   const isManager = origem === "manager";
   const [ready, setReady] = useState(false);
   const [validSession, setValidSession] = useState(false);
@@ -61,6 +62,10 @@ function ResetPasswordPage() {
       if (error) throw error;
       setPassword("");
       setConfirmation("");
+      if (convite) {
+        window.location.assign("/boas-vindas");
+        return;
+      }
       setDone(true);
     } catch (cause) {
       setFeedback(cause instanceof Error ? cause.message : "Não foi possível atualizar a senha.");
