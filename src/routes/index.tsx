@@ -81,9 +81,10 @@ function Dashboard() {
     return () => { mounted = false; };
   }, []);
 
-  // The legacy dashboard below remains available for the design migration,
-  // but authenticated schools must start from a truthful empty state.
-  if (adminProfile.email) {
+  // Every school dashboard must use tenant-scoped Supabase counts. The legacy
+  // prototype below is kept only as design reference and must never be shown.
+  const useRealSchoolDashboard = true;
+  if (useRealSchoolDashboard) {
     const firstName = adminProfile.name.split(" ")[0] || "Gestor";
     return (
       <div className="mx-auto max-w-[1400px] space-y-8">
