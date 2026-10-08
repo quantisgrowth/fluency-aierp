@@ -88,19 +88,16 @@ export function AuthGuard({ children, platformAdmin = false, allowedRoles }: Pro
 
   useEffect(() => {
     if (status === "login") void navigate({ to: "/login" });
-  }, [status, navigate]);
+    if (status === "denied") {
+      clearAccessSnapshot();
+      void navigate({ to: platformAdmin ? "/manager" : "/login" });
+    }
+  }, [status, navigate, platformAdmin]);
 
-  if (status === "loading" || status === "login") {
+  if (status === "loading" || status === "login" || status === "denied") {
     return (
       <div className="grid min-h-screen place-items-center text-sm text-muted-foreground">
-        Verificando acesso…
-      </div>
-    );
-  }
-  if (status === "denied") {
-    return (
-      <div className="grid min-h-screen place-items-center p-6 text-center text-sm">
-        Acesso não autorizado. Solicite um convite à escola ou à equipe da plataforma.
+        {status === "denied" ? "Redirecionando para o login…" : "Verificando acesso…"}
       </div>
     );
   }
