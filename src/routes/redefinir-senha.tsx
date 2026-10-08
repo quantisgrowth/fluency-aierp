@@ -69,7 +69,7 @@ function ResetPasswordPage() {
         convite || sessionStorage.getItem("fluency_school_invite_first_access") === "1";
       if (isInviteFirstAccess) {
         sessionStorage.removeItem("fluency_school_invite_first_access");
-        window.location.assign("/boas-vindas");
+        window.location.assign("/");
         return;
       }
       setDone(true);

@@ -167,7 +167,7 @@ function LoginPage() {
         throw new Error("Esta conta não tem acesso ativo ao portal selecionado.");
       }
       setLoginStep("Abrindo seu ambiente…");
-      await navigate({ to: portalType === "aluno" ? "/portal/aluno" : "/boas-vindas" });
+      await navigate({ to: portalType === "aluno" ? "/portal/aluno" : "/" });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro no login.";
       toast.error(msg);

@@ -84,8 +84,14 @@ function WelcomePage() {
               </div>
               <div className="flex flex-wrap gap-3">
                 <Link
-                  to="/turmas"
+                  to="/"
                   className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                >
+                  Acessar painel da escola
+                </Link>
+                <Link
+                  to="/turmas"
+                  className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold"
                 >
                   Cadastrar cursos e turmas
                 </Link>

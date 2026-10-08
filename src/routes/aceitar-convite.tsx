@@ -42,7 +42,7 @@ function AcceptInvitePage() {
         window.location.assign("/redefinir-senha?convite=1");
         return;
       }
-      await navigate({ to: "/boas-vindas" });
+      await navigate({ to: "/" });
     },
     [name, navigate, token],
   );
