@@ -38,6 +38,7 @@ function AcceptInvitePage() {
       if (error) throw error;
       toast.success("Convite aceito. Seu acesso à escola está ativo.");
       if (firstAccess) {
+        sessionStorage.setItem("fluency_school_invite_first_access", "1");
         window.location.assign("/redefinir-senha?convite=1");
         return;
       }

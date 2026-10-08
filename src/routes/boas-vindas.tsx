@@ -74,7 +74,9 @@ function WelcomePage() {
           school && (
             <>
               <h1 className="text-2xl font-bold">{school.nome}</h1>
-              <p className="text-sm text-neutral-300">Seu ambiente foi criado com sucesso.</p>
+              <p className="text-sm text-neutral-300">
+                Seu acesso está ativo. Escolha por onde começar.
+              </p>
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm">
                 <p>Plano: {school.status === "trial" ? "Teste gratuito" : school.status}</p>
                 <p>Teste até: {new Date(school.trial_ends_at).toLocaleDateString("pt-BR")}</p>

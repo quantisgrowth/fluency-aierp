@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
+import { Eye, EyeOff } from "lucide-react";
 
 export const Route = createFileRoute("/redefinir-senha")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -21,6 +22,8 @@ function ResetPasswordPage() {
   const [validSession, setValidSession] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [feedback, setFeedback] = useState("");
@@ -62,7 +65,10 @@ function ResetPasswordPage() {
       if (error) throw error;
       setPassword("");
       setConfirmation("");
-      if (convite) {
+      const isInviteFirstAccess =
+        convite || sessionStorage.getItem("fluency_school_invite_first_access") === "1";
+      if (isInviteFirstAccess) {
+        sessionStorage.removeItem("fluency_school_invite_first_access");
         window.location.assign("/boas-vindas");
         return;
       }
@@ -114,27 +120,49 @@ function ResetPasswordPage() {
             )}
             <div>
               <Label htmlFor="new-password">Nova senha (mínimo de 12 caracteres)</Label>
-              <Input
-                id="new-password"
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                minLength={12}
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="new-password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  minLength={12}
+                  className="pr-11"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((value) => !value)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
+                  aria-label={showPassword ? "Ocultar nova senha" : "Mostrar nova senha"}
+                >
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
             </div>
             <div>
               <Label htmlFor="confirm-password">Confirmar nova senha</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                autoComplete="new-password"
-                value={confirmation}
-                onChange={(event) => setConfirmation(event.target.value)}
-                minLength={12}
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="confirm-password"
+                  type={showConfirmation ? "text" : "password"}
+                  autoComplete="new-password"
+                  value={confirmation}
+                  onChange={(event) => setConfirmation(event.target.value)}
+                  minLength={12}
+                  className="pr-11"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmation((value) => !value)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
+                  aria-label={showConfirmation ? "Ocultar confirmação" : "Mostrar confirmação"}
+                >
+                  {showConfirmation ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
             </div>
             <Button className="w-full" disabled={busy}>
               {busy ? "Atualizando…" : "Atualizar senha"}
