@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Plus, UserPlus, MoveRight, Pencil, X, Search, Check, Copy } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import { ModuleGate } from "@/components/module-gate";
 import { brl } from "@/data/mock";
 import { toast } from "sonner";
-import { type Lead, ORIGEM_IDEAS, LEADS_STORAGE_KEY } from "./leads";
+import { type Lead, ORIGEM_IDEAS, LEADS_STORAGE_PREFIX } from "./leads";
+import { currentSchoolId } from "@/lib/academic";
 
 export const Route = createFileRoute("/crm")({
   head: () => ({
@@ -30,8 +31,7 @@ type Stage = {
   cards: LeadCard[];
 };
 
-const CRM_STAGES_KEY = "fluency-ai:crm:stages:v2";
-const CRM_LEADS_KEY = `${LEADS_STORAGE_KEY}:v2`;
+const CRM_STAGES_PREFIX = "fluency-ai:crm:stages:v3";
 const EMPTY_STAGES: Stage[] = [
   { id: "lead", titulo: "Lead", cards: [] },
   { id: "contato", titulo: "Contato", cards: [] },
@@ -42,6 +42,8 @@ const EMPTY_STAGES: Stage[] = [
 function CrmPage() {
   const [stages, setStages] = useState<Stage[]>(EMPTY_STAGES);
   const [leadsDb, setLeadsDb] = useState<Lead[]>([]);
+  const leadsStorageKeyRef = useRef<string | null>(null);
+  const stagesStorageKeyRef = useRef<string | null>(null);
 
   // Edit Lead Modal States
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -86,37 +88,59 @@ function CrmPage() {
 
   // Load leads database and CRM stages from localStorage and sync across tabs
   useEffect(() => {
-    const loadData = () => {
-      try {
-        const stored = window.localStorage.getItem(CRM_LEADS_KEY);
-        if (stored) {
-          setLeadsDb(JSON.parse(stored));
-        }
+    let disposed = false;
 
-        const storedStages = window.localStorage.getItem(CRM_STAGES_KEY);
-        if (storedStages) {
-          setStages(JSON.parse(storedStages));
-        }
+    const loadData = (leadsKey: string, stagesKey: string) => {
+      try {
+        const stored = window.localStorage.getItem(leadsKey);
+        const storedStages = window.localStorage.getItem(stagesKey);
+        setLeadsDb(stored ? JSON.parse(stored) : []);
+        setStages(storedStages ? JSON.parse(storedStages) : EMPTY_STAGES);
       } catch {
-        /* ignore */
+        setLeadsDb([]);
+        setStages(EMPTY_STAGES);
       }
     };
 
-    loadData();
+    const initializeSchoolStorage = async () => {
+      try {
+        const schoolId = await currentSchoolId();
+        if (disposed) return;
+        const leadsKey = `${LEADS_STORAGE_PREFIX}:${schoolId}`;
+        const stagesKey = `${CRM_STAGES_PREFIX}:${schoolId}`;
+        leadsStorageKeyRef.current = leadsKey;
+        stagesStorageKeyRef.current = stagesKey;
+        loadData(leadsKey, stagesKey);
+      } catch {
+        if (!disposed) {
+          setLeadsDb([]);
+          setStages(EMPTY_STAGES);
+        }
+      }
+    };
+
+    void initializeSchoolStorage();
 
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === CRM_LEADS_KEY || e.key === CRM_STAGES_KEY) {
-        loadData();
+      const leadsKey = leadsStorageKeyRef.current;
+      const stagesKey = stagesStorageKeyRef.current;
+      if (leadsKey && stagesKey && (e.key === leadsKey || e.key === stagesKey)) {
+        loadData(leadsKey, stagesKey);
       }
     };
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, [isNewDealOpen, isCreateLeadOpen]);
+    return () => {
+      disposed = true;
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
 
   const saveLeadsDb = (nextLeads: Lead[]) => {
     setLeadsDb(nextLeads);
     try {
-      window.localStorage.setItem(CRM_LEADS_KEY, JSON.stringify(nextLeads));
+      if (leadsStorageKeyRef.current) {
+        window.localStorage.setItem(leadsStorageKeyRef.current, JSON.stringify(nextLeads));
+      }
     } catch {
       /* ignore */
     }
@@ -125,7 +149,9 @@ function CrmPage() {
   const saveStages = (nextStages: Stage[]) => {
     setStages(nextStages);
     try {
-      window.localStorage.setItem(CRM_STAGES_KEY, JSON.stringify(nextStages));
+      if (stagesStorageKeyRef.current) {
+        window.localStorage.setItem(stagesStorageKeyRef.current, JSON.stringify(nextStages));
+      }
     } catch {
       /* ignore */
     }

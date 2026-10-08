@@ -31,6 +31,7 @@ import {
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
 import { toast } from "sonner";
+import { currentSchoolId } from "@/lib/academic";
 
 export const Route = createFileRoute("/leads")({
   head: () => ({
@@ -86,82 +87,7 @@ export const ORIGEM_IDEAS = [
   "TikTok Orgânico",
 ];
 
-const DEFAULT_LEADS: Lead[] = [
-  {
-    id: "lead-1",
-    nome: "Lucas Oliveira Ramos",
-    tags: ["Adulto", "Inglês", "Iniciante"],
-    telefone: "+55 (11) 99123-4567",
-    email: "lucas.ramos@gmail.com",
-    site: "www.lucasramos.dev",
-    documento: "421.321.448-90",
-    empresa: "Ramos Tech Solutions",
-    origem: "Tráfego Pago (Instagram Ad)",
-    dataNascimento: "1995-08-14",
-    responsavel: "Autônomo",
-    fezTesteNivel: true,
-    pais: "Brasil",
-    cep: "01310-100",
-    endereco: "Av. Paulista",
-    numero: "1000",
-    complemento: "Apto 152",
-    bairro: "Bela Vista",
-    cidade: "São Paulo",
-    uf: "SP",
-    anotacoes: "Tem interesse em inglês para negócios. Já fez o teste e foi classificado como Beginner A2.",
-    createdAt: "2026-08-15T10:00:00.000Z",
-  },
-  {
-    id: "lead-2",
-    nome: "Beatriz M. Santos",
-    tags: ["Teen", "Espanhol", "Intermediário"],
-    telefone: "+55 (11) 98774-1234",
-    email: "beatriz.santos@outlook.com",
-    site: "",
-    documento: "",
-    empresa: "Colégio Santa Maria",
-    origem: "Indicação de Aluno",
-    dataNascimento: "2010-04-20",
-    responsavel: "Mariana Mendes Santos (Mãe)",
-    fezTesteNivel: false,
-    pais: "Brasil",
-    cep: "04533-010",
-    endereco: "Rua Joaquim Floriano",
-    numero: "450",
-    complemento: "",
-    bairro: "Itaim Bibi",
-    cidade: "São Paulo",
-    uf: "SP",
-    anotacoes: "Filha do aluno Marcos Santos do Avançado. Nunca estudou espanhol formalmente.",
-    createdAt: "2026-08-18T14:30:00.000Z",
-  },
-  {
-    id: "lead-3",
-    nome: "Gustavo Lima de Sousa",
-    tags: ["Kids", "Inglês", "Alfabetização"],
-    telefone: "+55 (11) 97744-8899",
-    email: "claudio.sousa@bol.com.br",
-    site: "",
-    documento: "452.122.908-12",
-    empresa: "",
-    origem: "Prospecção Ativa (Outbound)",
-    dataNascimento: "2018-11-02",
-    responsavel: "Claudio de Sousa (Pai)",
-    fezTesteNivel: true,
-    pais: "Brasil",
-    cep: "03102-040",
-    endereco: "Rua Juventus",
-    numero: "88",
-    complemento: "Bloco B",
-    bairro: "Mooca",
-    cidade: "São Paulo",
-    uf: "SP",
-    anotacoes: "Pai ligou procurando inglês lúdico. Fez o teste de nivelamento kids e foi bem.",
-    createdAt: "2026-08-19T09:15:00.000Z",
-  },
-];
-
-export const LEADS_STORAGE_KEY = "fluency-ai:leads-db";
+export const LEADS_STORAGE_PREFIX = "fluency-ai:leads-db:v2";
 
 type Question = {
   id: string;
@@ -187,7 +113,8 @@ type Submission = {
 };
 
 function LeadsPage() {
-  const [leads, setLeads] = useState<Lead[]>(DEFAULT_LEADS);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const storageKeyRef = useRef<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterOrigem, setFilterOrigem] = useState("");
   const [filterTeste, setFilterTeste] = useState<"todos" | "sim" | "nao">("todos");
@@ -201,8 +128,7 @@ function LeadsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"contato" | "pessoais" | "endereco" | "anotacoes">("contato");
 
-  // View details drawer (pre-select first lead by default so panel is never empty)
-  const [selectedDetails, setSelectedDetails] = useState<Lead | null>(() => DEFAULT_LEADS[0] || null);
+  const [selectedDetails, setSelectedDetails] = useState<Lead | null>(null);
 
   // Form local states
   const [nome, setNome] = useState("");
@@ -302,57 +228,62 @@ function LeadsPage() {
 
   // Load from local storage and sync across tabs
   useEffect(() => {
-    const loadLeads = () => {
+    let disposed = false;
+
+    const loadLeads = (storageKey: string) => {
       try {
-        const stored = window.localStorage.getItem(LEADS_STORAGE_KEY);
-        if (stored) {
-          setLeads(JSON.parse(stored));
-        }
+        const stored = window.localStorage.getItem(storageKey);
+        const nextLeads = stored ? JSON.parse(stored) : [];
+        setLeads(nextLeads);
+        setSelectedDetails(nextLeads[0] || null);
       } catch {
-        /* ignore */
+        setLeads([]);
+        setSelectedDetails(null);
       }
     };
 
-    loadLeads();
+    const initializeSchoolStorage = async () => {
+      try {
+        const schoolId = await currentSchoolId();
+        if (disposed) return;
+        const storageKey = `${LEADS_STORAGE_PREFIX}:${schoolId}`;
+        storageKeyRef.current = storageKey;
+        loadLeads(storageKey);
 
-    // Load submissions and questions for CEFR test review
-    try {
-      const storedSubs = window.localStorage.getItem("fluency-ai:captacao:submissions");
-      if (storedSubs) {
-        setSubmissions(JSON.parse(storedSubs));
+        const storedSubs = window.localStorage.getItem(`fluency-ai:captacao:submissions:v2:${schoolId}`);
+        const storedQuestions = window.localStorage.getItem(`fluency-ai:captacao:questions:v2:${schoolId}`);
+        setSubmissions(storedSubs ? JSON.parse(storedSubs) : []);
+        setQuestions(storedQuestions ? JSON.parse(storedQuestions) : []);
+      } catch {
+        if (!disposed) {
+          setLeads([]);
+          setSelectedDetails(null);
+          setSubmissions([]);
+          setQuestions([]);
+        }
       }
-      
-      const storedQuestions = window.localStorage.getItem("fluency-ai:captacao:questions");
-      if (storedQuestions) {
-        setQuestions(JSON.parse(storedQuestions));
-      }
-    } catch {
-      /* ignore */
-    }
+    };
+
+    void initializeSchoolStorage();
 
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === LEADS_STORAGE_KEY) {
-        loadLeads();
-      }
-      if (e.key === "fluency-ai:captacao:submissions") {
-        try {
-          if (e.newValue) setSubmissions(JSON.parse(e.newValue));
-        } catch {}
-      }
-      if (e.key === "fluency-ai:captacao:questions") {
-        try {
-          if (e.newValue) setQuestions(JSON.parse(e.newValue));
-        } catch {}
+      if (storageKeyRef.current && e.key === storageKeyRef.current) {
+        loadLeads(storageKeyRef.current);
       }
     };
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    return () => {
+      disposed = true;
+      window.removeEventListener("storage", handleStorage);
+    };
   }, []);
 
   const saveLeads = (nextLeads: Lead[]) => {
     setLeads(nextLeads);
     try {
-      window.localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(nextLeads));
+      if (storageKeyRef.current) {
+        window.localStorage.setItem(storageKeyRef.current, JSON.stringify(nextLeads));
+      }
     } catch {
       /* ignore */
     }
