@@ -53,6 +53,10 @@ export const Route = createFileRoute("/captacao")({
   component: CaptacaoPage,
 });
 
+function EmptyChart({ message }: { message: string }) {
+  return <div className="grid h-full place-items-center rounded-xl border border-dashed border-hairline px-6 text-center text-xs text-muted-foreground">{message}</div>;
+}
+
 type Question = {
   id: string;
   enunciado: string;
@@ -129,71 +133,17 @@ const DEFAULT_QUESTIONS: Question[] = [
   }
 ];
 
-const DEFAULT_SUBMISSIONS: Submission[] = [
-  {
-    id: "sub-1",
-    nome: "Fernanda Dias",
-    email: "fernanda.dias@gmail.com",
-    telefone: "+55 (11) 98888-7777",
-    score: 4,
-    total: 5,
-    level: "B2 - Upper Intermediate",
-    date: "2026-08-19T10:15:00.000Z",
-    respostas: {
-      "q-1": "B",
-      "q-2": "C",
-      "q-3": "B",
-      "q-4": "A",
-      "q-5": "B"
-    }
-  },
-  {
-    id: "sub-2",
-    nome: "Otávio Prado",
-    email: "otavio.prado@yahoo.com",
-    telefone: "+55 (21) 97777-6666",
-    score: 2,
-    total: 5,
-    level: "A2 - Elementary",
-    date: "2026-08-18T14:30:00.000Z",
-    respostas: {
-      "q-1": "B",
-      "q-2": "C",
-      "q-3": "A",
-      "q-4": "B",
-      "q-5": "B"
-    }
-  },
-  {
-    id: "sub-3",
-    nome: "Juliana Mendes",
-    email: "juliana.mendes@outlook.com",
-    telefone: "+55 (31) 96666-5555",
-    score: 5,
-    total: 5,
-    level: "C1 - Advanced",
-    date: "2026-08-17T09:00:00.000Z",
-    respostas: {
-      "q-1": "B",
-      "q-2": "C",
-      "q-3": "B",
-      "q-4": "A",
-      "q-5": "A"
-    }
-  }
-];
-
 function CaptacaoPage() {
   const [activeTab, setActiveTab] = useState<"gerenciador" | "editor" | "respostas" | "playground">("gerenciador");
   
   // Data lists
-  const [questions, setQuestions] = useState<Question[]>(DEFAULT_QUESTIONS);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [storageSchoolId, setStorageSchoolId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Form Active & Premium states
-  const [isNivelamentoActive, setIsNivelamentoActive] = useState(true);
+  const [isNivelamentoActive, setIsNivelamentoActive] = useState(false);
   const [isMatriculaActive, setIsMatriculaActive] = useState(false);
   const [isMatriculaUnlocked, setIsMatriculaUnlocked] = useState(false);
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
@@ -236,14 +186,19 @@ function CaptacaoPage() {
         const submissionKey = scopedKey("fluency-ai:captacao:submissions", schoolId);
         const storedQuestions = window.localStorage.getItem(questionKey);
         const storedSubmissions = window.localStorage.getItem(submissionKey);
-        setQuestions(storedQuestions ? JSON.parse(storedQuestions) : DEFAULT_QUESTIONS);
-        setSubmissions(storedSubmissions ? JSON.parse(storedSubmissions) : []);
-        if (!storedQuestions) window.localStorage.setItem(questionKey, JSON.stringify(DEFAULT_QUESTIONS));
+        const parsedQuestions: Question[] = storedQuestions ? JSON.parse(storedQuestions) : [];
+        const parsedSubmissions: Submission[] = storedSubmissions ? JSON.parse(storedSubmissions) : [];
+        const isLegacyDemo = parsedSubmissions.length === 0
+          && parsedQuestions.length === DEFAULT_QUESTIONS.length
+          && parsedQuestions.every((item, index) => item.id === DEFAULT_QUESTIONS[index]?.id && item.enunciado === DEFAULT_QUESTIONS[index]?.enunciado);
+        setQuestions(isLegacyDemo ? [] : parsedQuestions);
+        setSubmissions(parsedSubmissions);
+        if (isLegacyDemo) window.localStorage.removeItem(questionKey);
 
         const activeNivel = window.localStorage.getItem(scopedKey("fluency-ai:captacao:formStatus:nivelamento", schoolId));
         const activeMatricula = window.localStorage.getItem(scopedKey("fluency-ai:captacao:formStatus:matricula", schoolId));
         const unlockedMatricula = window.localStorage.getItem(scopedKey("fluency-ai:captacao:premium-unlocked", schoolId));
-        setIsNivelamentoActive(activeNivel !== null ? JSON.parse(activeNivel) : true);
+        setIsNivelamentoActive(isLegacyDemo ? false : activeNivel !== null ? JSON.parse(activeNivel) : false);
         setIsMatriculaActive(activeMatricula !== null ? JSON.parse(activeMatricula) : false);
         setIsMatriculaUnlocked(unlockedMatricula !== null ? JSON.parse(unlockedMatricula) : false);
       } catch {
@@ -274,6 +229,11 @@ function CaptacaoPage() {
 
   // Toggle handlers
   const toggleNivelamento = () => {
+    if (!isNivelamentoActive && questions.length === 0) {
+      toast.error("Cadastre ao menos uma questão antes de ativar o teste.");
+      setActiveTab("editor");
+      return;
+    }
     const next = !isNivelamentoActive;
     setIsNivelamentoActive(next);
     try {
@@ -411,6 +371,11 @@ function CaptacaoPage() {
   };
 
   const handleStartSim = () => {
+    if (questions.length === 0) {
+      toast.error("Cadastre as questões antes de iniciar uma simulação.");
+      setActiveTab("editor");
+      return;
+    }
     setSimStep(1);
     setSimAnswers({});
     setSimName("");
@@ -579,15 +544,15 @@ function CaptacaoPage() {
     { name: "C1/C2", value: (cefrDistribution["C1"] || 0) + (cefrDistribution["C2"] || 0), color: "#a78bfa" },
   ].filter(item => item.value > 0);
 
-  // Dynamically calculate timeline data (group by date)
-  // Mock data for display, combined with submissions count
-  const timelineData = [
-    { date: "15/08", leads: 1 },
-    { date: "16/08", leads: 2 },
-    { date: "17/08", leads: 4 },
-    { date: "18/08", leads: 3 },
-    { date: "19/08", leads: submissions.length },
-  ];
+  const conversionRate = submissions.length
+    ? Math.round((submissions.filter((item) => item.email.trim() || item.telefone.replace(/\D/g, "").length > 4).length / submissions.length) * 100)
+    : 0;
+  const mostCommonLevel = Object.entries(cefrDistribution).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
+  const timelineData = Object.entries(submissions.reduce((acc: Record<string, number>, item) => {
+    const date = new Date(item.date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    acc[date] = (acc[date] || 0) + 1;
+    return acc;
+  }, {})).map(([date, leads]) => ({ date, leads }));
 
   const filteredSubmissions = submissions.filter((s) =>
     s.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -655,21 +620,21 @@ function CaptacaoPage() {
                 <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Leads Totais Captados</span>
                 <div className="flex items-baseline gap-2 mt-2">
                   <span className="text-3xl font-bold text-foreground">{submissions.length}</span>
-                  <span className="text-xs text-emerald-400 font-semibold">+12% este mês</span>
+                  <span className="text-xs text-muted-foreground font-semibold">respostas recebidas</span>
                 </div>
               </GlassCard>
               <GlassCard className="p-6 flex flex-col justify-between">
                 <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Conversão em Lead Real</span>
                 <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-3xl font-bold text-foreground">84%</span>
+                  <span className="text-3xl font-bold text-foreground">{conversionRate}%</span>
                   <span className="text-xs text-muted-foreground">Preencheram contatos</span>
                 </div>
               </GlassCard>
               <GlassCard className="p-6 flex flex-col justify-between">
                 <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Nível Mais Comum</span>
                 <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-3xl font-bold text-foreground">B1</span>
-                  <span className="text-xs text-muted-foreground">Intermediate CEFR</span>
+                  <span className="text-3xl font-bold text-foreground">{mostCommonLevel}</span>
+                  <span className="text-xs text-muted-foreground">resultado das respostas</span>
                 </div>
               </GlassCard>
             </div>
@@ -682,7 +647,7 @@ function CaptacaoPage() {
                   <p className="text-[10px] text-muted-foreground">Distribuição estimada dos leads captados por nível CEFR.</p>
                 </div>
                 <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                  {pieChartData.length ? <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={pieChartData}
@@ -708,7 +673,7 @@ function CaptacaoPage() {
                         formatter={(value) => <span className="text-[10px] font-semibold text-muted-foreground uppercase">{value}</span>}
                       />
                     </PieChart>
-                  </ResponsiveContainer>
+                  </ResponsiveContainer> : <EmptyChart message="A distribuição aparecerá após a primeira resposta." />}
                 </div>
               </GlassCard>
 
@@ -718,7 +683,7 @@ function CaptacaoPage() {
                   <p className="text-[10px] text-muted-foreground">Volume diário de novos leads captados através dos formulários.</p>
                 </div>
                 <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                  {timelineData.length ? <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={timelineData}>
                       <defs>
                         <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
@@ -754,7 +719,7 @@ function CaptacaoPage() {
                         fill="url(#colorLeads)" 
                       />
                     </AreaChart>
-                  </ResponsiveContainer>
+                  </ResponsiveContainer> : <EmptyChart message="O histórico começará após a primeira captação." />}
                 </div>
               </GlassCard>
             </div>
@@ -874,7 +839,7 @@ function CaptacaoPage() {
                   <div className="border-t border-hairline pt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-medium">
                     <div>
                       <span className="text-muted-foreground block">Matrículas Realizadas</span>
-                      <span className="font-semibold text-foreground">12 Alunos</span>
+                      <span className="font-semibold text-foreground">0 Alunos</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground block">Estilo de Layout</span>
