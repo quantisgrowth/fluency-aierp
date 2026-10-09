@@ -31,6 +31,8 @@ export function AcademicStudentsPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [cepBusy, setCepBusy] = useState(false);
+  const [cepError, setCepError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
@@ -53,6 +55,8 @@ export function AcademicStudentsPage() {
   const [importFileName, setImportFileName] = useState("");
   const [importBusy, setImportBusy] = useState(false);
   const importFileRef = useRef<HTMLInputElement>(null);
+  const cepRequestRef = useRef<AbortController | null>(null);
+  const lastResolvedCepRef = useRef("");
   const update = (key: keyof Form, value: string) => setForm((old) => ({ ...old, [key]: value }));
   const filtered = useMemo(() => students.filter((student) => {
     const age = ageFromBirth(student.data_nascimento);
@@ -75,6 +79,39 @@ export function AcademicStudentsPage() {
   }
 
   useEffect(() => { let active = true; void (async () => { try { const id = await currentSchoolId(); if (!active) return; setSchoolId(id); const stored = window.localStorage.getItem(`fluency-ai:leads-db:v2:${id}`); setLeads(stored ? JSON.parse(stored) : []); await refresh(id); } catch (cause) { if (active) setError(readableError(cause)); } finally { if (active) setLoading(false); } })(); return () => { active = false; }; }, []);
+  useEffect(() => () => cepRequestRef.current?.abort(), []);
+
+  function updateCep(value: string) {
+    const digits = value.replace(/\D/g, "").slice(0, 8);
+    update("cep", digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits);
+    setCepError("");
+  }
+
+  async function lookupCep(showIncompleteError = false) {
+    const digits = form.cep.replace(/\D/g, "");
+    if (digits.length !== 8) {
+      if (showIncompleteError && digits.length) setCepError("Informe um CEP com 8 dígitos.");
+      return;
+    }
+    if (digits === lastResolvedCepRef.current) return;
+    cepRequestRef.current?.abort();
+    const controller = new AbortController();
+    cepRequestRef.current = controller;
+    setCepBusy(true); setCepError("");
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${digits}/json/`, { signal: controller.signal });
+      if (!response.ok) throw new Error("Serviço de CEP indisponível.");
+      const result = await response.json() as { erro?: boolean; cep?: string; logradouro?: string; complemento?: string; bairro?: string; localidade?: string; uf?: string };
+      if (result.erro) { setCepError("CEP não encontrado."); return; }
+      const city = [result.localidade, result.uf].filter(Boolean).join("/");
+      const address = [result.logradouro, result.complemento, result.bairro, city].filter(Boolean).join(", ");
+      update("cep", result.cep || form.cep); update("endereco", address); lastResolvedCepRef.current = digits;
+      toast.success("Endereço preenchido. Confira e inclua o número.");
+    } catch (cause) {
+      if (cause instanceof DOMException && cause.name === "AbortError") return;
+      setCepError("Não foi possível consultar o CEP. Você pode preencher o endereço manualmente.");
+    } finally { if (cepRequestRef.current === controller) setCepBusy(false); }
+  }
 
   function importLead(id: string) {
     setSourceLeadId(id); const lead = leads.find((item) => item.id === id); if (!lead) return;
@@ -100,7 +137,7 @@ export function AcademicStudentsPage() {
     setBusy(false);
   }
 
-  function closeStudentForm() { setForm(emptyForm); setPhoto(null); setSourceLeadId(""); setActiveTab("pessoais"); setEditingStudent(null); setIsStudent(false); setCreateOpen(false); }
+  function closeStudentForm() { cepRequestRef.current?.abort(); lastResolvedCepRef.current = ""; setCepBusy(false); setCepError(""); setForm(emptyForm); setPhoto(null); setSourceLeadId(""); setActiveTab("pessoais"); setEditingStudent(null); setIsStudent(false); setCreateOpen(false); }
   function openNewStudent() { closeStudentForm(); setCreateOpen(true); }
   function editStudent(student: Student) { const profile = parseOccupation(student.profissao_ou_escola); const cep = student.endereco?.match(/CEP\s*([\d-]+)/i)?.[1] || ""; const address = (student.endereco || "").replace(/\s*·\s*CEP\s*[\d-]+/i, ""); setEditingStudent(student); setIsStudent(profile.isStudent); setPhoto(student.foto_url); setForm({ ...emptyForm, nome: student.nome, nomeSocial: student.nome_social || "", nascimento: student.data_nascimento || "", cpf: student.cpf || "", email: student.email || "", telefone: student.telefone || "", cep, endereco: address, ocupacao: profile.occupation, escolaridade: profile.education, instituicao: profile.institution, idioma: student.idioma_principal || "", nivel: student.nivel_atual || "", objetivo: student.objetivo_aprendizagem || "", meta: student.meta_academica || "", acessibilidade: student.necessidades_acessibilidade || "", emergenciaNome: student.contato_emergencia_nome || "", emergenciaTelefone: student.contato_emergencia_telefone || "", observacoes: student.observacoes || "", responsavelNome: student.responsavel_nome || "", parentesco: student.responsavel_contato || "", responsavelEmail: student.responsavel_email || "", responsavelTelefone: student.responsavel_telefone || "" }); setCreateOpen(true); }
   async function deleteStudent() { if (!deleteTarget) return; setBusy(true); const { error: deleteError } = await supabase.from("alunos").delete().eq("id", deleteTarget.id).eq("escola_id", schoolId); if (deleteError) toast.error(`Não foi possível excluir: ${deleteError.message}`); else { toast.success("Aluno excluído."); setDeleteTarget(null); await refresh(schoolId); } setBusy(false); }
@@ -185,8 +222,8 @@ export function AcademicStudentsPage() {
                 <Field label="CPF" value={form.cpf} set={(v) => update("cpf", v)} />
                 <Field label="E-mail (e-mail ou telefone obrigatório)" type="email" value={form.email} set={(v) => update("email", v)} />
                 <Field label="Telefone / WhatsApp (e-mail ou telefone obrigatório)" value={form.telefone} set={(v) => update("telefone", v)} />
-                <Field label="CEP" value={form.cep} set={(v) => update("cep", v)} placeholder="00000-000" />
-                <div className="self-end pb-2 text-xs text-muted-foreground">O endereço continua editável depois do preenchimento.</div>
+                <div><Label>CEP</Label><div className="flex gap-2"><Input value={form.cep} onChange={(event) => updateCep(event.target.value)} onBlur={() => void lookupCep()} placeholder="00000-000" inputMode="numeric" maxLength={9} aria-describedby="cep-feedback" /><Button type="button" variant="outline" disabled={cepBusy || form.cep.replace(/\D/g, "").length !== 8} onClick={() => void lookupCep(true)}>{cepBusy ? <><Loader2 className="mr-2 size-4 animate-spin" />Buscando…</> : "Buscar CEP"}</Button></div>{cepError && <p id="cep-feedback" role="alert" className="mt-1 text-xs text-red-400">{cepError}</p>}</div>
+                <div className="self-end pb-2 text-xs text-muted-foreground">O endereço preenchido automaticamente continua editável.</div>
                 <div className="md:col-span-2"><Field label="Endereço" value={form.endereco} set={(v) => update("endereco", v)} placeholder="Rua, número, complemento, bairro, cidade e estado" /></div>
                 <label className="flex min-h-9 items-center gap-2 rounded-lg border border-hairline px-3 text-sm"><input type="checkbox" checked={isStudent} onChange={(event) => setIsStudent(event.target.checked)} className="size-4 accent-primary" />É estudante</label>
                 {!isStudent && <Field label="Profissão" value={form.ocupacao} set={(v) => update("ocupacao", v)} />}
