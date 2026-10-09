@@ -37,6 +37,7 @@ export type SchoolClass = {
 
 export type Student = {
   id: string;
+  created_at: string;
   nome: string;
   email: string | null;
   telefone: string | null;
@@ -57,6 +58,9 @@ export type Student = {
   meta_academica: string | null;
   observacoes: string | null;
   foto_url: string | null;
+  responsavel_email?: string | null;
+  responsavel_telefone?: string | null;
+  responsavel_contato?: string | null;
 };
 
 export type StudentHistory = { id: string; tipo: string; titulo: string; descricao: string | null; created_at: string };
