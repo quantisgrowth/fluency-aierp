@@ -36,6 +36,18 @@ pasta foram escritos para esse esquema já existente.
    emitir e cancelar convites e concluir o primeiro acesso do gestor. A Edge
    Function local `master-admin` valida a sessão e a permissão Master antes de
    consultar dados globais ou chamar essas operações.
+10. As etapas `010` a `015` adicionam catálogo comercial, módulos por escola,
+    convites por SMTP, aceite seguro, operação real por tenant e o financeiro
+    operacional. Consulte cada arquivo antes de executar uma etapa ainda não
+    registrada no projeto.
+11. `016_fundacao_academica_universal.sql` está preparado para execução manual.
+    Ele preserva os cadastros existentes e amplia a mesma base para escolas de
+    idiomas, cursos profissionalizantes, cursos livres e preparatórios. Inclui
+    responsáveis, competências configuráveis, aulas, frequência, avaliações,
+    materiais por turma e histórico acadêmico imutável por aluno.
+12. Depois da etapa 016, execute
+    `016_fundacao_academica_universal_verificacao.sql`. Todas as linhas devem
+    retornar `OK` antes de publicar as telas que usam a nova estrutura.
 
 Estes arquivos **não estão na pasta de migrações automática** porque
 `supabase/config.toml` referencia outro projeto e as três migrações
