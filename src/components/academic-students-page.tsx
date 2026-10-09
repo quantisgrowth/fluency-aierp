@@ -361,8 +361,8 @@ export function AcademicStudentsPage() {
       toast.error("Não foi possível identificar a escola. Atualize a página e tente novamente.");
       return;
     }
-    if (!form.nome.trim() || !form.nascimento || (!form.email.trim() && !form.telefone.trim())) {
-      toast.error("Preencha nome, data de nascimento e ao menos um contato.");
+    if (!form.nome.trim() || !form.nascimento) {
+      toast.error("Preencha o nome completo e a data de nascimento.");
       setActiveTab("pessoais");
       return;
     }
@@ -904,7 +904,7 @@ export function AcademicStudentsPage() {
               {editingStudent ? "Editar aluno" : "Novo aluno"}
             </DialogTitle>
             <DialogDescription>
-              Campos com * são obrigatórios. Informe ao menos um contato: e-mail ou telefone.
+              Campos com * são obrigatórios. E-mail e telefone são recomendados para comunicação.
             </DialogDescription>
           </DialogHeader>
           <form id="student-form" onSubmit={saveStudent} className="flex min-h-0 flex-1 flex-col">
@@ -1003,16 +1003,22 @@ export function AcademicStudentsPage() {
                     />
                     <Field label="CPF" value={form.cpf} set={(v) => update("cpf", v)} />
                     <Field
-                      label="E-mail (e-mail ou telefone obrigatório)"
+                      label="E-mail"
                       type="email"
                       value={form.email}
                       set={(v) => update("email", v)}
                     />
                     <Field
-                      label="Telefone / WhatsApp (e-mail ou telefone obrigatório)"
+                      label="Telefone / WhatsApp"
                       value={form.telefone}
                       set={(v) => update("telefone", v)}
                     />
+                    {!form.email.trim() && !form.telefone.trim() && (
+                      <p className="md:col-span-2 -mt-2 text-xs text-amber-400">
+                        Recomendado: informe ao menos um contato para facilitar a comunicação com o
+                        aluno ou responsável.
+                      </p>
+                    )}
                     <div>
                       <Label>CEP</Label>
                       <div className="flex gap-2">
