@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 
 export type TenantPreset = "lumen" | "apex" | "british";
@@ -109,11 +103,17 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
       if (mounted && school?.nome) {
         setTenant((current) => ({ ...current, name: school.nome, tagline: "Gestão escolar" }));
-        try { window.localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+        try {
+          window.localStorage.removeItem(STORAGE_KEY);
+        } catch {
+          /* ignore */
+        }
       }
     }
     void loadTenant();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Sync primary color and high-contrast foreground to CSS variables

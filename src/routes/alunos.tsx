@@ -67,7 +67,10 @@ export const Route = createFileRoute("/alunos")({
   head: () => ({
     meta: [
       { title: "Alunos & Contratos 360º — Fluency AI" },
-      { name: "description", content: "Dossiê 360º, contratos por produto, frequência, notas e financeiro do aluno." },
+      {
+        name: "description",
+        content: "Dossiê 360º, contratos por produto, frequência, notas e financeiro do aluno.",
+      },
     ],
   }),
   component: SchoolStudentsPage,
@@ -161,20 +164,58 @@ const INITIAL_DETAILS: Record<string, StudentDetail> = {
     liga: "Ouro",
     whats: "5511999998888",
     historico: [
-      { data: "15/08/2026", texto: "Aprovada no módulo B2.1 com média 9.2. Excelente conversação.", autor: "Julia Kern" },
-      { data: "03/08/2026", texto: "Completou a maratona de exercícios de vocabulário de business.", autor: "Sistema" },
-      { data: "20/07/2026", texto: "Demonstrou excelente participação nos debates de atualidades.", autor: "Marcos Vidal" },
+      {
+        data: "15/08/2026",
+        texto: "Aprovada no módulo B2.1 com média 9.2. Excelente conversação.",
+        autor: "Julia Kern",
+      },
+      {
+        data: "03/08/2026",
+        texto: "Completou a maratona de exercícios de vocabulário de business.",
+        autor: "Sistema",
+      },
+      {
+        data: "20/07/2026",
+        texto: "Demonstrou excelente participação nos debates de atualidades.",
+        autor: "Marcos Vidal",
+      },
     ],
     financeiro: [
-      { id: "f-1", descricao: "Mensalidade Agosto (B2)", valor: 450, vencimento: "10/08/2026", situacao: "pago", dataPagamento: "08/08/2026" },
-      { id: "f-2", descricao: "Mensalidade Julho (B2)", valor: 450, vencimento: "10/07/2026", situacao: "pago", dataPagamento: "10/07/2026" },
-      { id: "f-3", descricao: "Material Didático B2", valor: 280, vencimento: "15/06/2026", situacao: "pago", dataPagamento: "15/06/2026" },
+      {
+        id: "f-1",
+        descricao: "Mensalidade Agosto (B2)",
+        valor: 450,
+        vencimento: "10/08/2026",
+        situacao: "pago",
+        dataPagamento: "08/08/2026",
+      },
+      {
+        id: "f-2",
+        descricao: "Mensalidade Julho (B2)",
+        valor: 450,
+        vencimento: "10/07/2026",
+        situacao: "pago",
+        dataPagamento: "10/07/2026",
+      },
+      {
+        id: "f-3",
+        descricao: "Material Didático B2",
+        valor: 280,
+        vencimento: "15/06/2026",
+        situacao: "pago",
+        dataPagamento: "15/06/2026",
+      },
     ],
     frequencias: [
       { data: "27/08/2026", aula: "Unit 8 — Phrasal Verbs in Context", presenca: true },
       { data: "25/08/2026", aula: "Unit 7 — Debate: Artificial Intelligence", presenca: true },
       { data: "20/08/2026", aula: "Unit 6 — Listening Simulation", presenca: true },
-      { data: "18/08/2026", aula: "Unit 5 — Complex Grammar Structures", presenca: false, justificativa: "Compromisso médico avisado com antecedência." },
+      {
+        data: "18/08/2026",
+        aula: "Unit 5 — Complex Grammar Structures",
+        presenca: false,
+        justificativa: "Compromisso médico avisado com antecedência.",
+      },
       { data: "13/08/2026", aula: "Unit 4 — Academic Writing Workshop", presenca: true },
     ],
     avaliacoes: [
@@ -185,12 +226,25 @@ const INITIAL_DETAILS: Record<string, StudentDetail> = {
         reading: 9.2,
         writing: 9.0,
         mediaGeral: 9.2,
-        feedback: "Excelente desenvoltura e espontaneidade. Vocabulário avançado e ótima pronúncia.",
+        feedback:
+          "Excelente desenvoltura e espontaneidade. Vocabulário avançado e ótima pronúncia.",
       },
     ],
     ocorrencias: [
-      { id: "oc-1", data: "12/03/2026", tipo: "matricula", descricao: "Matrícula realizada no plano Regular Semestral (Turma Conversation).", autor: "Secretaria" },
-      { id: "oc-2", data: "15/08/2026", tipo: "pedagogico", descricao: "Aprovada para o estágio B2.2 com destaque de turma.", autor: "Julia Kern" },
+      {
+        id: "oc-1",
+        data: "12/03/2026",
+        tipo: "matricula",
+        descricao: "Matrícula realizada no plano Regular Semestral (Turma Conversation).",
+        autor: "Secretaria",
+      },
+      {
+        id: "oc-2",
+        data: "15/08/2026",
+        tipo: "pedagogico",
+        descricao: "Aprovada para o estágio B2.2 com destaque de turma.",
+        autor: "Julia Kern",
+      },
     ],
   },
   "Caio Bertolli": {
@@ -202,12 +256,33 @@ const INITIAL_DETAILS: Record<string, StudentDetail> = {
     liga: "Bronze",
     whats: "5511988887777",
     historico: [
-      { data: "10/08/2026", texto: "Faltou a duas aulas seguidas. Sem contato com a coordenação.", autor: "Ana Beatriz" },
-      { data: "28/07/2026", texto: "Dificuldade na entrega das redações do módulo A2.", autor: "Julia Kern" },
+      {
+        data: "10/08/2026",
+        texto: "Faltou a duas aulas seguidas. Sem contato com a coordenação.",
+        autor: "Ana Beatriz",
+      },
+      {
+        data: "28/07/2026",
+        texto: "Dificuldade na entrega das redações do módulo A2.",
+        autor: "Julia Kern",
+      },
     ],
     financeiro: [
-      { id: "f-4", descricao: "Mensalidade Agosto (A2)", valor: 450, vencimento: "10/08/2026", situacao: "atrasado" },
-      { id: "f-5", descricao: "Mensalidade Julho (A2)", valor: 450, vencimento: "10/07/2026", situacao: "pago", dataPagamento: "12/07/2026" },
+      {
+        id: "f-4",
+        descricao: "Mensalidade Agosto (A2)",
+        valor: 450,
+        vencimento: "10/08/2026",
+        situacao: "atrasado",
+      },
+      {
+        id: "f-5",
+        descricao: "Mensalidade Julho (A2)",
+        valor: 450,
+        vencimento: "10/07/2026",
+        situacao: "pago",
+        dataPagamento: "12/07/2026",
+      },
     ],
     frequencias: [
       { data: "27/08/2026", aula: "Unit 5 — Past Continuous Drills", presenca: false },
@@ -223,12 +298,25 @@ const INITIAL_DETAILS: Record<string, StudentDetail> = {
         reading: 6.0,
         writing: 5.5,
         mediaGeral: 6.3,
-        feedback: "Necessita de maior dedicação aos exercícios extraclasse para fixação dos tempos verbais.",
+        feedback:
+          "Necessita de maior dedicação aos exercícios extraclasse para fixação dos tempos verbais.",
       },
     ],
     ocorrencias: [
-      { id: "oc-3", data: "04/05/2026", tipo: "matricula", descricao: "Matrícula realizada na turma Regular Noite A2.", autor: "Secretaria" },
-      { id: "oc-4", data: "15/08/2026", tipo: "financeiro", descricao: "Disparo automático de cobrança via WhatsApp por 15 dias de atraso.", autor: "Sistema" },
+      {
+        id: "oc-3",
+        data: "04/05/2026",
+        tipo: "matricula",
+        descricao: "Matrícula realizada na turma Regular Noite A2.",
+        autor: "Secretaria",
+      },
+      {
+        id: "oc-4",
+        data: "15/08/2026",
+        tipo: "financeiro",
+        descricao: "Disparo automático de cobrança via WhatsApp por 15 dias de atraso.",
+        autor: "Sistema",
+      },
     ],
   },
   "Helena Prado": {
@@ -240,12 +328,34 @@ const INITIAL_DETAILS: Record<string, StudentDetail> = {
     liga: "Rubi",
     whats: "5511977776666",
     historico: [
-      { data: "18/08/2026", texto: "Iniciou o preparatório VIP para o Cambridge C1 com excelente desempenho.", autor: "Peter Hall" },
-      { data: "01/08/2026", texto: "Alcançou o topo da Liga Ouro de engajamento extraclasse.", autor: "Sistema" },
+      {
+        data: "18/08/2026",
+        texto: "Iniciou o preparatório VIP para o Cambridge C1 com excelente desempenho.",
+        autor: "Peter Hall",
+      },
+      {
+        data: "01/08/2026",
+        texto: "Alcançou o topo da Liga Ouro de engajamento extraclasse.",
+        autor: "Sistema",
+      },
     ],
     financeiro: [
-      { id: "f-6", descricao: "Pacote VIP Mensal (8h lecionadas)", valor: 650, vencimento: "05/08/2026", situacao: "pago", dataPagamento: "04/08/2026" },
-      { id: "f-7", descricao: "Pacote VIP Mensal (8h lecionadas)", valor: 650, vencimento: "05/07/2026", situacao: "pago", dataPagamento: "05/07/2026" },
+      {
+        id: "f-6",
+        descricao: "Pacote VIP Mensal (8h lecionadas)",
+        valor: 650,
+        vencimento: "05/08/2026",
+        situacao: "pago",
+        dataPagamento: "04/08/2026",
+      },
+      {
+        id: "f-7",
+        descricao: "Pacote VIP Mensal (8h lecionadas)",
+        valor: 650,
+        vencimento: "05/07/2026",
+        situacao: "pago",
+        dataPagamento: "05/07/2026",
+      },
     ],
     frequencias: [
       { data: "26/08/2026", aula: "Sessão VIP 1-on-1 — Cambridge Essay Structure", presenca: true },
@@ -264,7 +374,13 @@ const INITIAL_DETAILS: Record<string, StudentDetail> = {
       },
     ],
     ocorrencias: [
-      { id: "oc-5", data: "22/01/2026", tipo: "matricula", descricao: "Contratação do plano VIP Individual (Hora/Aula com Peter Hall).", autor: "Diretoria" },
+      {
+        id: "oc-5",
+        data: "22/01/2026",
+        tipo: "matricula",
+        descricao: "Contratação do plano VIP Individual (Hora/Aula com Peter Hall).",
+        autor: "Diretoria",
+      },
     ],
   },
   "Bruno Salles": {
@@ -276,12 +392,33 @@ const INITIAL_DETAILS: Record<string, StudentDetail> = {
     liga: "Bronze",
     whats: "5511966665555",
     historico: [
-      { data: "12/08/2026", texto: "Aluno relata falta de tempo para fazer as lições em casa.", autor: "Julia Kern" },
-      { data: "04/08/2026", texto: "Recomendado plantão de dúvidas para recuperação do conteúdo de gramática.", autor: "Coordenação" },
+      {
+        data: "12/08/2026",
+        texto: "Aluno relata falta de tempo para fazer as lições em casa.",
+        autor: "Julia Kern",
+      },
+      {
+        data: "04/08/2026",
+        texto: "Recomendado plantão de dúvidas para recuperação do conteúdo de gramática.",
+        autor: "Coordenação",
+      },
     ],
     financeiro: [
-      { id: "f-8", descricao: "Mensalidade Agosto (A2)", valor: 450, vencimento: "15/08/2026", situacao: "aberto" },
-      { id: "f-9", descricao: "Mensalidade Julho (A2)", valor: 450, vencimento: "15/07/2026", situacao: "pago", dataPagamento: "15/07/2026" },
+      {
+        id: "f-8",
+        descricao: "Mensalidade Agosto (A2)",
+        valor: 450,
+        vencimento: "15/08/2026",
+        situacao: "aberto",
+      },
+      {
+        id: "f-9",
+        descricao: "Mensalidade Julho (A2)",
+        valor: 450,
+        vencimento: "15/07/2026",
+        situacao: "pago",
+        dataPagamento: "15/07/2026",
+      },
     ],
     frequencias: [
       { data: "26/08/2026", aula: "Unit 6 — Simple Past vs Present Perfect", presenca: false },
@@ -296,11 +433,18 @@ const INITIAL_DETAILS: Record<string, StudentDetail> = {
         reading: 6.5,
         writing: 5.0,
         mediaGeral: 5.8,
-        feedback: "Necessita de apoio pedagógico em gramática e mais comprometimento com a frequência.",
+        feedback:
+          "Necessita de apoio pedagógico em gramática e mais comprometimento com a frequência.",
       },
     ],
     ocorrencias: [
-      { id: "oc-6", data: "18/06/2026", tipo: "matricula", descricao: "Matrícula na turma Regular Tarde A2.", autor: "Secretaria" },
+      {
+        id: "oc-6",
+        data: "18/06/2026",
+        tipo: "matricula",
+        descricao: "Matrícula na turma Regular Tarde A2.",
+        autor: "Secretaria",
+      },
     ],
   },
   "Aline Ferraz": {
@@ -312,11 +456,29 @@ const INITIAL_DETAILS: Record<string, StudentDetail> = {
     liga: "Prata",
     whats: "5511955554444",
     historico: [
-      { data: "14/08/2026", texto: "Excelente evolução na fluência e redução do sotaque.", autor: "Marcos Vidal" },
+      {
+        data: "14/08/2026",
+        texto: "Excelente evolução na fluência e redução do sotaque.",
+        autor: "Marcos Vidal",
+      },
     ],
     financeiro: [
-      { id: "f-10", descricao: "Parcela 2/6 — Pacote IELTS", valor: 466.67, vencimento: "10/08/2026", situacao: "pago", dataPagamento: "10/08/2026" },
-      { id: "f-11", descricao: "Parcela 1/6 — Pacote IELTS", valor: 466.67, vencimento: "10/07/2026", situacao: "pago", dataPagamento: "09/07/2026" },
+      {
+        id: "f-10",
+        descricao: "Parcela 2/6 — Pacote IELTS",
+        valor: 466.67,
+        vencimento: "10/08/2026",
+        situacao: "pago",
+        dataPagamento: "10/08/2026",
+      },
+      {
+        id: "f-11",
+        descricao: "Parcela 1/6 — Pacote IELTS",
+        valor: 466.67,
+        vencimento: "10/07/2026",
+        situacao: "pago",
+        dataPagamento: "09/07/2026",
+      },
     ],
     frequencias: [
       { data: "26/08/2026", aula: "IELTS Speaking Part 2 — Topic Cards", presenca: true },
@@ -334,7 +496,13 @@ const INITIAL_DETAILS: Record<string, StudentDetail> = {
       },
     ],
     ocorrencias: [
-      { id: "oc-7", data: "09/07/2026", tipo: "matricula", descricao: "Contratação do Pacote Fechado Preparatório IELTS (60h).", autor: "Secretaria" },
+      {
+        id: "oc-7",
+        data: "09/07/2026",
+        tipo: "matricula",
+        descricao: "Contratação do Pacote Fechado Preparatório IELTS (60h).",
+        autor: "Secretaria",
+      },
     ],
   },
   "Rafael Lima": {
@@ -346,11 +514,28 @@ const INITIAL_DETAILS: Record<string, StudentDetail> = {
     liga: "Bronze",
     whats: "5511944443333",
     historico: [
-      { data: "16/08/2026", texto: "Perda de rendimento observada nas últimas atividades de listening.", autor: "Peter Hall" },
+      {
+        data: "16/08/2026",
+        texto: "Perda de rendimento observada nas últimas atividades de listening.",
+        autor: "Peter Hall",
+      },
     ],
     financeiro: [
-      { id: "f-12", descricao: "Mensalidade Agosto (C1 Business)", valor: 490, vencimento: "10/08/2026", situacao: "aberto" },
-      { id: "f-13", descricao: "Mensalidade Julho (C1 Business)", valor: 490, vencimento: "10/07/2026", situacao: "pago", dataPagamento: "10/07/2026" },
+      {
+        id: "f-12",
+        descricao: "Mensalidade Agosto (C1 Business)",
+        valor: 490,
+        vencimento: "10/08/2026",
+        situacao: "aberto",
+      },
+      {
+        id: "f-13",
+        descricao: "Mensalidade Julho (C1 Business)",
+        valor: 490,
+        vencimento: "10/07/2026",
+        situacao: "pago",
+        dataPagamento: "10/07/2026",
+      },
     ],
     frequencias: [
       { data: "27/08/2026", aula: "Business Negotiation Mock", presenca: false },
@@ -364,11 +549,18 @@ const INITIAL_DETAILS: Record<string, StudentDetail> = {
         reading: 7.5,
         writing: 6.8,
         mediaGeral: 7.0,
-        feedback: "Boa argumentação oral em negócios. Reforçar vocabulário de relatórios financeiros.",
+        feedback:
+          "Boa argumentação oral em negócios. Reforçar vocabulário de relatórios financeiros.",
       },
     ],
     ocorrencias: [
-      { id: "oc-8", data: "27/02/2026", tipo: "matricula", descricao: "Matrícula no curso Business English C1.", autor: "Secretaria" },
+      {
+        id: "oc-8",
+        data: "27/02/2026",
+        tipo: "matricula",
+        descricao: "Matrícula no curso Business English C1.",
+        autor: "Secretaria",
+      },
     ],
   },
 };
@@ -466,9 +658,11 @@ function AlunosPage() {
   const handleApplyBulkStatus = () => {
     if (selectedStudentNames.size === 0) return;
     setStudents((prev) =>
-      prev.map((s) => (selectedStudentNames.has(s.nome) ? { ...s, status: bulkStatusValue } : s))
+      prev.map((s) => (selectedStudentNames.has(s.nome) ? { ...s, status: bulkStatusValue } : s)),
     );
-    toast.success(`Situação alterada para "${bulkStatusValue}" em ${selectedStudentNames.size} alunos!`);
+    toast.success(
+      `Situação alterada para "${bulkStatusValue}" em ${selectedStudentNames.size} alunos!`,
+    );
     setIsBulkStatusModalOpen(false);
     setSelectedStudentNames(new Set());
   };
@@ -476,9 +670,11 @@ function AlunosPage() {
   const handleApplyBulkTurma = () => {
     if (selectedStudentNames.size === 0) return;
     setStudents((prev) =>
-      prev.map((s) => (selectedStudentNames.has(s.nome) ? { ...s, turma: bulkTurmaValue } : s))
+      prev.map((s) => (selectedStudentNames.has(s.nome) ? { ...s, turma: bulkTurmaValue } : s)),
     );
-    toast.success(`Turma alterada para "${bulkTurmaValue}" em ${selectedStudentNames.size} alunos!`);
+    toast.success(
+      `Turma alterada para "${bulkTurmaValue}" em ${selectedStudentNames.size} alunos!`,
+    );
     setIsBulkTurmaModalOpen(false);
     setSelectedStudentNames(new Set());
   };
@@ -572,16 +768,18 @@ function AlunosPage() {
   };
 
   // Drawer Active Tab
-  const [activeTab, setActiveTab] = useState<"contrato" | "financeiro" | "frequencia" | "pedagogico" | "ocorrencias">(
-    "contrato"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "contrato" | "financeiro" | "frequencia" | "pedagogico" | "ocorrencias"
+  >("contrato");
 
   // Form states (Novo & Editar Aluno)
   const [formNome, setFormNome] = useState("");
   const [formNivel, setFormNivel] = useState("Beginner / Kids");
   const [formTurma, setFormTurma] = useState("Regular Noite");
   const [formStatus, setFormStatus] = useState("Ativo");
-  const [formProdutoId, setFormProdutoId] = useState(initialEducationalProducts[0]?.id || "prod-regular");
+  const [formProdutoId, setFormProdutoId] = useState(
+    initialEducationalProducts[0]?.id || "prod-regular",
+  );
   const [formValor, setFormValor] = useState(450);
   const [formVencimento, setFormVencimento] = useState(10);
   const [formHoras, setFormHoras] = useState(3);
@@ -714,8 +912,8 @@ function AlunosPage() {
         chosenProduct?.modalidade === "hora_aula"
           ? "hora_aula"
           : chosenProduct?.modalidade === "pacote_fechado"
-          ? "pacote_fechado"
-          : "turma",
+            ? "pacote_fechado"
+            : "turma",
       valorMensalidade: Number(formValor),
       diaVencimento: Number(formVencimento),
       horasContratadas: Number(formHoras),
@@ -791,13 +989,13 @@ function AlunosPage() {
               chosenProduct?.modalidade === "hora_aula"
                 ? ("hora_aula" as const)
                 : chosenProduct?.modalidade === "pacote_fechado"
-                ? ("pacote_fechado" as const)
-                : ("turma" as const),
+                  ? ("pacote_fechado" as const)
+                  : ("turma" as const),
             valorMensalidade: Number(formValor),
             diaVencimento: Number(formVencimento),
             horasContratadas: Number(formHoras),
           }
-        : s
+        : s,
     );
 
     setStudents(updatedStudents);
@@ -852,7 +1050,7 @@ function AlunosPage() {
             situacao: "pago" as const,
             dataPagamento: new Date().toLocaleDateString("pt-BR"),
           }
-        : b
+        : b,
     );
 
     const updated = {
@@ -976,7 +1174,9 @@ function AlunosPage() {
               {selectedStudentNames.size}
             </span>
             <span className="text-xs font-bold text-foreground">
-              {selectedStudentNames.size === 1 ? "1 aluno selecionado" : `${selectedStudentNames.size} alunos selecionados`}
+              {selectedStudentNames.size === 1
+                ? "1 aluno selecionado"
+                : `${selectedStudentNames.size} alunos selecionados`}
             </span>
           </div>
 
@@ -1032,7 +1232,10 @@ function AlunosPage() {
                 <th className="w-12 px-4 py-3.5 text-center">
                   <input
                     type="checkbox"
-                    checked={filteredStudents.length > 0 && selectedStudentNames.size === filteredStudents.length}
+                    checked={
+                      filteredStudents.length > 0 &&
+                      selectedStudentNames.size === filteredStudents.length
+                    }
                     onChange={toggleSelectAll}
                     title="Selecionar todos os alunos filtrados"
                     className="size-4 rounded border-hairline accent-primary cursor-pointer align-middle"
@@ -1071,7 +1274,9 @@ function AlunosPage() {
                           {s.nome.charAt(0)}
                         </span>
                         <div>
-                          <p className="font-bold text-foreground group-hover:text-primary transition-colors">{s.nome}</p>
+                          <p className="font-bold text-foreground group-hover:text-primary transition-colors">
+                            {s.nome}
+                          </p>
                           <p className="text-[10px] text-muted-foreground">Início: {s.inicio}</p>
                         </div>
                       </div>
@@ -1083,21 +1288,23 @@ function AlunosPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="space-y-0.5">
-                        <p className="font-semibold text-foreground">{s.produtoNome || "Inglês Regular"}</p>
+                        <p className="font-semibold text-foreground">
+                          {s.produtoNome || "Inglês Regular"}
+                        </p>
                         <span
                           className={`inline-flex rounded px-1.5 py-0.2 text-[9px] font-bold uppercase border ${
                             s.tipoContrato === "hora_aula"
                               ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                               : s.tipoContrato === "pacote_fechado"
-                              ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
-                              : "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                                ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
+                                : "bg-blue-500/10 text-blue-400 border-blue-500/20"
                           }`}
                         >
                           {s.tipoContrato === "hora_aula"
                             ? "VIP Hora/Aula"
                             : s.tipoContrato === "pacote_fechado"
-                            ? "Pacote Semestral"
-                            : "Turma Regular"}
+                              ? "Pacote Semestral"
+                              : "Turma Regular"}
                         </span>
                       </div>
                     </td>
@@ -1116,8 +1323,8 @@ function AlunosPage() {
                           s.status === "Ativo"
                             ? "paid"
                             : s.status === "Inadimplente"
-                            ? "overdue"
-                            : "due"
+                              ? "overdue"
+                              : "due"
                         }
                       >
                         {s.status}
@@ -1176,7 +1383,9 @@ function AlunosPage() {
               </span>
               <div>
                 <h3 className="text-base font-bold text-foreground">Nova Matrícula de Aluno</h3>
-                <p className="text-xs text-muted-foreground">Cadastre o aluno e vincule ao curso contratado.</p>
+                <p className="text-xs text-muted-foreground">
+                  Cadastre o aluno e vincule ao curso contratado.
+                </p>
               </div>
             </div>
 
@@ -1227,7 +1436,13 @@ function AlunosPage() {
                 >
                   {initialEducationalProducts.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.nome} ({p.modalidade === "hora_aula" ? "VIP Hora/Aula" : p.modalidade === "pacote_fechado" ? "Pacote Semestral" : "Turma Regular"}) — {brl(p.valorBase)}
+                      {p.nome} (
+                      {p.modalidade === "hora_aula"
+                        ? "VIP Hora/Aula"
+                        : p.modalidade === "pacote_fechado"
+                          ? "Pacote Semestral"
+                          : "Turma Regular"}
+                      ) — {brl(p.valorBase)}
                     </option>
                   ))}
                 </select>
@@ -1335,8 +1550,12 @@ function AlunosPage() {
                 <Pencil className="size-4" />
               </span>
               <div>
-                <h3 className="text-sm font-bold text-foreground">Editar Contrato & Matrícula do Aluno</h3>
-                <p className="text-[10px] text-muted-foreground">Altere o produto contratado, turma, valor e nível CEFR.</p>
+                <h3 className="text-sm font-bold text-foreground">
+                  Editar Contrato & Matrícula do Aluno
+                </h3>
+                <p className="text-[10px] text-muted-foreground">
+                  Altere o produto contratado, turma, valor e nível CEFR.
+                </p>
               </div>
             </div>
 
@@ -1373,7 +1592,13 @@ function AlunosPage() {
                 >
                   {initialEducationalProducts.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.nome} ({p.modalidade === "hora_aula" ? "VIP Hora/Aula" : p.modalidade === "pacote_fechado" ? "Pacote Semestral" : "Turma Regular"}) — {brl(p.valorBase)}
+                      {p.nome} (
+                      {p.modalidade === "hora_aula"
+                        ? "VIP Hora/Aula"
+                        : p.modalidade === "pacote_fechado"
+                          ? "Pacote Semestral"
+                          : "Turma Regular"}
+                      ) — {brl(p.valorBase)}
                     </option>
                   ))}
                 </select>
@@ -1522,8 +1747,8 @@ function AlunosPage() {
                     selectedStudent.status === "Ativo"
                       ? "paid"
                       : selectedStudent.status === "Inadimplente"
-                      ? "overdue"
-                      : "due"
+                        ? "overdue"
+                        : "due"
                   }
                 >
                   {selectedStudent.status}
@@ -1571,52 +1796,71 @@ function AlunosPage() {
 
             {/* Profile Drawer Body */}
             <div className="flex-1 py-5 overflow-y-auto">
-              
               {/* TAB 1: CONTRATO & PRODUTO CONTRATADO */}
               {activeTab === "contrato" && (
                 <div className="space-y-5 animate-in fade-in duration-200">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <GlassCard className="p-4 space-y-1.5 border-primary/20">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Curso / Produto</span>
-                      <p className="text-sm font-bold text-foreground">{selectedStudent.produtoNome || "Inglês Regular"}</p>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                        Curso / Produto
+                      </span>
+                      <p className="text-sm font-bold text-foreground">
+                        {selectedStudent.produtoNome || "Inglês Regular"}
+                      </p>
                       <p className="text-[11px] text-muted-foreground">
                         Modalidade:{" "}
                         <strong className="text-primary uppercase">
                           {selectedStudent.tipoContrato === "hora_aula"
                             ? "VIP Hora/Aula"
                             : selectedStudent.tipoContrato === "pacote_fechado"
-                            ? "Pacote Semestral"
-                            : "Turma Regular"}
+                              ? "Pacote Semestral"
+                              : "Turma Regular"}
                         </strong>
                       </p>
                     </GlassCard>
 
                     <GlassCard className="p-4 space-y-1.5">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Mensalidade & Vencimento</span>
-                      <p className="text-sm font-bold text-foreground">{brl(selectedStudent.valorMensalidade || 450)}</p>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                        Mensalidade & Vencimento
+                      </span>
+                      <p className="text-sm font-bold text-foreground">
+                        {brl(selectedStudent.valorMensalidade || 450)}
+                      </p>
                       <p className="text-[11px] text-muted-foreground">
-                        Vencimento todo <strong>dia {selectedStudent.diaVencimento || 10}</strong> de cada mês
+                        Vencimento todo <strong>dia {selectedStudent.diaVencimento || 10}</strong>{" "}
+                        de cada mês
                       </p>
                     </GlassCard>
 
                     <GlassCard className="p-4 space-y-1.5">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Turma & Carga Horária</span>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                        Turma & Carga Horária
+                      </span>
                       <p className="text-sm font-bold text-foreground">{selectedStudent.turma}</p>
                       <p className="text-[11px] text-muted-foreground">
-                        Carga Contratada: <strong>{selectedStudent.horasContratadas || 3} horas / semana</strong>
+                        Carga Contratada:{" "}
+                        <strong>{selectedStudent.horasContratadas || 3} horas / semana</strong>
                       </p>
                     </GlassCard>
 
                     <GlassCard className="p-4 space-y-1.5">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Livro Didático em Uso</span>
-                      <p className="text-sm font-bold text-foreground">{selectedStudent.livroEmUso || "Pathway to Fluency B2"}</p>
-                      <p className="text-[11px] text-muted-foreground">Nível CEFR correspondente: {selectedStudent.nivel}</p>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                        Livro Didático em Uso
+                      </span>
+                      <p className="text-sm font-bold text-foreground">
+                        {selectedStudent.livroEmUso || "Pathway to Fluency B2"}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        Nível CEFR correspondente: {selectedStudent.nivel}
+                      </p>
                     </GlassCard>
                   </div>
 
                   <div className="rounded-xl border border-hairline bg-surface/30 p-4 space-y-3">
                     <div className="flex justify-between items-center">
-                      <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Ações de Contrato</h4>
+                      <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                        Ações de Contrato
+                      </h4>
                       <button
                         onClick={() => handleOpenEdit(selectedStudent)}
                         className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground hover:bg-primary/95 shadow cursor-pointer transition-all"
@@ -1625,7 +1869,9 @@ function AlunosPage() {
                       </button>
                     </div>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      Ao trocar de modalidade (ex: de Turma para VIP Hora-Aula), o sistema recalcula automaticamente a previsão de faturamento no DRE gerencial e atualiza a alocação nas salas.
+                      Ao trocar de modalidade (ex: de Turma para VIP Hora-Aula), o sistema recalcula
+                      automaticamente a previsão de faturamento no DRE gerencial e atualiza a
+                      alocação nas salas.
                     </p>
                   </div>
                 </div>
@@ -1636,8 +1882,12 @@ function AlunosPage() {
                 <div className="space-y-5 animate-in fade-in duration-200">
                   <div className="flex justify-between items-center">
                     <div>
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">Extrato de Cobranças do Aluno</h4>
-                      <p className="text-[11px] text-muted-foreground">Histórico de faturas, pagamentos e baixas.</p>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                        Extrato de Cobranças do Aluno
+                      </h4>
+                      <p className="text-[11px] text-muted-foreground">
+                        Histórico de faturas, pagamentos e baixas.
+                      </p>
                     </div>
                     <span className="rounded-md bg-surface border border-hairline px-2.5 py-1 text-xs font-bold text-foreground">
                       Mensalidade: {brl(selectedStudent.valorMensalidade || 450)}
@@ -1654,19 +1904,25 @@ function AlunosPage() {
                           <p className="text-xs font-bold text-foreground">{bill.descricao}</p>
                           <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                             <span>Vencimento: {bill.vencimento}</span>
-                            {bill.dataPagamento && <span className="text-paid font-semibold">· Pago em: {bill.dataPagamento}</span>}
+                            {bill.dataPagamento && (
+                              <span className="text-paid font-semibold">
+                                · Pago em: {bill.dataPagamento}
+                              </span>
+                            )}
                           </div>
                         </div>
 
                         <div className="flex items-center gap-3 self-end sm:self-auto">
-                          <span className="text-xs font-bold text-foreground">{brl(bill.valor)}</span>
+                          <span className="text-xs font-bold text-foreground">
+                            {brl(bill.valor)}
+                          </span>
                           <span
                             className={`rounded-full px-2 py-0.5 text-[9px] font-bold border uppercase tracking-wider ${
                               bill.situacao === "pago"
                                 ? "bg-paid/10 border-paid/20 text-paid"
                                 : bill.situacao === "atrasado"
-                                ? "bg-overdue/10 border-overdue/20 text-overdue"
-                                : "bg-due/10 border-due/20 text-due"
+                                  ? "bg-overdue/10 border-overdue/20 text-overdue"
+                                  : "bg-due/10 border-due/20 text-due"
                             }`}
                           >
                             {bill.situacao}
@@ -1692,26 +1948,42 @@ function AlunosPage() {
                 <div className="space-y-5 animate-in fade-in duration-200">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <GlassCard className="p-4 space-y-1">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Assiduidade Geral</span>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                        Assiduidade Geral
+                      </span>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-extrabold text-foreground">{selectedDetails.presenca}%</span>
-                        <span className={`text-[10px] font-semibold ${selectedDetails.presenca >= 85 ? "text-paid" : "text-overdue"}`}>
-                          {selectedDetails.presenca >= 85 ? "Presença Satisfatória" : "Abaixo da meta (75%)"}
+                        <span className="text-3xl font-extrabold text-foreground">
+                          {selectedDetails.presenca}%
+                        </span>
+                        <span
+                          className={`text-[10px] font-semibold ${selectedDetails.presenca >= 85 ? "text-paid" : "text-overdue"}`}
+                        >
+                          {selectedDetails.presenca >= 85
+                            ? "Presença Satisfatória"
+                            : "Abaixo da meta (75%)"}
                         </span>
                       </div>
                     </GlassCard>
 
                     <GlassCard className="p-4 space-y-1">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Tarefas Entregues</span>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                        Tarefas Entregues
+                      </span>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-extrabold text-foreground">{selectedDetails.tarefas}%</span>
-                        <span className="text-[10px] text-paid font-semibold">Lições de Casa OK</span>
+                        <span className="text-3xl font-extrabold text-foreground">
+                          {selectedDetails.tarefas}%
+                        </span>
+                        <span className="text-[10px] text-paid font-semibold">
+                          Lições de Casa OK
+                        </span>
                       </div>
                     </GlassCard>
                   </div>
 
                   <div className="space-y-3">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Histórico de Presenças em Aulas</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      Histórico de Presenças em Aulas
+                    </h4>
                     <div className="divide-y divide-hairline rounded-xl border border-hairline bg-surface/30">
                       {selectedDetails.frequencias.map((att, i) => (
                         <div key={i} className="p-3 flex items-center justify-between text-xs">
@@ -1719,7 +1991,9 @@ function AlunosPage() {
                             <p className="font-semibold text-foreground">{att.aula}</p>
                             <p className="text-[10px] text-muted-foreground">{att.data}</p>
                             {att.justificativa && (
-                              <p className="text-[10px] text-amber-400 italic">Justificativa: {att.justificativa}</p>
+                              <p className="text-[10px] text-amber-400 italic">
+                                Justificativa: {att.justificativa}
+                              </p>
                             )}
                           </div>
                           <span
@@ -1743,12 +2017,16 @@ function AlunosPage() {
                 <div className="space-y-5 animate-in fade-in duration-200">
                   {/* Skill Grades */}
                   <div className="space-y-3">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Boletim por Habilidade (CEFR)</h4>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      Boletim por Habilidade (CEFR)
+                    </h4>
                     {selectedDetails.avaliacoes.map((av, i) => (
                       <GlassCard key={i} className="p-4 space-y-3 border-primary/20">
                         <div className="flex justify-between items-center border-b border-hairline pb-2">
                           <span className="font-bold text-xs text-foreground">{av.ciclo}</span>
-                          <span className="text-xs font-extrabold text-primary">Média Geral: {av.mediaGeral}</span>
+                          <span className="text-xs font-extrabold text-primary">
+                            Média Geral: {av.mediaGeral}
+                          </span>
                         </div>
 
                         <div className="grid grid-cols-4 gap-2 text-center text-xs">
@@ -1802,7 +2080,10 @@ function AlunosPage() {
 
                     <div className="space-y-2 max-h-44 overflow-y-auto">
                       {selectedDetails.historico.map((h, i) => (
-                        <div key={i} className="p-3 rounded-lg border border-hairline bg-surface-elevated/40 space-y-1 text-xs">
+                        <div
+                          key={i}
+                          className="p-3 rounded-lg border border-hairline bg-surface-elevated/40 space-y-1 text-xs"
+                        >
                           <div className="flex justify-between text-[10px] text-muted-foreground">
                             <span className="font-bold text-foreground">{h.autor}</span>
                             <span>{h.data}</span>
@@ -1823,7 +2104,10 @@ function AlunosPage() {
                   </h4>
                   <div className="space-y-3">
                     {selectedDetails.ocorrencias.map((oc) => (
-                      <div key={oc.id} className="p-3.5 rounded-xl border border-hairline bg-surface/30 space-y-1 text-xs">
+                      <div
+                        key={oc.id}
+                        className="p-3.5 rounded-xl border border-hairline bg-surface/30 space-y-1 text-xs"
+                      >
                         <div className="flex justify-between items-center">
                           <span className="rounded bg-primary/10 border border-primary/20 px-2 py-0.5 text-[9px] font-bold text-primary uppercase">
                             {oc.tipo}
@@ -1831,13 +2115,14 @@ function AlunosPage() {
                           <span className="text-[10px] text-muted-foreground">{oc.data}</span>
                         </div>
                         <p className="text-foreground font-medium pt-1">{oc.descricao}</p>
-                        <p className="text-[10px] text-muted-foreground">Registrado por: {oc.autor}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          Registrado por: {oc.autor}
+                        </p>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-
             </div>
 
             {/* Drawer footer controls */}
@@ -1860,7 +2145,6 @@ function AlunosPage() {
       {isImportModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="relative flex max-h-[92vh] w-full max-w-4xl flex-col rounded-2xl border border-hairline bg-card shadow-2xl overflow-hidden">
-            
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-hairline px-6 py-4 bg-surface/30">
               <div className="flex items-center gap-3">
@@ -1868,7 +2152,9 @@ function AlunosPage() {
                   <FileSpreadsheet className="size-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-foreground">Importação em Lote & Migração de Alunos</h3>
+                  <h3 className="text-base font-bold text-foreground">
+                    Importação em Lote & Migração de Alunos
+                  </h3>
                   <p className="text-xs text-muted-foreground">
                     Traga sua base de alunos de outro sistema ou planilha Excel/CSV de uma só vez.
                   </p>
@@ -1888,7 +2174,6 @@ function AlunosPage() {
 
             {/* Modal Body */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              
               {/* Step 1: Download Templates */}
               <div className="rounded-xl border border-hairline bg-surface/20 p-4 space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1897,7 +2182,8 @@ function AlunosPage() {
                       <Download className="size-3.5 text-primary" /> 1. Baixar Planilha Modelo
                     </h4>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                      Baixe o modelo pré-formatado com os 4 blocos de dados (Aluno, Responsável, Pedagógico e Financeiro).
+                      Baixe o modelo pré-formatado com os 4 blocos de dados (Aluno, Responsável,
+                      Pedagógico e Financeiro).
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -1920,19 +2206,27 @@ function AlunosPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-hairline/50 text-[10px]">
                   <div className="p-2 rounded bg-surface/40 border border-hairline/40">
                     <strong className="block text-primary">1. Dados do Aluno</strong>
-                    <span className="text-muted-foreground">Nome, Nasc, CPF, RG, Gênero, Endereço, Contatos</span>
+                    <span className="text-muted-foreground">
+                      Nome, Nasc, CPF, RG, Gênero, Endereço, Contatos
+                    </span>
                   </div>
                   <div className="p-2 rounded bg-surface/40 border border-hairline/40">
                     <strong className="block text-primary">2. Responsável</strong>
-                    <span className="text-muted-foreground">Nome, Nasc, CPF, RG, Endereço e Contatos</span>
+                    <span className="text-muted-foreground">
+                      Nome, Nasc, CPF, RG, Endereço e Contatos
+                    </span>
                   </div>
                   <div className="p-2 rounded bg-surface/40 border border-hairline/40">
                     <strong className="block text-primary">3. Pedagógico</strong>
-                    <span className="text-muted-foreground">Curso, Turma, Início, Teste de Nível e Status</span>
+                    <span className="text-muted-foreground">
+                      Curso, Turma, Início, Teste de Nível e Status
+                    </span>
                   </div>
                   <div className="p-2 rounded bg-surface/40 border border-hairline/40">
                     <strong className="block text-primary">4. Financeiro</strong>
-                    <span className="text-muted-foreground">Vencimento, Pagamento, Mensalidade, Desconto</span>
+                    <span className="text-muted-foreground">
+                      Vencimento, Pagamento, Mensalidade, Desconto
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1982,7 +2276,8 @@ function AlunosPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                      <Eye className="size-3.5 text-primary" /> 3. Pré-visualização dos Alunos ({importedRows.length})
+                      <Eye className="size-3.5 text-primary" /> 3. Pré-visualização dos Alunos (
+                      {importedRows.length})
                     </h4>
                     <div className="flex items-center gap-2 text-xs">
                       <span className="inline-flex items-center gap-1 text-emerald-500 font-semibold">
@@ -1990,7 +2285,8 @@ function AlunosPage() {
                       </span>
                       {importStats.totalErrors > 0 && (
                         <span className="inline-flex items-center gap-1 text-rose-400 font-semibold">
-                          <AlertCircle className="size-3.5" /> {importStats.totalErrors} com pendências
+                          <AlertCircle className="size-3.5" /> {importStats.totalErrors} com
+                          pendências
                         </span>
                       )}
                     </div>
@@ -2012,10 +2308,18 @@ function AlunosPage() {
                       </thead>
                       <tbody className="divide-y divide-hairline text-[11px]">
                         {importedRows.map((row, idx) => (
-                          <tr key={idx} className={row._isValid === false ? "bg-rose-500/5" : "hover:bg-accent/30"}>
+                          <tr
+                            key={idx}
+                            className={
+                              row._isValid === false ? "bg-rose-500/5" : "hover:bg-accent/30"
+                            }
+                          >
                             <td className="px-3 py-2 whitespace-nowrap">
                               {row._isValid === false ? (
-                                <span className="inline-flex items-center gap-1 text-rose-400 font-bold" title={row._errors?.join(", ")}>
+                                <span
+                                  className="inline-flex items-center gap-1 text-rose-400 font-bold"
+                                  title={row._errors?.join(", ")}
+                                >
                                   <AlertCircle className="size-3" /> Erro
                                 </span>
                               ) : (
@@ -2026,7 +2330,11 @@ function AlunosPage() {
                             </td>
                             <td className="px-3 py-2 font-semibold text-foreground whitespace-nowrap">
                               {row.nome || <span className="text-rose-400 italic">Sem nome</span>}
-                              {row.email && <div className="text-[10px] text-muted-foreground font-normal">{row.email}</div>}
+                              {row.email && (
+                                <div className="text-[10px] text-muted-foreground font-normal">
+                                  {row.email}
+                                </div>
+                              )}
                             </td>
                             <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">
                               {row.cpf || row.rg || "—"}
@@ -2035,7 +2343,9 @@ function AlunosPage() {
                               {row.responsavelNome || "— (Próprio)"}
                             </td>
                             <td className="px-3 py-2 whitespace-nowrap">
-                              <span className="text-foreground font-medium">{row.idiomaCurso || "Inglês"}</span>
+                              <span className="text-foreground font-medium">
+                                {row.idiomaCurso || "Inglês"}
+                              </span>
                               <div className="text-[10px] text-muted-foreground">{row.turma}</div>
                             </td>
                             <td className="px-3 py-2 whitespace-nowrap">
@@ -2056,7 +2366,6 @@ function AlunosPage() {
                   </div>
                 </div>
               )}
-
             </div>
 
             {/* Modal Footer */}
@@ -2086,12 +2395,15 @@ function AlunosPage() {
                 <button
                   type="button"
                   onClick={handleConfirmBatchImport}
-                  disabled={importedRows.length === 0 || importStats.totalValid === 0 || isSavingBatch}
+                  disabled={
+                    importedRows.length === 0 || importStats.totalValid === 0 || isSavingBatch
+                  }
                   className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-xs font-bold text-primary-foreground shadow hover:bg-primary/95 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
                 >
                   {isSavingBatch ? (
                     <>
-                      <Loader2 className="size-4 animate-spin" /> Salvando {importStats.totalValid} Alunos...
+                      <Loader2 className="size-4 animate-spin" /> Salvando {importStats.totalValid}{" "}
+                      Alunos...
                     </>
                   ) : (
                     <>
@@ -2101,7 +2413,6 @@ function AlunosPage() {
                 </button>
               </div>
             </div>
-
           </div>
         </div>
       )}
@@ -2112,34 +2423,40 @@ function AlunosPage() {
           <div className="w-full max-w-md rounded-2xl border border-hairline bg-card p-6 shadow-2xl space-y-5">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <h3 className="text-base font-bold text-foreground">Alterar Situação em Massa</h3>
-              <button onClick={() => setIsBulkStatusModalOpen(false)} className="text-muted-foreground hover:text-foreground">
+              <button
+                onClick={() => setIsBulkStatusModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <X className="size-5" />
               </button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Selecione a nova situação cadastral para aplicar aos <strong>{selectedStudentNames.size} alunos selecionados</strong>:
+              Selecione a nova situação cadastral para aplicar aos{" "}
+              <strong>{selectedStudentNames.size} alunos selecionados</strong>:
             </p>
             <div className="space-y-2">
-              {["Ativo", "Inadimplente", "Em risco", "Trancado", "Bolsista", "Cancelado"].map((st) => (
-                <label
-                  key={st}
-                  className={`flex items-center justify-between rounded-xl border p-3 text-xs font-semibold transition-all cursor-pointer ${
-                    bulkStatusValue === st
-                      ? "border-primary bg-primary/10 text-primary shadow-sm"
-                      : "border-hairline bg-surface/40 text-foreground hover:bg-accent"
-                  }`}
-                >
-                  <span>{st}</span>
-                  <input
-                    type="radio"
-                    name="bulkStatus"
-                    value={st}
-                    checked={bulkStatusValue === st}
-                    onChange={(e) => setBulkStatusValue(e.target.value)}
-                    className="accent-primary"
-                  />
-                </label>
-              ))}
+              {["Ativo", "Inadimplente", "Em risco", "Trancado", "Bolsista", "Cancelado"].map(
+                (st) => (
+                  <label
+                    key={st}
+                    className={`flex items-center justify-between rounded-xl border p-3 text-xs font-semibold transition-all cursor-pointer ${
+                      bulkStatusValue === st
+                        ? "border-primary bg-primary/10 text-primary shadow-sm"
+                        : "border-hairline bg-surface/40 text-foreground hover:bg-accent"
+                    }`}
+                  >
+                    <span>{st}</span>
+                    <input
+                      type="radio"
+                      name="bulkStatus"
+                      value={st}
+                      checked={bulkStatusValue === st}
+                      onChange={(e) => setBulkStatusValue(e.target.value)}
+                      className="accent-primary"
+                    />
+                  </label>
+                ),
+              )}
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <button
@@ -2165,15 +2482,21 @@ function AlunosPage() {
           <div className="w-full max-w-md rounded-2xl border border-hairline bg-card p-6 shadow-2xl space-y-5">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <h3 className="text-base font-bold text-foreground">Transferir Turma em Massa</h3>
-              <button onClick={() => setIsBulkTurmaModalOpen(false)} className="text-muted-foreground hover:text-foreground">
+              <button
+                onClick={() => setIsBulkTurmaModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <X className="size-5" />
               </button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Escolha a turma de destino para transferir os <strong>{selectedStudentNames.size} alunos selecionados</strong>:
+              Escolha a turma de destino para transferir os{" "}
+              <strong>{selectedStudentNames.size} alunos selecionados</strong>:
             </p>
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-bold text-muted-foreground">Turma de Destino</label>
+              <label className="text-[10px] uppercase font-bold text-muted-foreground">
+                Turma de Destino
+              </label>
               <select
                 value={bulkTurmaValue}
                 onChange={(e) => setBulkTurmaValue(e.target.value)}
@@ -2214,13 +2537,16 @@ function AlunosPage() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-foreground">Excluir Alunos em Massa</h3>
-                <p className="text-xs text-muted-foreground">Ação irreversível de exclusão cadastral</p>
+                <p className="text-xs text-muted-foreground">
+                  Ação irreversível de exclusão cadastral
+                </p>
               </div>
             </div>
             <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 text-xs text-rose-400 space-y-2">
               <p className="font-bold">Atenção:</p>
               <p>
-                Você está prestes a excluir permanentemente <strong>{selectedStudentNames.size} alunos</strong> da base do sistema.
+                Você está prestes a excluir permanentemente{" "}
+                <strong>{selectedStudentNames.size} alunos</strong> da base do sistema.
               </p>
             </div>
             <div className="flex justify-end gap-3 pt-2">

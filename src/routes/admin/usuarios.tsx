@@ -22,7 +22,12 @@ import {
 } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
-import { useUser, type UserRole, type UserPermissions, type SchoolUser } from "@/modules/user-context";
+import {
+  useUser,
+  type UserRole,
+  type UserPermissions,
+  type SchoolUser,
+} from "@/modules/user-context";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/usuarios")({
@@ -64,7 +69,8 @@ function Tooltip({ label, children }: { label: string; children: React.ReactNode
 }
 
 function UsuariosPage() {
-  const { users, companies, addUser, updateUser, deleteUser, resetPassword, resendInvite } = useUser();
+  const { users, companies, addUser, updateUser, deleteUser, resetPassword, resendInvite } =
+    useUser();
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState<SchoolUser | null>(null);
   const [confirmInviteUser, setConfirmInviteUser] = useState<SchoolUser | null>(null);
@@ -119,7 +125,7 @@ function UsuariosPage() {
   // Auto-fill default permissions when role changes
   useEffect(() => {
     if (editingUser) return; // Don't overwrite when editing
-    
+
     if (selectedRole === "admin") {
       setValue("permissions", { crm: true, financeiro: true, pedagogico: true, success: true });
     } else if (selectedRole === "operador") {
@@ -169,7 +175,10 @@ function UsuariosPage() {
   const toggleCompany = (companyName: string) => {
     const current = selectedCompanies;
     if (current.includes(companyName)) {
-      setValue("companies", current.filter((c) => c !== companyName));
+      setValue(
+        "companies",
+        current.filter((c) => c !== companyName),
+      );
     } else {
       setValue("companies", [...current, companyName]);
     }
@@ -185,7 +194,14 @@ function UsuariosPage() {
 
   const onSubmit = (data: UserFormValues) => {
     if (editingUser) {
-      updateUser(editingUser.id, data.name, data.email, data.role, data.permissions, data.companies);
+      updateUser(
+        editingUser.id,
+        data.name,
+        data.email,
+        data.role,
+        data.permissions,
+        data.companies,
+      );
       toast.success(`Usuário ${data.name} atualizado com sucesso!`);
     } else {
       addUser(data.name, data.email, data.role, data.permissions, data.companies);
@@ -210,15 +226,18 @@ function UsuariosPage() {
   };
 
   const roleDescriptions: Record<UserRole, string> = {
-    admin: "Visão e gestão completa de todos os dados operacionais, pedagógicos e financeiros da escola.",
-    operador: "Visão das turmas e indicadores, emissão de cobranças Pix/Boleto (sem poder de cancelamento), atendimento de leads e fechamento de matrículas.",
-    professor: "Visão restrita às suas próprias turmas, lançamento de presenças e acompanhamento dos indicadores de risco dos seus alunos.",
-    coordenador: "Visão de todas as turmas da unidade. Pode criar turmas, excluir turmas e efetuar transferências de alunos entre turmas.",
+    admin:
+      "Visão e gestão completa de todos os dados operacionais, pedagógicos e financeiros da escola.",
+    operador:
+      "Visão das turmas e indicadores, emissão de cobranças Pix/Boleto (sem poder de cancelamento), atendimento de leads e fechamento de matrículas.",
+    professor:
+      "Visão restrita às suas próprias turmas, lançamento de presenças e acompanhamento dos indicadores de risco dos seus alunos.",
+    coordenador:
+      "Visão de todas as turmas da unidade. Pode criar turmas, excluir turmas e efetuar transferências de alunos entre turmas.",
   };
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-8 animate-in fade-in duration-300">
-
       {/* ── Confirmation Modal: Excluir Usuário ── */}
       {confirmDeleteUser && (
         <div
@@ -247,8 +266,8 @@ function UsuariosPage() {
               <h3 className="text-sm font-bold text-foreground">Excluir Usuário</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Tem certeza que deseja remover{" "}
-                <span className="font-semibold text-foreground">{confirmDeleteUser.name}</span>{" "}
-                da plataforma? Esta ação não pode ser desfeita.
+                <span className="font-semibold text-foreground">{confirmDeleteUser.name}</span> da
+                plataforma? Esta ação não pode ser desfeita.
               </p>
               <p className="text-[11px] text-muted-foreground/70">{confirmDeleteUser.email}</p>
             </div>
@@ -338,7 +357,6 @@ function UsuariosPage() {
       />
 
       <div className="grid gap-6 lg:grid-cols-3">
-        
         {/* Form Drawer Modal to Add/Edit User */}
         {showForm && (
           <div className="lg:col-span-3">
@@ -350,20 +368,24 @@ function UsuariosPage() {
               >
                 <X className="size-4.5" />
               </button>
-              
+
               <div>
                 <h3 className="text-sm font-semibold text-foreground">
                   {editingUser ? "Editar Colaborador" : "Adicionar Novo Membro"}
                 </h3>
-                <p className="text-xs text-muted-foreground">Configure as credenciais, unidades de atuação e as flags de permissão de acesso.</p>
+                <p className="text-xs text-muted-foreground">
+                  Configure as credenciais, unidades de atuação e as flags de permissão de acesso.
+                </p>
               </div>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                
                 {/* User Details */}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <label htmlFor="name" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <label
+                      htmlFor="name"
+                      className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                    >
                       Nome Completo
                     </label>
                     <input
@@ -380,7 +402,10 @@ function UsuariosPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label htmlFor="email" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <label
+                      htmlFor="email"
+                      className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                    >
                       E-mail Institucional
                     </label>
                     <input
@@ -393,7 +418,9 @@ function UsuariosPage() {
                       {...register("email")}
                     />
                     {errors.email && (
-                      <p className="text-[11px] font-medium text-rose-500">{errors.email.message}</p>
+                      <p className="text-[11px] font-medium text-rose-500">
+                        {errors.email.message}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -401,7 +428,10 @@ function UsuariosPage() {
                 {/* Role and Multi-Unit Assignment */}
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <label htmlFor="role" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <label
+                      htmlFor="role"
+                      className="text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                    >
                       Cargo / Nível Base
                     </label>
                     <select
@@ -420,7 +450,11 @@ function UsuariosPage() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                        <Building className="size-3.5 text-primary" /> Unidades Vinculadas ({selectedCompanies.length === 0 ? "Global / Sem Vínculo" : `${selectedCompanies.length} selecionada(s)`})
+                        <Building className="size-3.5 text-primary" /> Unidades Vinculadas (
+                        {selectedCompanies.length === 0
+                          ? "Global / Sem Vínculo"
+                          : `${selectedCompanies.length} selecionada(s)`}
+                        )
                       </label>
                       <div className="flex gap-2">
                         <button
@@ -470,7 +504,8 @@ function UsuariosPage() {
                       })}
                     </div>
                     <p className="text-[11px] text-muted-foreground">
-                      * Caso nenhuma unidade seja marcada, o colaborador terá <strong>Acesso Geral / Global</strong> em toda a instituição.
+                      * Caso nenhuma unidade seja marcada, o colaborador terá{" "}
+                      <strong>Acesso Geral / Global</strong> em toda a instituição.
                     </p>
                   </div>
                 </div>
@@ -481,7 +516,6 @@ function UsuariosPage() {
                     Flags de Permissões Granulares (Acesso aos Módulos)
                   </label>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 p-4 rounded-xl border border-hairline bg-surface-elevated/20">
-                    
                     {/* CRM flag */}
                     <Controller
                       name="permissions.crm"
@@ -549,7 +583,6 @@ function UsuariosPage() {
                         </label>
                       )}
                     />
-
                   </div>
                 </div>
 
@@ -590,7 +623,9 @@ function UsuariosPage() {
                       <tr key={u.id} className="transition-colors hover:bg-surface/30">
                         <td className="px-6 py-4 font-medium text-foreground">{u.name}</td>
                         <td className="px-6 py-4">
-                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold border ${roleColors[u.role]}`}>
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 text-xs font-bold border ${roleColors[u.role]}`}
+                          >
                             {roleLabels[u.role]}
                           </span>
                         </td>
@@ -626,7 +661,13 @@ function UsuariosPage() {
                               <Pencil className="size-4" />
                             </button>
                           </Tooltip>
-                          <Tooltip label={sentInviteUserId === u.id ? "Convite enviado!" : "Reenviar convite de acesso"}>
+                          <Tooltip
+                            label={
+                              sentInviteUserId === u.id
+                                ? "Convite enviado!"
+                                : "Reenviar convite de acesso"
+                            }
+                          >
                             <button
                               onClick={() => setConfirmInviteUser(u)}
                               className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
@@ -635,9 +676,11 @@ function UsuariosPage() {
                                   : "border-hairline hover:bg-primary/10 text-muted-foreground hover:text-primary"
                               }`}
                             >
-                              {sentInviteUserId === u.id
-                                ? <CircleCheck className="size-4" />
-                                : <Send className="size-4" />}
+                              {sentInviteUserId === u.id ? (
+                                <CircleCheck className="size-4" />
+                              ) : (
+                                <Send className="size-4" />
+                              )}
                             </button>
                           </Tooltip>
                           <Tooltip label="Redefinir senha por e-mail">
@@ -673,16 +716,26 @@ function UsuariosPage() {
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                 <ShieldAlert className="size-4 text-primary" /> Matriz de Permissões
               </h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Entenda as diretrizes de acesso para cada cargo</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Entenda as diretrizes de acesso para cada cargo
+              </p>
             </div>
 
             <div className="space-y-4">
               {(Object.keys(roleLabels) as UserRole[]).map((r) => (
                 <div key={r} className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className={`h-1.5 w-1.5 rounded-full ${
-                      r === "admin" ? "bg-red-400" : r === "operador" ? "bg-orange-400" : r === "professor" ? "bg-blue-400" : "bg-purple-400"
-                    }`} />
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        r === "admin"
+                          ? "bg-red-400"
+                          : r === "operador"
+                            ? "bg-orange-400"
+                            : r === "professor"
+                              ? "bg-blue-400"
+                              : "bg-purple-400"
+                      }`}
+                    />
                     <p className="text-xs font-semibold text-foreground">{roleLabels[r]}</p>
                   </div>
                   <p className="text-[11px] text-muted-foreground pl-3.5 leading-relaxed">
@@ -693,7 +746,6 @@ function UsuariosPage() {
             </div>
           </GlassCard>
         </div>
-
       </div>
     </div>
   );

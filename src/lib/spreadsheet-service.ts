@@ -51,26 +51,86 @@ export const OFFICIAL_COLUMNS = [
   { header: "Telefone", key: "telefone", required: false, example: "(11) 98765-4321" },
   { header: "E-mail", key: "email", required: false, example: "ana.clara@email.com" },
 
-  { header: "Nome Completo do Responsável", key: "responsavelNome", required: false, example: "Carlos Roberto Silva" },
-  { header: "Data de Nascimento do Responsável", key: "responsavelDataNascimento", required: false, example: "20/08/1978" },
+  {
+    header: "Nome Completo do Responsável",
+    key: "responsavelNome",
+    required: false,
+    example: "Carlos Roberto Silva",
+  },
+  {
+    header: "Data de Nascimento do Responsável",
+    key: "responsavelDataNascimento",
+    required: false,
+    example: "20/08/1978",
+  },
   { header: "RG do Responsável", key: "responsavelRg", required: false, example: "98.765.432-1" },
-  { header: "CPF do Responsável", key: "responsavelCpf", required: false, example: "987.654.321-00" },
-  { header: "Endereço do Responsável", key: "responsavelEndereco", required: false, example: "Av. Paulista, 1000 - Apto 42" },
-  { header: "Telefone do Responsável", key: "responsavelTelefone", required: false, example: "(11) 99888-7766" },
-  { header: "E-mail do Responsável", key: "responsavelEmail", required: false, example: "carlos.silva@email.com" },
+  {
+    header: "CPF do Responsável",
+    key: "responsavelCpf",
+    required: false,
+    example: "987.654.321-00",
+  },
+  {
+    header: "Endereço do Responsável",
+    key: "responsavelEndereco",
+    required: false,
+    example: "Av. Paulista, 1000 - Apto 42",
+  },
+  {
+    header: "Telefone do Responsável",
+    key: "responsavelTelefone",
+    required: false,
+    example: "(11) 99888-7766",
+  },
+  {
+    header: "E-mail do Responsável",
+    key: "responsavelEmail",
+    required: false,
+    example: "carlos.silva@email.com",
+  },
 
   { header: "Idioma / Curso", key: "idiomaCurso", required: false, example: "Inglês Regular" },
   { header: "Turma", key: "turma", required: false, example: "B1 · Intermediário Noite" },
   { header: "Data de Início", key: "dataInicio", required: false, example: "01/08/2026" },
-  { header: "Fez ou não teste de nível? (Sim/Não)", key: "fezTesteNivel", required: false, example: "Sim" },
-  { header: "Resultado do Teste de Nível", key: "resultadoTesteNivel", required: false, example: "B1" },
-  { header: "Status do Aluno (Ativo, Inativo, Bolsista, etc.)", key: "status", required: false, example: "Ativo" },
+  {
+    header: "Fez ou não teste de nível? (Sim/Não)",
+    key: "fezTesteNivel",
+    required: false,
+    example: "Sim",
+  },
+  {
+    header: "Resultado do Teste de Nível",
+    key: "resultadoTesteNivel",
+    required: false,
+    example: "B1",
+  },
+  {
+    header: "Status do Aluno (Ativo, Inativo, Bolsista, etc.)",
+    key: "status",
+    required: false,
+    example: "Ativo",
+  },
 
-  { header: "Data de Pagamento / Vencimento", key: "diaVencimento", required: false, example: "Dia 10" },
-  { header: "Forma de Pagamento Preferencial (Ex: Boleto, Cartão, PIX)", key: "formaPagamento", required: false, example: "PIX" },
+  {
+    header: "Data de Pagamento / Vencimento",
+    key: "diaVencimento",
+    required: false,
+    example: "Dia 10",
+  },
+  {
+    header: "Forma de Pagamento Preferencial (Ex: Boleto, Cartão, PIX)",
+    key: "formaPagamento",
+    required: false,
+    example: "PIX",
+  },
   { header: "Valor da Mensalidade", key: "valorMensalidade", required: false, example: "450.00" },
   { header: "Desconto Aplicado", key: "descontoAplicado", required: false, example: "50.00" },
-  { header: "Canal de Aquisição (Como nos conheceu)", key: "canalAquisicao", required: false, example: "Indicação de Amigo" },
+  {
+    header: "Canal de Aquisição (Como nos conheceu)",
+    key: "canalAquisicao",
+    required: false,
+    example: "Indicação de Amigo",
+  },
 ];
 
 /**
@@ -85,11 +145,13 @@ export function downloadStudentTemplateXLSX() {
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Modelo Alunos ERP");
-  const instructions = XLSX.utils.json_to_sheet(OFFICIAL_COLUMNS.map((column) => ({
-    Campo: column.header,
-    Obrigatorio: column.required ? "Sim" : "Não",
-    Exemplo: column.example,
-  })));
+  const instructions = XLSX.utils.json_to_sheet(
+    OFFICIAL_COLUMNS.map((column) => ({
+      Campo: column.header,
+      Obrigatorio: column.required ? "Sim" : "Não",
+      Exemplo: column.example,
+    })),
+  );
   XLSX.utils.book_append_sheet(workbook, instructions, "Instruções");
 
   XLSX.writeFile(workbook, "modelo_importacao_alunos_fluency.xlsx");
@@ -167,8 +229,17 @@ export async function parseStudentSpreadsheet(file: File): Promise<{
     const telefone = getValue(["Telefone", "Celular", "WhatsApp", "Contato"]);
     const email = getValue(["E-mail", "Email", "Correio Eletrônico"]);
 
-    const responsavelNome = getValue(["Nome Completo do Responsável", "Responsável", "Nome Responsavel", "Responsavel"]);
-    const responsavelDataNascimento = getValue(["Data de Nascimento do Responsável", "Nasc Responsavel", "Data Nasc Responsável"]);
+    const responsavelNome = getValue([
+      "Nome Completo do Responsável",
+      "Responsável",
+      "Nome Responsavel",
+      "Responsavel",
+    ]);
+    const responsavelDataNascimento = getValue([
+      "Data de Nascimento do Responsável",
+      "Nasc Responsavel",
+      "Data Nasc Responsável",
+    ]);
     const responsavelRg = getValue(["RG do Responsável", "RG Responsável"]);
     const responsavelCpf = getValue(["CPF do Responsável", "CPF Responsável"]);
     const responsavelEndereco = getValue(["Endereço do Responsável", "Endereco Responsável"]);
@@ -178,18 +249,54 @@ export async function parseStudentSpreadsheet(file: File): Promise<{
     const idiomaCurso = getValue(["Idioma / Curso", "Idioma", "Curso"]);
     const turma = getValue(["Turma", "Turma Atual"]);
     const dataInicio = getValue(["Data de Início", "Data Inicio", "Início", "Matrícula"]);
-    const fezTesteRaw = getValue(["Fez ou não teste de nível? (Sim/Não)", "Fez Teste de Nível", "Teste de Nível"]);
+    const fezTesteRaw = getValue([
+      "Fez ou não teste de nível? (Sim/Não)",
+      "Fez Teste de Nível",
+      "Teste de Nível",
+    ]);
     const fezTesteNivel = /sim|s|yes|y|true|1/i.test(fezTesteRaw);
-    const resultadoTesteNivel = getValue(["Resultado do Teste de Nível", "Resultado Teste", "Nível Teste", "Nivel"]);
-    const status = getValue(["Status do Aluno (Ativo, Inativo, Bolsista, etc.)", "Status", "Situação"]) || "Ativo";
+    const resultadoTesteNivel = getValue([
+      "Resultado do Teste de Nível",
+      "Resultado Teste",
+      "Nível Teste",
+      "Nivel",
+    ]);
+    const status =
+      getValue(["Status do Aluno (Ativo, Inativo, Bolsista, etc.)", "Status", "Situação"]) ||
+      "Ativo";
 
-    const diaVencRaw = getValue(["Data de Pagamento / Vencimento", "Vencimento", "Dia Vencimento", "Dia"]);
+    const diaVencRaw = getValue([
+      "Data de Pagamento / Vencimento",
+      "Vencimento",
+      "Dia Vencimento",
+      "Dia",
+    ]);
     const diaVencimento = parseInt(diaVencRaw.replace(/\D/g, ""), 10) || 10;
 
-    const formaPagamento = getValue(["Forma de Pagamento Preferencial (Ex: Boleto, Cartão, PIX)", "Forma de Pagamento", "Pagamento"]) || "PIX";
-    const valorMensalidade = parseFloat(getValue(["Valor da Mensalidade", "Mensalidade", "Valor"]).replace(/[^0-9.,]/g, "").replace(",", ".")) || 0;
-    const descontoAplicado = parseFloat(getValue(["Desconto Aplicado", "Desconto"]).replace(/[^0-9.,]/g, "").replace(",", ".")) || 0;
-    const canalAquisicao = getValue(["Canal de Aquisição (Como nos conheceu)", "Canal de Aquisição", "Origem", "Como nos conheceu"]);
+    const formaPagamento =
+      getValue([
+        "Forma de Pagamento Preferencial (Ex: Boleto, Cartão, PIX)",
+        "Forma de Pagamento",
+        "Pagamento",
+      ]) || "PIX";
+    const valorMensalidade =
+      parseFloat(
+        getValue(["Valor da Mensalidade", "Mensalidade", "Valor"])
+          .replace(/[^0-9.,]/g, "")
+          .replace(",", "."),
+      ) || 0;
+    const descontoAplicado =
+      parseFloat(
+        getValue(["Desconto Aplicado", "Desconto"])
+          .replace(/[^0-9.,]/g, "")
+          .replace(",", "."),
+      ) || 0;
+    const canalAquisicao = getValue([
+      "Canal de Aquisição (Como nos conheceu)",
+      "Canal de Aquisição",
+      "Origem",
+      "Como nos conheceu",
+    ]);
 
     const errors: string[] = [];
     if (!nome) {
@@ -247,11 +354,11 @@ export function exportStudentsToXLSX(students: any[]) {
   const rows = students.map((s) => ({
     "Nome Completo do Aluno": s.nome || "",
     "Data de Nascimento": s.dataNascimento || "",
-    "RG": s.rg || "",
-    "CPF": s.cpf || "",
+    RG: s.rg || "",
+    CPF: s.cpf || "",
     "Gênero / Pronome": s.genero || "",
-    "Endereço": s.endereco || "",
-    "Telefone": s.telefone || "",
+    Endereço: s.endereco || "",
+    Telefone: s.telefone || "",
     "E-mail": s.email || "",
     "Nome Completo do Responsável": s.responsavelNome || s.responsavel || "",
     "Data de Nascimento do Responsável": s.responsavelDataNascimento || "",
@@ -261,7 +368,7 @@ export function exportStudentsToXLSX(students: any[]) {
     "Telefone do Responsável": s.responsavelTelefone || "",
     "E-mail do Responsável": s.responsavelEmail || "",
     "Idioma / Curso": s.idiomaCurso || s.produtoNome || "Inglês Regular",
-    "Turma": s.turma || "",
+    Turma: s.turma || "",
     "Data de Início": s.inicio || s.dataInicio || "",
     "Fez ou não teste de nível? (Sim/Não)": s.fezTesteNivel ? "Sim" : "Não",
     "Resultado do Teste de Nível": s.nivel || s.resultadoTesteNivel || "A1",
@@ -286,7 +393,10 @@ export function exportStudentsToXLSX(students: any[]) {
 /**
  * Saves a batch of parsed students to Supabase (and falls back gracefully).
  */
-export async function saveBatchStudentsToSupabase(students: StudentSpreadsheetRow[], schoolId?: string): Promise<{
+export async function saveBatchStudentsToSupabase(
+  students: StudentSpreadsheetRow[],
+  schoolId?: string,
+): Promise<{
   savedCount: number;
   errorCount: number;
   errorMessage?: string;
@@ -301,11 +411,22 @@ export async function saveBatchStudentsToSupabase(students: StudentSpreadsheetRo
     if (!resolvedSchoolId) {
       const { data: authData } = await supabase.auth.getUser();
       if (authData.user) {
-        const { data: membership } = await supabase.from("escola_membros").select("escola_id").eq("user_id", authData.user.id).eq("status", "ativo").limit(1).maybeSingle();
+        const { data: membership } = await supabase
+          .from("escola_membros")
+          .select("escola_id")
+          .eq("user_id", authData.user.id)
+          .eq("status", "ativo")
+          .limit(1)
+          .maybeSingle();
         resolvedSchoolId = membership?.escola_id;
       }
     }
-    if (!resolvedSchoolId) return { savedCount: 0, errorCount: validStudents.length, errorMessage: "Escola atual não identificada." };
+    if (!resolvedSchoolId)
+      return {
+        savedCount: 0,
+        errorCount: validStudents.length,
+        errorMessage: "Escola atual não identificada.",
+      };
     const payload = validStudents.map((s) => ({
       escola_id: resolvedSchoolId,
       nome: s.nome,
@@ -365,6 +486,7 @@ function normalizeDate(value?: string): string | null {
 
 function normalizeStatus(value?: string): string {
   const normalized = (value || "ativo").trim().toLowerCase();
-  if (["ativo", "inativo", "trancado", "concluido", "concluído", "cancelado"].includes(normalized)) return normalized.replace("concluído", "concluido");
+  if (["ativo", "inativo", "trancado", "concluido", "concluído", "cancelado"].includes(normalized))
+    return normalized.replace("concluído", "concluido");
   return "ativo";
 }

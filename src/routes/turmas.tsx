@@ -97,66 +97,160 @@ const DEFAULT_LIVROS_TRILHAS: BookTrail[] = [
     titulo: "Kids Playgroup - Vol 1",
     nivel: "A1",
     aulas: [
-      { id: "l1-1", aula: 1, tema: "Welcome & Color Songs", descricao: "Apresentação e introdução de cores primárias com música." },
-      { id: "l1-2", aula: 2, tema: "Vocabulary: Farm Animals", descricao: "Aprendizado dos nomes de animais de fazenda em inglês." },
-      { id: "l1-3", aula: 3, tema: "Singing & Action Verbs", descricao: "Música interativa e ações (jump, run, clap)." },
-      { id: "l1-4", aula: 4, tema: "Vocabulary: Fruit & Foods", descricao: "Introdução de nomes de frutas comuns e vocabulário de comida." },
-      { id: "l1-5", aula: 5, tema: "Review & Games", descricao: "Atividades lúdicas de revisão de cores e animais." }
-    ]
+      {
+        id: "l1-1",
+        aula: 1,
+        tema: "Welcome & Color Songs",
+        descricao: "Apresentação e introdução de cores primárias com música.",
+      },
+      {
+        id: "l1-2",
+        aula: 2,
+        tema: "Vocabulary: Farm Animals",
+        descricao: "Aprendizado dos nomes de animais de fazenda em inglês.",
+      },
+      {
+        id: "l1-3",
+        aula: 3,
+        tema: "Singing & Action Verbs",
+        descricao: "Música interativa e ações (jump, run, clap).",
+      },
+      {
+        id: "l1-4",
+        aula: 4,
+        tema: "Vocabulary: Fruit & Foods",
+        descricao: "Introdução de nomes de frutas comuns e vocabulário de comida.",
+      },
+      {
+        id: "l1-5",
+        aula: 5,
+        tema: "Review & Games",
+        descricao: "Atividades lúdicas de revisão de cores e animais.",
+      },
+    ],
   },
   {
     id: "livro-2",
     titulo: "English File - Elementary",
     nivel: "A2",
     aulas: [
-      { id: "l2-1", aula: 1, tema: "Simple Past vs Past Continuous", descricao: "Revisão e exercícios de gramática com tempos verbais passados." },
-      { id: "l2-2", aula: 2, tema: "Travel Vocabulary & Bookings", descricao: "Como fazer reservas e vocabulário útil para viagens." },
-      { id: "l2-3", aula: 3, tema: "Conversational Drills", descricao: "Simulações práticas de diálogo em aeroportos e hotéis." },
-      { id: "l2-4", aula: 4, tema: "Reading & Pronunciation", descricao: "Leitura de textos e foco em pronúncia e entonação." }
-    ]
+      {
+        id: "l2-1",
+        aula: 1,
+        tema: "Simple Past vs Past Continuous",
+        descricao: "Revisão e exercícios de gramática com tempos verbais passados.",
+      },
+      {
+        id: "l2-2",
+        aula: 2,
+        tema: "Travel Vocabulary & Bookings",
+        descricao: "Como fazer reservas e vocabulário útil para viagens.",
+      },
+      {
+        id: "l2-3",
+        aula: 3,
+        tema: "Conversational Drills",
+        descricao: "Simulações práticas de diálogo em aeroportos e hotéis.",
+      },
+      {
+        id: "l2-4",
+        aula: 4,
+        tema: "Reading & Pronunciation",
+        descricao: "Leitura de textos e foco em pronúncia e entonação.",
+      },
+    ],
   },
   {
     id: "livro-3",
     titulo: "Oxford Grammar - Intermediate",
     nivel: "B1",
     aulas: [
-      { id: "l3-1", aula: 1, tema: "Greetings & Self Introduction", descricao: "Como se apresentar profissionalmente em inglês." },
-      { id: "l3-2", aula: 2, tema: "Writing Professional Emails", descricao: "Estruturas, formalidades e expressões de e-mail comercial." },
-      { id: "l3-3", aula: 3, tema: "Meeting Phrasal Verbs", descricao: "Principais phrasal verbs usados em reuniões." },
-      { id: "l3-4", aula: 4, tema: "Negotiation Tactics", descricao: "Vocabulário de negociação e expressão de opiniões." }
-    ]
+      {
+        id: "l3-1",
+        aula: 1,
+        tema: "Greetings & Self Introduction",
+        descricao: "Como se apresentar profissionalmente em inglês.",
+      },
+      {
+        id: "l3-2",
+        aula: 2,
+        tema: "Writing Professional Emails",
+        descricao: "Estruturas, formalidades e expressões de e-mail comercial.",
+      },
+      {
+        id: "l3-3",
+        aula: 3,
+        tema: "Meeting Phrasal Verbs",
+        descricao: "Principais phrasal verbs usados em reuniões.",
+      },
+      {
+        id: "l3-4",
+        aula: 4,
+        tema: "Negotiation Tactics",
+        descricao: "Vocabulário de negociação e expressão de opiniões.",
+      },
+    ],
   },
   {
     id: "livro-4",
     titulo: "Cambridge - Conversation Mastery",
     nivel: "B2",
     aulas: [
-      { id: "l4-1", aula: 1, tema: "Welcome & Diagnostic Speaking", descricao: "Apresentação e avaliação inicial de fluência oral." },
-      { id: "l4-2", aula: 2, tema: "Debating the Future of Work - AI Impact", descricao: "Debate estruturado sobre o impacto da Inteligência Artificial no mercado." },
-      { id: "l4-3", aula: 3, tema: "Expressing Agreement & Disagreement", descricao: "Expressões e conectores para concordar e discordar educadamente." },
-      { id: "l4-4", aula: 4, tema: "Idiomatic Expressions for Negotiation", descricao: "Expressões idiomáticas nativas usadas em acordos." },
-      { id: "l4-5", aula: 5, tema: "Final Presentation - Persuasive Pitch", descricao: "Apresentações finais e feedbacks individuais detalhados." }
-    ]
-  }
+      {
+        id: "l4-1",
+        aula: 1,
+        tema: "Welcome & Diagnostic Speaking",
+        descricao: "Apresentação e avaliação inicial de fluência oral.",
+      },
+      {
+        id: "l4-2",
+        aula: 2,
+        tema: "Debating the Future of Work - AI Impact",
+        descricao: "Debate estruturado sobre o impacto da Inteligência Artificial no mercado.",
+      },
+      {
+        id: "l4-3",
+        aula: 3,
+        tema: "Expressing Agreement & Disagreement",
+        descricao: "Expressões e conectores para concordar e discordar educadamente.",
+      },
+      {
+        id: "l4-4",
+        aula: 4,
+        tema: "Idiomatic Expressions for Negotiation",
+        descricao: "Expressões idiomáticas nativas usadas em acordos.",
+      },
+      {
+        id: "l4-5",
+        aula: 5,
+        tema: "Final Presentation - Persuasive Pitch",
+        descricao: "Apresentações finais e feedbacks individuais detalhados.",
+      },
+    ],
+  },
 ];
 
 const DEFAULT_CRONOGRAMAS: Record<string, Lesson[]> = {
-  "Kids Playgroup": DEFAULT_LIVROS_TRILHAS[0]?.aulas.map((aula, index) => ({
-    ...aula,
-    status: index < 2 ? "Concluída" : index === 2 ? "Em Andamento" : "Pendente",
-  })) ?? [],
-  "Regular Noite": DEFAULT_LIVROS_TRILHAS[1]?.aulas.map((aula, index) => ({
-    ...aula,
-    status: index < 2 ? "Concluída" : index === 2 ? "Em Andamento" : "Pendente",
-  })) ?? [],
-  "Business English": DEFAULT_LIVROS_TRILHAS[2]?.aulas.map((aula, index) => ({
-    ...aula,
-    status: index < 2 ? "Concluída" : index === 2 ? "Em Andamento" : "Pendente",
-  })) ?? [],
-  Conversation: DEFAULT_LIVROS_TRILHAS[3]?.aulas.map((aula, index) => ({
-    ...aula,
-    status: index < 2 ? "Concluída" : index === 2 ? "Em Andamento" : "Pendente",
-  })) ?? [],
+  "Kids Playgroup":
+    DEFAULT_LIVROS_TRILHAS[0]?.aulas.map((aula, index) => ({
+      ...aula,
+      status: index < 2 ? "Concluída" : index === 2 ? "Em Andamento" : "Pendente",
+    })) ?? [],
+  "Regular Noite":
+    DEFAULT_LIVROS_TRILHAS[1]?.aulas.map((aula, index) => ({
+      ...aula,
+      status: index < 2 ? "Concluída" : index === 2 ? "Em Andamento" : "Pendente",
+    })) ?? [],
+  "Business English":
+    DEFAULT_LIVROS_TRILHAS[2]?.aulas.map((aula, index) => ({
+      ...aula,
+      status: index < 2 ? "Concluída" : index === 2 ? "Em Andamento" : "Pendente",
+    })) ?? [],
+  Conversation:
+    DEFAULT_LIVROS_TRILHAS[3]?.aulas.map((aula, index) => ({
+      ...aula,
+      status: index < 2 ? "Concluída" : index === 2 ? "Em Andamento" : "Pendente",
+    })) ?? [],
 };
 
 const CALENDAR_DAYS = [
@@ -165,20 +259,20 @@ const CALENDAR_DAYS = [
   { key: "Qua", label: "Quarta" },
   { key: "Qui", label: "Quinta" },
   { key: "Sex", label: "Sexta" },
-  { key: "Sáb", label: "Sábado" }
+  { key: "Sáb", label: "Sábado" },
 ];
 
 const parseClassHorario = (c: any) => {
   let diasSelecionados = c.diasSelecionados || [];
   let horaSelecionada = c.horaSelecionada || "";
   let horaFimSelecionada = c.horaFimSelecionada || "";
-  
+
   if (diasSelecionados.length === 0 || !horaSelecionada) {
     const parts = c.horario.split(" ");
     if (parts.length === 2) {
       const daysStr = parts[0];
       const hoursPart = parts[1];
-      
+
       if (hoursPart.includes("-")) {
         const hParts = hoursPart.split("-");
         horaSelecionada = hParts[0];
@@ -190,7 +284,7 @@ const parseClassHorario = (c: any) => {
       } else {
         horaSelecionada = hoursPart;
       }
-      
+
       if (daysStr.includes("/")) {
         diasSelecionados = daysStr.split("/");
       } else {
@@ -201,13 +295,13 @@ const parseClassHorario = (c: any) => {
       horaSelecionada = "19:00";
     }
   }
-  
+
   if (!horaFimSelecionada && horaSelecionada) {
     const [h, m] = horaSelecionada.split(":").map(Number);
     const date = new Date();
     date.setHours(h || 0, (m || 0) + 90, 0, 0);
-    const fh = String(date.getHours()).padStart(2, '0');
-    const fm = String(date.getMinutes()).padStart(2, '0');
+    const fh = String(date.getHours()).padStart(2, "0");
+    const fm = String(date.getMinutes()).padStart(2, "0");
     horaFimSelecionada = `${fh}:${fm}`;
   }
 
@@ -219,9 +313,9 @@ const parseClassHorario = (c: any) => {
     else livroId = "livro-4";
   }
 
-  let aulaAtual = c.aulaAtual || 1;
-  let salaId = c.salaId || "sala-1";
-  let salaNome = c.salaNome || "Sala 01 - London";
+  const aulaAtual = c.aulaAtual || 1;
+  const salaId = c.salaId || "sala-1";
+  const salaNome = c.salaNome || "Sala 01 - London";
 
   return {
     ...c,
@@ -255,7 +349,7 @@ function TurmasPage() {
         return JSON.parse(stored).map((c: any) => parseClassHorario(c));
       }
     } catch {}
-    
+
     return initialClasses.map((c: any) => parseClassHorario(c));
   });
 
@@ -270,8 +364,10 @@ function TurmasPage() {
 
   const [search, setSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState<string>("todos");
-  
-  const [activePageTab, setActivePageTab] = useState<"lista" | "calendario" | "cronograma">("lista");
+
+  const [activePageTab, setActivePageTab] = useState<"lista" | "calendario" | "cronograma">(
+    "lista",
+  );
   const [calendarViewMode, setCalendarViewMode] = useState<"semanal" | "mensal">("semanal");
 
   // Cronograma / Trilha states
@@ -294,13 +390,14 @@ function TurmasPage() {
 
   // Download Model CSV
   const handleDownloadModelCSV = () => {
-    const csvContent = "data:text/csv;charset=utf-8,\uFEFF"
-      + "Aula;Tema;Descricao\n"
-      + "1;Welcome & Introduction;Primeira aula de nivelamento e apresentacao\n"
-      + "2;Present Continuous Drills;Exercicios praticos de conversacao sobre atividades do dia a dia\n"
-      + "3;Business Vocabulary;Vocabulario de reunioes e apresentacao de projetos\n"
-      + "4;Mock Dialogues;Pratica guiada com simulacao de chamadas e mensagens\n"
-      + "5;Review & Evaluation;Feedback pedagogico de conversacao\n";
+    const csvContent =
+      "data:text/csv;charset=utf-8,\uFEFF" +
+      "Aula;Tema;Descricao\n" +
+      "1;Welcome & Introduction;Primeira aula de nivelamento e apresentacao\n" +
+      "2;Present Continuous Drills;Exercicios praticos de conversacao sobre atividades do dia a dia\n" +
+      "3;Business Vocabulary;Vocabulario de reunioes e apresentacao de projetos\n" +
+      "4;Mock Dialogues;Pratica guiada com simulacao de chamadas e mensagens\n" +
+      "5;Review & Evaluation;Feedback pedagogico de conversacao\n";
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -337,7 +434,7 @@ function TurmasPage() {
             aula: aulaNum,
             tema: temaStr,
             descricao: descStr,
-            status: i === 1 ? "Em Andamento" : "Pendente"
+            status: i === 1 ? "Em Andamento" : "Pendente",
           });
         }
 
@@ -348,9 +445,11 @@ function TurmasPage() {
 
         setCronogramas((prev) => ({
           ...prev,
-          [selectedCronogramaClass]: parsedLessons
+          [selectedCronogramaClass]: parsedLessons,
         }));
-        toast.success(`Importadas ${parsedLessons.length} aulas na trilha da turma ${selectedCronogramaClass}!`);
+        toast.success(
+          `Importadas ${parsedLessons.length} aulas na trilha da turma ${selectedCronogramaClass}!`,
+        );
       } catch (err) {
         console.error(err);
         toast.error("Falha ao ler o arquivo CSV. Verifique a formatação.");
@@ -363,19 +462,19 @@ function TurmasPage() {
   // Add Lesson
   const handleAddLesson = () => {
     const lessons = cronogramas[selectedCronogramaClass] || [];
-    const nextAulaNum = lessons.length > 0 ? Math.max(...lessons.map(l => l.aula)) + 1 : 1;
-    
+    const nextAulaNum = lessons.length > 0 ? Math.max(...lessons.map((l) => l.aula)) + 1 : 1;
+
     const newLesson: Lesson = {
       id: `lesson-${Date.now()}`,
       aula: nextAulaNum,
       tema: `Nova Aula Pedagógica #${nextAulaNum}`,
       descricao: "Clique nos controles ao lado para editar o tema e a descrição desta aula.",
-      status: nextAulaNum === 1 ? "Em Andamento" : "Pendente"
+      status: nextAulaNum === 1 ? "Em Andamento" : "Pendente",
     };
 
     setCronogramas((prev) => ({
       ...prev,
-      [selectedCronogramaClass]: [...lessons, newLesson]
+      [selectedCronogramaClass]: [...lessons, newLesson],
     }));
     toast.success("Nova aula adicionada no cronograma!");
   };
@@ -396,7 +495,7 @@ function TurmasPage() {
 
     setCronogramas((prev) => ({
       ...prev,
-      [selectedCronogramaClass]: updated
+      [selectedCronogramaClass]: updated,
     }));
     toast.success("Status da aula atualizado!");
   };
@@ -405,7 +504,7 @@ function TurmasPage() {
   const handleEditLessonPrompt = (lesson: Lesson) => {
     const newTema = prompt("Insira o tema da aula:", lesson.tema);
     if (newTema === null) return;
-    
+
     const newDesc = prompt("Insira a descrição da aula:", lesson.descricao);
     if (newDesc === null) return;
 
@@ -444,7 +543,7 @@ function TurmasPage() {
 
   // Selected items for edit/delete/transfer
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
-  
+
   // Form fields
   const [formName, setFormName] = useState("");
   const [formNivel, setFormNivel] = useState("A1");
@@ -474,7 +573,7 @@ function TurmasPage() {
     targetDias: string[],
     targetHoraInicio: string,
     targetHoraFim: string,
-    excludeClassName?: string
+    excludeClassName?: string,
   ): ClassConflict | null => {
     if (!targetDias || targetDias.length === 0 || !targetHoraInicio) return null;
 
@@ -542,7 +641,7 @@ function TurmasPage() {
       targetClass.diasSelecionados || [],
       targetClass.horaSelecionada || "",
       targetClass.horaFimSelecionada || "",
-      targetClass.nome
+      targetClass.nome,
     );
   };
 
@@ -550,12 +649,32 @@ function TurmasPage() {
   const [calendarTimes, setCalendarTimes] = useState<string[]>(() => {
     try {
       const stored = window.localStorage.getItem("fluency-ai:classes:calendar-times");
-      return stored ? JSON.parse(stored) : [
-        "07:30", "09:00", "10:30", "12:00", "13:30", "15:00", "16:30", "18:30", "19:00", "20:00"
-      ];
+      return stored
+        ? JSON.parse(stored)
+        : [
+            "07:30",
+            "09:00",
+            "10:30",
+            "12:00",
+            "13:30",
+            "15:00",
+            "16:30",
+            "18:30",
+            "19:00",
+            "20:00",
+          ];
     } catch {
       return [
-        "07:30", "09:00", "10:30", "12:00", "13:30", "15:00", "16:30", "18:30", "19:00", "20:00"
+        "07:30",
+        "09:00",
+        "10:30",
+        "12:00",
+        "13:30",
+        "15:00",
+        "16:30",
+        "18:30",
+        "19:00",
+        "20:00",
       ];
     }
   });
@@ -563,7 +682,10 @@ function TurmasPage() {
   // Sync calendar times
   useEffect(() => {
     try {
-      window.localStorage.setItem("fluency-ai:classes:calendar-times", JSON.stringify(calendarTimes));
+      window.localStorage.setItem(
+        "fluency-ai:classes:calendar-times",
+        JSON.stringify(calendarTimes),
+      );
     } catch {}
   }, [calendarTimes]);
 
@@ -588,7 +710,10 @@ function TurmasPage() {
   // Sync book trails
   useEffect(() => {
     try {
-      window.localStorage.setItem("fluency-ai:classes:livros-trilhas", JSON.stringify(livrosTrilhas));
+      window.localStorage.setItem(
+        "fluency-ai:classes:livros-trilhas",
+        JSON.stringify(livrosTrilhas),
+      );
     } catch {}
   }, [livrosTrilhas]);
 
@@ -634,9 +759,11 @@ function TurmasPage() {
   const handleApplyBulkTeacher = () => {
     if (selectedClassNames.size === 0) return;
     setClasses((prev) =>
-      prev.map((c) => (selectedClassNames.has(c.nome) ? { ...c, professor: bulkTeacherValue } : c))
+      prev.map((c) => (selectedClassNames.has(c.nome) ? { ...c, professor: bulkTeacherValue } : c)),
     );
-    toast.success(`Professor(a) "${bulkTeacherValue}" atribuído(a) a ${selectedClassNames.size} turmas!`);
+    toast.success(
+      `Professor(a) "${bulkTeacherValue}" atribuído(a) a ${selectedClassNames.size} turmas!`,
+    );
     setIsBulkTeacherModalOpen(false);
     setSelectedClassNames(new Set());
   };
@@ -676,11 +803,15 @@ function TurmasPage() {
   // Synchronize class student count with students list dynamically
   useEffect(() => {
     let changed = false;
-    const updated = classes.map(c => {
+    const updated = classes.map((c) => {
       const classNomeLower = c.nome.toLowerCase();
       const count = students.filter((s: any) => {
         const studentTurma = s.turma.toLowerCase();
-        return studentTurma === classNomeLower || studentTurma.includes(classNomeLower) || classNomeLower.includes(studentTurma);
+        return (
+          studentTurma === classNomeLower ||
+          studentTurma.includes(classNomeLower) ||
+          classNomeLower.includes(studentTurma)
+        );
       }).length;
       if (c.alunos !== count) {
         changed = true;
@@ -715,9 +846,10 @@ function TurmasPage() {
   // Filter classes based on role and search query
   const filteredClasses = classes.filter((c) => {
     const matchesRole = !isProfessor || c.professor === "Julia Kern";
-    
-    const matchesSearch = c.nome.toLowerCase().includes(search.toLowerCase()) || 
-                          c.professor.toLowerCase().includes(search.toLowerCase());
+
+    const matchesSearch =
+      c.nome.toLowerCase().includes(search.toLowerCase()) ||
+      c.professor.toLowerCase().includes(search.toLowerCase());
     const matchesLevel = levelFilter === "todos" || c.nivel === levelFilter;
     return matchesRole && matchesSearch && matchesLevel;
   });
@@ -726,8 +858,10 @@ function TurmasPage() {
     if (!confirm(`Deseja remover o aluno "${studentName}" da turma "${className}"?`)) {
       return;
     }
-    setStudents(students.map(s => s.nome === studentName ? { ...s, turma: "Sem Turma" } : s));
-    setClasses(classes.map(c => c.nome === className ? { ...c, alunos: Math.max(0, c.alunos - 1) } : c));
+    setStudents(students.map((s) => (s.nome === studentName ? { ...s, turma: "Sem Turma" } : s)));
+    setClasses(
+      classes.map((c) => (c.nome === className ? { ...c, alunos: Math.max(0, c.alunos - 1) } : c)),
+    );
 
     try {
       const storedDetails = window.localStorage.getItem("fluency-ai:students:details");
@@ -768,7 +902,13 @@ function TurmasPage() {
     if (!formName) return;
 
     // Dual Conflict Validation (Room + Teacher)
-    const conflict = checkClassConflicts(formSalaId, formProfessor, formDias, formHora, formHoraFim);
+    const conflict = checkClassConflicts(
+      formSalaId,
+      formProfessor,
+      formDias,
+      formHora,
+      formHoraFim,
+    );
     if (conflict) {
       toast.error(conflict.message);
       return;
@@ -822,7 +962,14 @@ function TurmasPage() {
     if (!selectedClass || !formName) return;
 
     // Dual Conflict Validation (Room + Teacher)
-    const conflict = checkClassConflicts(formSalaId, formProfessor, formDias, formHora, formHoraFim, selectedClass.nome);
+    const conflict = checkClassConflicts(
+      formSalaId,
+      formProfessor,
+      formDias,
+      formHora,
+      formHoraFim,
+      selectedClass.nome,
+    );
     if (conflict) {
       toast.error(conflict.message);
       return;
@@ -836,12 +983,12 @@ function TurmasPage() {
     setClasses(
       classes.map((c) =>
         c.nome === selectedClass.nome
-          ? { 
-              ...c, 
-              nome: formName, 
-              nivel: formNivel, 
-              professor: formProfessor, 
-              vagas: Number(formVagas), 
+          ? {
+              ...c,
+              nome: formName,
+              nivel: formNivel,
+              professor: formProfessor,
+              vagas: Number(formVagas),
               horario: combinedHorario,
               diasSelecionados: formDias,
               horaSelecionada: formHora,
@@ -851,8 +998,8 @@ function TurmasPage() {
               salaNome,
               corTheme: formCorTheme,
             }
-          : c
-      )
+          : c,
+      ),
     );
     toast.success(`Turma "${formName}" editada com sucesso!`);
     setIsEditOpen(false);
@@ -899,7 +1046,7 @@ function TurmasPage() {
       if (targetClassObj.horaSelecionada && targetClassObj.horaFimSelecionada) {
         const [sh = 19, sm = 0] = targetClassObj.horaSelecionada.split(":").map(Number);
         const [eh = 21, em = 0] = targetClassObj.horaFimSelecionada.split(":").map(Number);
-        const diff = (eh * 60 + em) - (sh * 60 + sm);
+        const diff = eh * 60 + em - (sh * 60 + sm);
         durationHours = diff > 0 ? Number((diff / 60).toFixed(1)) : 2.0;
       }
       const targetWeeklyHours = durationHours * daysCount;
@@ -929,13 +1076,11 @@ function TurmasPage() {
           return { ...c, alunos: Math.min(c.vagas, c.alunos + 1) };
         }
         return c;
-      })
+      }),
     );
 
     setStudents(
-      students.map((s) =>
-        s.nome === transferStudent ? { ...s, turma: transferTargetClass } : s
-      )
+      students.map((s) => (s.nome === transferStudent ? { ...s, turma: transferTargetClass } : s)),
     );
 
     try {
@@ -958,7 +1103,8 @@ function TurmasPage() {
   // Occupancy metrics calculations
   const totalStudentsInClasses = classes.reduce((sum, c) => sum + c.alunos, 0);
   const totalVacancies = classes.reduce((sum, c) => sum + c.vagas, 0);
-  const vacancyOccupancyRate = totalVacancies > 0 ? Math.round((totalStudentsInClasses / totalVacancies) * 100) : 0;
+  const vacancyOccupancyRate =
+    totalVacancies > 0 ? Math.round((totalStudentsInClasses / totalVacancies) * 100) : 0;
 
   // Time slot occupancy calculations
   let occupiedSlotsCount = 0;
@@ -966,7 +1112,7 @@ function TurmasPage() {
     calendarTimes.forEach((t) => {
       const classesInSlot = classes.filter((c) => {
         const matchesDay = c.diasSelecionados?.includes(d.key);
-        
+
         const toMinutes = (timeStr: string) => {
           if (!timeStr) return 0;
           const [h, m] = timeStr.split(":").map(Number);
@@ -976,7 +1122,7 @@ function TurmasPage() {
         const startMin = toMinutes(c.horaSelecionada || "19:00");
         const endMin = toMinutes(c.horaFimSelecionada || "20:30");
         const matchesTime = tMin >= startMin && tMin < endMin;
-        
+
         return matchesDay && matchesTime;
       });
       if (classesInSlot.length > 0) {
@@ -990,7 +1136,7 @@ function TurmasPage() {
   const getClassesForSlot = (dayKey: string, time: string) => {
     return filteredClasses.filter((c) => {
       const matchesDay = c.diasSelecionados?.includes(dayKey);
-      
+
       const toMinutes = (timeStr: string) => {
         if (!timeStr) return 0;
         const [h, m] = timeStr.split(":").map(Number);
@@ -1000,7 +1146,7 @@ function TurmasPage() {
       const startMin = toMinutes(c.horaSelecionada || "19:00");
       const endMin = toMinutes(c.horaFimSelecionada || "20:30");
       const matchesTime = tMin >= startMin && tMin < endMin;
-      
+
       return matchesDay && matchesTime;
     });
   };
@@ -1058,15 +1204,26 @@ function TurmasPage() {
       <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 flex gap-3 text-xs text-amber-950 dark:text-amber-200 leading-relaxed items-start">
         <Sparkles className="size-4.5 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
         <div>
-          <p className="font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300">Cargo Ativo: {activeRole.toUpperCase()}</p>
+          <p className="font-bold uppercase tracking-wider text-amber-900 dark:text-amber-300">
+            Cargo Ativo: {activeRole.toUpperCase()}
+          </p>
           {activeRole === "professor" && (
-            <p className="mt-1 opacity-90">Visualização restrita às turmas sob responsabilidade de <strong>Julia Kern</strong>. Ações de criação, exclusão e transferência estão trancadas.</p>
+            <p className="mt-1 opacity-90">
+              Visualização restrita às turmas sob responsabilidade de <strong>Julia Kern</strong>.
+              Ações de criação, exclusão e transferência estão trancadas.
+            </p>
           )}
           {activeRole === "operador" && (
-            <p className="mt-1 opacity-90">Você tem permissão para visualizar todas as turmas, mas os botões de edição, exclusão e criação estão desabilitados.</p>
+            <p className="mt-1 opacity-90">
+              Você tem permissão para visualizar todas as turmas, mas os botões de edição, exclusão
+              e criação estão desabilitados.
+            </p>
           )}
           {(activeRole === "coordenador" || activeRole === "admin") && (
-            <p className="mt-1 opacity-90">Controle total ativo. Você pode criar novas turmas, editar configurações, excluir turmas vazias e transferir alunos.</p>
+            <p className="mt-1 opacity-90">
+              Controle total ativo. Você pode criar novas turmas, editar configurações, excluir
+              turmas vazias e transferir alunos.
+            </p>
           )}
         </div>
       </div>
@@ -1144,7 +1301,9 @@ function TurmasPage() {
                   {selectedClassNames.size}
                 </span>
                 <span className="text-xs font-bold text-foreground">
-                  {selectedClassNames.size === 1 ? "1 turma selecionada" : `${selectedClassNames.size} turmas selecionadas`}
+                  {selectedClassNames.size === 1
+                    ? "1 turma selecionada"
+                    : `${selectedClassNames.size} turmas selecionadas`}
                 </span>
               </div>
 
@@ -1180,7 +1339,9 @@ function TurmasPage() {
             <label className="flex items-center gap-2 cursor-pointer font-semibold hover:text-foreground">
               <input
                 type="checkbox"
-                checked={filteredClasses.length > 0 && selectedClassNames.size === filteredClasses.length}
+                checked={
+                  filteredClasses.length > 0 && selectedClassNames.size === filteredClasses.length
+                }
                 onChange={toggleSelectAllClasses}
                 className="size-4 rounded border-hairline accent-primary cursor-pointer"
               />
@@ -1195,13 +1356,16 @@ function TurmasPage() {
               filteredClasses.map((c) => {
                 const percentage = (c.alunos / c.vagas) * 100;
                 const isFull = c.alunos >= c.vagas;
-                const themeObj = CLASS_COLOR_THEMES.find((t) => t.id === c.corTheme) || CLASS_COLOR_THEMES[0];
+                const themeObj =
+                  CLASS_COLOR_THEMES.find((t) => t.id === c.corTheme) || CLASS_COLOR_THEMES[0];
                 const conflictInfo = getClassConflictInfo(c);
                 const isSelected = selectedClassNames.has(c.nome);
 
                 return (
-                  <GlassCard key={c.nome} className={`p-6 flex flex-col justify-between hover:border-white/10 hover:shadow-lg transition-all duration-300 relative group/card ${isSelected ? "border-primary/50 bg-primary/[0.03]" : ""} ${conflictInfo ? "border-rose-500/40 bg-rose-500/[0.03]" : ""}`}>
-                    
+                  <GlassCard
+                    key={c.nome}
+                    className={`p-6 flex flex-col justify-between hover:border-white/10 hover:shadow-lg transition-all duration-300 relative group/card ${isSelected ? "border-primary/50 bg-primary/[0.03]" : ""} ${conflictInfo ? "border-rose-500/40 bg-rose-500/[0.03]" : ""}`}
+                  >
                     {/* Checkbox selector */}
                     <div className="absolute top-4 left-4 z-10">
                       <input
@@ -1211,7 +1375,7 @@ function TurmasPage() {
                         className="size-4 rounded border-hairline accent-primary cursor-pointer"
                       />
                     </div>
-                    
+
                     {/* Actions overlay for Coordenador/Admin */}
                     {canManage && (
                       <div className="absolute top-4 right-4 flex gap-1.5 opacity-0 group-hover/card:opacity-100 transition-opacity">
@@ -1243,10 +1407,15 @@ function TurmasPage() {
                       {/* Top Level badge and name */}
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-1.5">
-                          <span className={`rounded-md border px-2.5 py-1 text-xs font-bold tracking-wider uppercase ${themeObj.badgeBg} ${themeObj.border} ${themeObj.text}`}>
+                          <span
+                            className={`rounded-md border px-2.5 py-1 text-xs font-bold tracking-wider uppercase ${themeObj.badgeBg} ${themeObj.border} ${themeObj.text}`}
+                          >
                             CEFR {c.nivel}
                           </span>
-                          <span className={`size-2 rounded-full ${themeObj.dot}`} title={`Tema: ${themeObj.label}`} />
+                          <span
+                            className={`size-2 rounded-full ${themeObj.dot}`}
+                            title={`Tema: ${themeObj.label}`}
+                          />
                         </div>
                         <span className="flex items-center gap-1.5 text-xs text-muted-foreground pr-16 group-hover/card:pr-24 transition-all">
                           <Calendar className="size-3.5" /> {c.horario}
@@ -1257,7 +1426,9 @@ function TurmasPage() {
                       <div className="space-y-1">
                         <h3 className="text-base font-bold text-foreground">{c.nome}</h3>
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>Professor: <strong className="text-foreground/90">{c.professor}</strong></span>
+                          <span>
+                            Professor: <strong className="text-foreground/90">{c.professor}</strong>
+                          </span>
                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-foreground/80 bg-surface-elevated border border-hairline px-2 py-0.5 rounded-md">
                             <Building2 className="size-3 text-primary shrink-0" />
                             {c.salaNome || "Sala 01 - London"}
@@ -1281,8 +1452,14 @@ function TurmasPage() {
                           <AlertTriangle className="size-4 shrink-0 text-rose-400 mt-0.5" />
                           <div className="space-y-0.5 flex-1">
                             <p className="font-bold text-foreground flex items-center justify-between">
-                              <span>{conflictInfo.type === "room" ? "⛔ Choque de Sala Física" : "⚠️ Choque de Docente"}</span>
-                              <span className="text-[10px] text-primary underline font-bold">Resolver ➜</span>
+                              <span>
+                                {conflictInfo.type === "room"
+                                  ? "⛔ Choque de Sala Física"
+                                  : "⚠️ Choque de Docente"}
+                              </span>
+                              <span className="text-[10px] text-primary underline font-bold">
+                                Resolver ➜
+                              </span>
                             </p>
                             <p className="text-[11px] opacity-95 leading-tight">
                               {conflictInfo.message}
@@ -1295,8 +1472,12 @@ function TurmasPage() {
                     {/* Bottom Occupancy Progress */}
                     <div className="mt-6 space-y-2">
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1"><Users className="size-3.5" /> Alunos Matriculados</span>
-                        <span className="font-semibold text-foreground">{c.alunos} / {c.vagas}</span>
+                        <span className="flex items-center gap-1">
+                          <Users className="size-3.5" /> Alunos Matriculados
+                        </span>
+                        <span className="font-semibold text-foreground">
+                          {c.alunos} / {c.vagas}
+                        </span>
                       </div>
                       <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                         <div
@@ -1307,10 +1488,11 @@ function TurmasPage() {
                         />
                       </div>
                       {isFull && (
-                        <p className="text-[10px] text-right text-overdue font-semibold animate-pulse">Turma Lotada</p>
+                        <p className="text-[10px] text-right text-overdue font-semibold animate-pulse">
+                          Turma Lotada
+                        </p>
                       )}
                     </div>
-
                   </GlassCard>
                 );
               })
@@ -1331,9 +1513,16 @@ function TurmasPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <GlassCard className="p-6 flex items-center justify-between">
               <div className="space-y-1.5">
-                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Ocupação de Horários</p>
-                <p className="text-2xl font-bold text-foreground">{occupiedSlotsCount} / {totalPossibleSlots} Horários</p>
-                <p className="text-xs text-muted-foreground">Taxa de preenchimento dos horários da grade: <span className="font-semibold text-primary">{slotOccupancyRate}%</span></p>
+                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
+                  Ocupação de Horários
+                </p>
+                <p className="text-2xl font-bold text-foreground">
+                  {occupiedSlotsCount} / {totalPossibleSlots} Horários
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Taxa de preenchimento dos horários da grade:{" "}
+                  <span className="font-semibold text-primary">{slotOccupancyRate}%</span>
+                </p>
               </div>
               <div className="relative size-16">
                 {/* Circular indicator representation */}
@@ -1363,9 +1552,16 @@ function TurmasPage() {
 
             <GlassCard className="p-6 flex items-center justify-between">
               <div className="space-y-1.5">
-                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Preenchimento de Vagas</p>
-                <p className="text-2xl font-bold text-foreground">{totalStudentsInClasses} / {totalVacancies} Alunos</p>
-                <p className="text-xs text-muted-foreground">Ocupação real de vagas físicas: <span className="font-semibold text-primary">{vacancyOccupancyRate}%</span></p>
+                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
+                  Preenchimento de Vagas
+                </p>
+                <p className="text-2xl font-bold text-foreground">
+                  {totalStudentsInClasses} / {totalVacancies} Alunos
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Ocupação real de vagas físicas:{" "}
+                  <span className="font-semibold text-primary">{vacancyOccupancyRate}%</span>
+                </p>
               </div>
               <div className="relative size-16">
                 <svg className="size-full -rotate-90" viewBox="0 0 36 36">
@@ -1399,7 +1595,7 @@ function TurmasPage() {
               <Calendar className="size-4.5 text-primary" />
               <span className="text-xs font-bold text-foreground">Agenda de Alocações</span>
             </div>
-            
+
             <div className="flex items-center gap-3">
               {canManage && (
                 <button
@@ -1409,7 +1605,7 @@ function TurmasPage() {
                   <Clock className="size-3.5" /> Configurar Horários
                 </button>
               )}
-              
+
               <div className="flex border border-hairline rounded-lg overflow-hidden bg-surface/40 p-0.5 shrink-0">
                 <button
                   onClick={() => setCalendarViewMode("semanal")}
@@ -1441,9 +1637,16 @@ function TurmasPage() {
               <table className="w-full border-collapse text-left min-w-[900px]">
                 <thead>
                   <tr className="border-b border-hairline bg-surface/50">
-                    <th className="p-3 text-xs font-semibold text-muted-foreground w-24">Horário</th>
+                    <th className="p-3 text-xs font-semibold text-muted-foreground w-24">
+                      Horário
+                    </th>
                     {CALENDAR_DAYS.map((d) => (
-                      <th key={d.key} className="p-3 text-xs font-semibold text-muted-foreground text-center w-40">{d.label}</th>
+                      <th
+                        key={d.key}
+                        className="p-3 text-xs font-semibold text-muted-foreground text-center w-40"
+                      >
+                        {d.label}
+                      </th>
                     ))}
                   </tr>
                 </thead>
@@ -1456,7 +1659,7 @@ function TurmasPage() {
                       {CALENDAR_DAYS.map((day) => {
                         const slotClasses = getClassesForSlot(day.key, time);
                         const hasClasses = slotClasses.length > 0;
-                        
+
                         // Check if there is an actual room or teacher collision inside this slot
                         const hasConflict = (() => {
                           if (slotClasses.length < 2) return false;
@@ -1466,7 +1669,10 @@ function TurmasPage() {
                               const b = slotClasses[j];
                               if (
                                 (a.salaId && b.salaId && a.salaId === b.salaId) ||
-                                (a.professor && b.professor && a.professor.trim().toLowerCase() === b.professor.trim().toLowerCase())
+                                (a.professor &&
+                                  b.professor &&
+                                  a.professor.trim().toLowerCase() ===
+                                    b.professor.trim().toLowerCase())
                               ) {
                                 return true;
                               }
@@ -1487,7 +1693,9 @@ function TurmasPage() {
                               <div className="space-y-1">
                                 {slotClasses.map((c) => {
                                   const isFull = c.alunos >= c.vagas;
-                                  const themeObj = CLASS_COLOR_THEMES.find((t) => t.id === c.corTheme) || CLASS_COLOR_THEMES[0];
+                                  const themeObj =
+                                    CLASS_COLOR_THEMES.find((t) => t.id === c.corTheme) ||
+                                    CLASS_COLOR_THEMES[0];
 
                                   return (
                                     <div
@@ -1500,11 +1708,20 @@ function TurmasPage() {
                                     >
                                       <div className="flex justify-between items-start font-bold">
                                         <span className="truncate">{c.nome}</span>
-                                        <span className="uppercase text-[8px] font-extrabold px-1 rounded bg-black/10 dark:bg-white/10 shrink-0">CEFR {c.nivel}</span>
+                                        <span className="uppercase text-[8px] font-extrabold px-1 rounded bg-black/10 dark:bg-white/10 shrink-0">
+                                          CEFR {c.nivel}
+                                        </span>
                                       </div>
                                       <div className="flex justify-between items-center mt-1 text-[9px] opacity-90">
-                                        <span>Prof. {c.professor.split(" ")[0]} · {c.salaNome ? c.salaNome.split("-")[0].trim() : "Sala"}</span>
-                                        <span className={isFull ? "text-rose-400 font-bold" : "opacity-80"}>
+                                        <span>
+                                          Prof. {c.professor.split(" ")[0]} ·{" "}
+                                          {c.salaNome ? c.salaNome.split("-")[0].trim() : "Sala"}
+                                        </span>
+                                        <span
+                                          className={
+                                            isFull ? "text-rose-400 font-bold" : "opacity-80"
+                                          }
+                                        >
                                           {c.alunos}/{c.vagas}
                                         </span>
                                       </div>
@@ -1551,7 +1768,10 @@ function TurmasPage() {
                 {generateMonthlyDays().map((dayNum, idx) => {
                   if (dayNum === null) {
                     return (
-                      <div key={`empty-${idx}`} className="h-28 rounded-lg bg-surface/5 border border-transparent opacity-30" />
+                      <div
+                        key={`empty-${idx}`}
+                        className="h-28 rounded-lg bg-surface/5 border border-transparent opacity-30"
+                      />
                     );
                   }
 
@@ -1566,18 +1786,25 @@ function TurmasPage() {
                       }`}
                     >
                       <div className="flex justify-between items-center">
-                        <span className={`text-xs font-extrabold ${isToday ? "text-primary" : "text-foreground"}`}>
+                        <span
+                          className={`text-xs font-extrabold ${isToday ? "text-primary" : "text-foreground"}`}
+                        >
                           {dayNum}
                         </span>
                         {isToday && (
-                          <span className="rounded bg-primary/20 text-primary text-[8px] font-extrabold px-1 py-0.5">Hoje</span>
+                          <span className="rounded bg-primary/20 text-primary text-[8px] font-extrabold px-1 py-0.5">
+                            Hoje
+                          </span>
                         )}
                       </div>
                       <div className="flex-1 overflow-y-auto space-y-1 mt-1 scrollbar-none">
                         {dayClasses.map((c) => {
-                          let badgeColor = "bg-emerald-500/20 text-emerald-400 border-emerald-500/10";
-                          if (c.nivel.startsWith("B")) badgeColor = "bg-blue-500/20 text-blue-400 border-blue-500/10";
-                          if (c.nivel.startsWith("C")) badgeColor = "bg-purple-500/20 text-purple-400 border-purple-500/10";
+                          let badgeColor =
+                            "bg-emerald-500/20 text-emerald-400 border-emerald-500/10";
+                          if (c.nivel.startsWith("B"))
+                            badgeColor = "bg-blue-500/20 text-blue-400 border-blue-500/10";
+                          if (c.nivel.startsWith("C"))
+                            badgeColor = "bg-purple-500/20 text-purple-400 border-purple-500/10";
 
                           return (
                             <div
@@ -1603,7 +1830,6 @@ function TurmasPage() {
       {/* --- CRONOGRAMA / LEARNING TRAIL PANEL --- */}
       {activePageTab === "cronograma" && (
         <div className="space-y-6 animate-in fade-in duration-300">
-          
           {/* Sub-Tabs Selector */}
           <div className="flex border-b border-hairline/60 gap-6 pb-0.5">
             <button
@@ -1635,12 +1861,18 @@ function TurmasPage() {
               <div className="lg:col-span-4 space-y-6">
                 <GlassCard className="p-6 space-y-4">
                   <div>
-                    <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Acompanhar Turma</h4>
-                    <p className="text-[10px] text-muted-foreground">Monitore o andamento pedagógico da turma na trilha do livro.</p>
+                    <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                      Acompanhar Turma
+                    </h4>
+                    <p className="text-[10px] text-muted-foreground">
+                      Monitore o andamento pedagógico da turma na trilha do livro.
+                    </p>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Turma</label>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                      Turma
+                    </label>
                     <select
                       value={selectedCronogramaClass}
                       onChange={(e) => setSelectedCronogramaClass(e.target.value)}
@@ -1655,38 +1887,51 @@ function TurmasPage() {
                   </div>
 
                   {(() => {
-                    const c = classes.find(item => item.nome === selectedCronogramaClass);
+                    const c = classes.find((item) => item.nome === selectedCronogramaClass);
                     if (!c) return null;
-                    const book = livrosTrilhas.find(b => b.id === c.livroId);
+                    const book = livrosTrilhas.find((b) => b.id === c.livroId);
 
                     return (
                       <div className="border-t border-hairline pt-4 space-y-4">
                         {book ? (
                           <div className="space-y-1">
-                            <span className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground">Livro Didático Ativo</span>
+                            <span className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground">
+                              Livro Didático Ativo
+                            </span>
                             <p className="text-xs font-bold text-foreground">{book.titulo}</p>
-                            <span className="inline-flex rounded bg-primary/10 text-primary text-[8px] font-extrabold px-1.5 py-0.5">CEFR {book.nivel}</span>
+                            <span className="inline-flex rounded bg-primary/10 text-primary text-[8px] font-extrabold px-1.5 py-0.5">
+                              CEFR {book.nivel}
+                            </span>
                           </div>
                         ) : (
                           <div className="rounded-lg bg-overdue/10 border border-overdue/20 p-3 text-[10px] text-overdue leading-relaxed">
-                            Nenhum livro didático está associado a esta turma. Selecione um livro abaixo para vinculá-la.
+                            Nenhum livro didático está associado a esta turma. Selecione um livro
+                            abaixo para vinculá-la.
                           </div>
                         )}
 
                         <div className="space-y-2">
-                          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Associar Livro / Trilha</label>
+                          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                            Associar Livro / Trilha
+                          </label>
                           <select
                             value={c.livroId || ""}
                             onChange={(e) => {
                               const bid = e.target.value;
-                              setClasses(classes.map(item => item.nome === c.nome ? { ...item, livroId: bid } : item));
+                              setClasses(
+                                classes.map((item) =>
+                                  item.nome === c.nome ? { ...item, livroId: bid } : item,
+                                ),
+                              );
                               toast.success("Livro atualizado para esta turma!");
                             }}
                             className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary cursor-pointer"
                           >
                             <option value="">-- Selecione o Livro --</option>
-                            {livrosTrilhas.map(b => (
-                              <option key={b.id} value={b.id}>{b.titulo} ({b.nivel})</option>
+                            {livrosTrilhas.map((b) => (
+                              <option key={b.id} value={b.id}>
+                                {b.titulo} ({b.nivel})
+                              </option>
                             ))}
                           </select>
                         </div>
@@ -1697,8 +1942,8 @@ function TurmasPage() {
 
                 {/* Progress Card */}
                 {(() => {
-                  const c = classes.find(item => item.nome === selectedCronogramaClass);
-                  const book = c ? livrosTrilhas.find(b => b.id === c.livroId) : null;
+                  const c = classes.find((item) => item.nome === selectedCronogramaClass);
+                  const book = c ? livrosTrilhas.find((b) => b.id === c.livroId) : null;
                   if (!book || !c) return null;
 
                   const total = book.aulas.length;
@@ -1708,14 +1953,20 @@ function TurmasPage() {
                   return (
                     <GlassCard className="p-6 space-y-4">
                       <div>
-                        <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Progresso da Trilha</h4>
-                        <p className="text-[10px] text-muted-foreground">Progresso do cronograma do livro didático.</p>
+                        <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                          Progresso da Trilha
+                        </h4>
+                        <p className="text-[10px] text-muted-foreground">
+                          Progresso do cronograma do livro didático.
+                        </p>
                       </div>
 
                       <div className="space-y-3">
                         <div className="flex justify-between items-center text-xs">
                           <span className="text-muted-foreground">Lições concluídas:</span>
-                          <span className="font-bold text-foreground">{activeIndex - 1} de {total} ({pct}%)</span>
+                          <span className="font-bold text-foreground">
+                            {activeIndex - 1} de {total} ({pct}%)
+                          </span>
                         </div>
                         <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                           <div
@@ -1733,16 +1984,24 @@ function TurmasPage() {
               <div className="lg:col-span-5 space-y-6">
                 <GlassCard className="p-6 space-y-4">
                   <div>
-                    <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Roteiro de Aulas da Turma</h4>
-                    <p className="text-[10px] text-muted-foreground">Aulas e conteúdos programados. Clique em uma aula para atualizar o progresso da turma até ela.</p>
+                    <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                      Roteiro de Aulas da Turma
+                    </h4>
+                    <p className="text-[10px] text-muted-foreground">
+                      Aulas e conteúdos programados. Clique em uma aula para atualizar o progresso
+                      da turma até ela.
+                    </p>
                   </div>
 
                   {(() => {
-                    const c = classes.find(item => item.nome === selectedCronogramaClass);
-                    const book = c ? livrosTrilhas.find(b => b.id === c.livroId) : null;
+                    const c = classes.find((item) => item.nome === selectedCronogramaClass);
+                    const book = c ? livrosTrilhas.find((b) => b.id === c.livroId) : null;
                     if (!book || !c) {
                       return (
-                        <p className="text-xs text-muted-foreground text-center py-8">Selecione ou vincule um livro didático à turma para carregar o roteiro pedagógico.</p>
+                        <p className="text-xs text-muted-foreground text-center py-8">
+                          Selecione ou vincule um livro didático à turma para carregar o roteiro
+                          pedagógico.
+                        </p>
                       );
                     }
 
@@ -1770,13 +2029,19 @@ function TurmasPage() {
                             <div
                               key={les.id}
                               onClick={() => {
-                                setClasses(classes.map(item => item.nome === c.nome ? { ...item, aulaAtual: les.aula } : item));
+                                setClasses(
+                                  classes.map((item) =>
+                                    item.nome === c.nome ? { ...item, aulaAtual: les.aula } : item,
+                                  ),
+                                );
                                 toast.success(`Turma posicionada na Aula #${les.aula}!`);
                               }}
                               className="relative group cursor-pointer transition-all hover:translate-x-0.5 duration-200"
                             >
                               {/* Dot indicator */}
-                              <span className={`absolute -left-[31px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full border bg-zinc-900 ring-4 ${ringColor} ${statusColor}`}>
+                              <span
+                                className={`absolute -left-[31px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full border bg-zinc-900 ring-4 ${ringColor} ${statusColor}`}
+                              >
                                 {isCompleted ? (
                                   <CheckCircle2 className="size-2.5 text-zinc-900 fill-emerald-400" />
                                 ) : isActive ? (
@@ -1788,18 +2053,26 @@ function TurmasPage() {
 
                               <div className="space-y-1 bg-white/[0.01] hover:bg-white/[0.03] p-2 rounded-lg transition-colors border border-transparent hover:border-hairline">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[10px] font-bold text-muted-foreground uppercase">Aula #{les.aula}</span>
-                                  <span className={`rounded-full text-[8px] font-bold px-1.5 py-0.2 uppercase ${
-                                    isCompleted ? "bg-emerald-500/10 text-emerald-400" :
-                                    isActive ? "bg-blue-500/10 text-blue-400" :
-                                    "bg-zinc-500/10 text-zinc-400"
-                                  }`}>
+                                  <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                                    Aula #{les.aula}
+                                  </span>
+                                  <span
+                                    className={`rounded-full text-[8px] font-bold px-1.5 py-0.2 uppercase ${
+                                      isCompleted
+                                        ? "bg-emerald-500/10 text-emerald-400"
+                                        : isActive
+                                          ? "bg-blue-500/10 text-blue-400"
+                                          : "bg-zinc-500/10 text-zinc-400"
+                                    }`}
+                                  >
                                     {statusText}
                                   </span>
                                 </div>
                                 <h5 className="text-xs font-bold text-foreground">{les.tema}</h5>
                                 {les.descricao && (
-                                  <p className="text-[10px] text-muted-foreground leading-relaxed">{les.descricao}</p>
+                                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                    {les.descricao}
+                                  </p>
                                 )}
                               </div>
                             </div>
@@ -1815,20 +2088,28 @@ function TurmasPage() {
               <div className="lg:col-span-3 space-y-6">
                 <GlassCard className="p-6 space-y-4">
                   <div>
-                    <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Desempenho dos Alunos</h4>
-                    <p className="text-[10px] text-muted-foreground">Progresso e sincronia de cada aluno no livro.</p>
+                    <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                      Desempenho dos Alunos
+                    </h4>
+                    <p className="text-[10px] text-muted-foreground">
+                      Progresso e sincronia de cada aluno no livro.
+                    </p>
                   </div>
 
                   <div className="divide-y divide-hairline">
                     {(() => {
-                      const c = classes.find(item => item.nome === selectedCronogramaClass);
+                      const c = classes.find((item) => item.nome === selectedCronogramaClass);
                       const currentClassName = selectedCronogramaClass.toLowerCase();
                       const filteredStudents = students.filter((s) => {
                         const studentTurma = s.turma.toLowerCase();
-                        return studentTurma.includes(currentClassName) || currentClassName.includes(studentTurma);
+                        return (
+                          studentTurma.includes(currentClassName) ||
+                          currentClassName.includes(studentTurma)
+                        );
                       });
 
-                      const displayList = filteredStudents.length > 0 ? filteredStudents : students.slice(0, 3);
+                      const displayList =
+                        filteredStudents.length > 0 ? filteredStudents : students.slice(0, 3);
 
                       return displayList.map((stu) => {
                         const activeLessonNum = c?.aulaAtual || 1;
@@ -1840,16 +2121,23 @@ function TurmasPage() {
                         }
 
                         return (
-                          <div key={stu.nome} className="py-3 flex items-center justify-between gap-3 first:pt-0 last:pb-0">
+                          <div
+                            key={stu.nome}
+                            className="py-3 flex items-center justify-between gap-3 first:pt-0 last:pb-0"
+                          >
                             <div className="space-y-0.5">
                               <p className="text-xs font-bold text-foreground">{stu.nome}</p>
-                              <span className="text-[9px] text-muted-foreground block">Trilha Nível {stu.nivel}</span>
+                              <span className="text-[9px] text-muted-foreground block">
+                                Trilha Nível {stu.nivel}
+                              </span>
                             </div>
                             <div className="text-right">
                               <span className="rounded bg-primary/10 text-primary text-[9px] font-bold px-2 py-0.5 block">
                                 Aula #{studentLessonNum}
                               </span>
-                              <span className="text-[8px] text-emerald-400 font-medium block mt-1">Conforme Trilha</span>
+                              <span className="text-[8px] text-emerald-400 font-medium block mt-1">
+                                Conforme Trilha
+                              </span>
                             </div>
                           </div>
                         );
@@ -1869,12 +2157,16 @@ function TurmasPage() {
                 <GlassCard className="p-6 space-y-4">
                   <div className="flex justify-between items-center">
                     <div>
-                      <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Trilhas de Livros</h4>
-                      <p className="text-[10px] text-muted-foreground">Lista de livros pedagógicos cadastrados.</p>
+                      <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                        Trilhas de Livros
+                      </h4>
+                      <p className="text-[10px] text-muted-foreground">
+                        Lista de livros pedagógicos cadastrados.
+                      </p>
                     </div>
                     {canManage && (
                       <button
-                        onClick={(() => {
+                        onClick={() => {
                           const title = prompt("Insira o nome do Livro / Material Didático:");
                           if (!title) return;
                           const level = prompt("Insira o nível CEFR (ex: A1, B2):", "A1");
@@ -1885,13 +2177,18 @@ function TurmasPage() {
                             titulo: title,
                             nivel: level,
                             aulas: [
-                              { id: `l-gen-${Date.now()}-1`, aula: 1, tema: "Aula Introdutória", descricao: "Apresentação do material e cronograma." }
-                            ]
+                              {
+                                id: `l-gen-${Date.now()}-1`,
+                                aula: 1,
+                                tema: "Aula Introdutória",
+                                descricao: "Apresentação do material e cronograma.",
+                              },
+                            ],
                           };
                           setLivrosTrilhas([...livrosTrilhas, newBook]);
                           setSelectedLibraryBookId(newBook.id);
                           toast.success(`Livro "${title}" adicionado com sucesso!`);
-                        })}
+                        }}
                         className="inline-flex items-center gap-1 rounded bg-primary/10 hover:bg-primary/20 px-2 py-1 text-[10px] font-bold text-primary cursor-pointer transition-all border-0"
                       >
                         + Novo Livro
@@ -1912,23 +2209,31 @@ function TurmasPage() {
                       >
                         <div>
                           <p className="font-bold">{book.titulo}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">{book.aulas.length} Aulas Planejadas</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            {book.aulas.length} Aulas Planejadas
+                          </p>
                         </div>
-                        <span className="rounded bg-primary/10 text-primary text-[8px] font-bold px-1.5 py-0.5">CEFR {book.nivel}</span>
+                        <span className="rounded bg-primary/10 text-primary text-[8px] font-bold px-1.5 py-0.5">
+                          CEFR {book.nivel}
+                        </span>
                       </div>
                     ))}
                   </div>
 
                   {/* CSV Actions for selected book */}
                   {(() => {
-                    const book = livrosTrilhas.find(b => b.id === selectedLibraryBookId);
+                    const book = livrosTrilhas.find((b) => b.id === selectedLibraryBookId);
                     if (!book) return null;
 
                     return (
                       <div className="border-t border-hairline pt-4 space-y-3">
                         <div>
-                          <h5 className="text-[11px] font-bold text-foreground">Importar Aulas para este Livro</h5>
-                          <p className="text-[9px] text-muted-foreground mt-0.5">Sobrescreva as aulas deste livro importando uma planilha modelo CSV.</p>
+                          <h5 className="text-[11px] font-bold text-foreground">
+                            Importar Aulas para este Livro
+                          </h5>
+                          <p className="text-[9px] text-muted-foreground mt-0.5">
+                            Sobrescreva as aulas deste livro importando uma planilha modelo CSV.
+                          </p>
                         </div>
                         <div className="flex gap-2">
                           <button
@@ -1957,7 +2262,9 @@ function TurmasPage() {
                                       const line = lines[i]?.trim();
                                       if (!line) continue;
 
-                                      const cols = line.includes(";") ? line.split(";") : line.split(",");
+                                      const cols = line.includes(";")
+                                        ? line.split(";")
+                                        : line.split(",");
                                       const aulaNum = Number(cols[0]?.trim()) || i;
                                       const temaStr = cols[1]?.trim() || "Aula sem tema";
                                       const descStr = cols[2]?.trim() || "";
@@ -1966,7 +2273,7 @@ function TurmasPage() {
                                         id: `l-csv-${Date.now()}-${i}`,
                                         aula: aulaNum,
                                         tema: temaStr,
-                                        descricao: descStr
+                                        descricao: descStr,
                                       });
                                     }
 
@@ -1975,8 +2282,14 @@ function TurmasPage() {
                                       return;
                                     }
 
-                                    setLivrosTrilhas(livrosTrilhas.map(b => b.id === book.id ? { ...b, aulas: parsedAulas } : b));
-                                    toast.success(`Importadas ${parsedAulas.length} aulas na trilha do livro "${book.titulo}"!`);
+                                    setLivrosTrilhas(
+                                      livrosTrilhas.map((b) =>
+                                        b.id === book.id ? { ...b, aulas: parsedAulas } : b,
+                                      ),
+                                    );
+                                    toast.success(
+                                      `Importadas ${parsedAulas.length} aulas na trilha do livro "${book.titulo}"!`,
+                                    );
                                   } catch {
                                     toast.error("Erro ao importar CSV.");
                                   }
@@ -1997,37 +2310,46 @@ function TurmasPage() {
               {/* Middle/Right Column: Lessons list of book */}
               <div className="lg:col-span-8 space-y-6">
                 {(() => {
-                  const book = livrosTrilhas.find(b => b.id === selectedLibraryBookId);
+                  const book = livrosTrilhas.find((b) => b.id === selectedLibraryBookId);
                   if (!book) return null;
 
                   return (
                     <GlassCard className="p-6 space-y-4">
                       <div className="flex justify-between items-center border-b border-hairline pb-4">
                         <div>
-                          <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Aulas do Livro: {book.titulo}</h4>
-                          <p className="text-[10px] text-muted-foreground">Estrutura oficial do curso. Professores seguirão este cronograma.</p>
+                          <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                            Aulas do Livro: {book.titulo}
+                          </h4>
+                          <p className="text-[10px] text-muted-foreground">
+                            Estrutura oficial do curso. Professores seguirão este cronograma.
+                          </p>
                         </div>
                         {canManage && (
                           <button
                             onClick={() => {
-                              setLivrosTrilhas(livrosTrilhas.map(b => {
-                                if (b.id === book.id) {
-                                  const nextNum = b.aulas.length > 0 ? Math.max(...b.aulas.map(a => a.aula)) + 1 : 1;
-                                  return {
-                                    ...b,
-                                    aulas: [
-                                      ...b.aulas,
-                                      {
-                                        id: `l-${Date.now()}`,
-                                        aula: nextNum,
-                                        tema: `Nova Aula Pedagógica #${nextNum}`,
-                                        descricao: "Descrição pedagógica da lição."
-                                      }
-                                    ]
-                                  };
-                                }
-                                return b;
-                              }));
+                              setLivrosTrilhas(
+                                livrosTrilhas.map((b) => {
+                                  if (b.id === book.id) {
+                                    const nextNum =
+                                      b.aulas.length > 0
+                                        ? Math.max(...b.aulas.map((a) => a.aula)) + 1
+                                        : 1;
+                                    return {
+                                      ...b,
+                                      aulas: [
+                                        ...b.aulas,
+                                        {
+                                          id: `l-${Date.now()}`,
+                                          aula: nextNum,
+                                          tema: `Nova Aula Pedagógica #${nextNum}`,
+                                          descricao: "Descrição pedagógica da lição.",
+                                        },
+                                      ],
+                                    };
+                                  }
+                                  return b;
+                                }),
+                              );
                               toast.success("Nova aula adicionada à trilha do livro!");
                             }}
                             className="inline-flex items-center gap-1 rounded bg-primary/10 hover:bg-primary/20 px-2.5 py-1 text-[10px] font-bold text-primary cursor-pointer transition-all border-0"
@@ -2044,10 +2366,14 @@ function TurmasPage() {
                             className="rounded-lg border border-hairline bg-white/[0.01] p-4 flex justify-between items-start gap-4 hover:bg-white/[0.03] transition-colors"
                           >
                             <div className="space-y-1">
-                              <span className="text-[10px] font-bold text-muted-foreground uppercase">Aula #{les.aula}</span>
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                                Aula #{les.aula}
+                              </span>
                               <h5 className="text-xs font-bold text-foreground">{les.tema}</h5>
                               {les.descricao && (
-                                <p className="text-[10px] text-muted-foreground leading-relaxed">{les.descricao}</p>
+                                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                  {les.descricao}
+                                </p>
                               )}
                             </div>
 
@@ -2057,18 +2383,31 @@ function TurmasPage() {
                                   onClick={() => {
                                     const newTema = prompt("Insira o tema da aula:", les.tema);
                                     if (newTema === null) return;
-                                    const newDesc = prompt("Insira a descrição da aula:", les.descricao);
+                                    const newDesc = prompt(
+                                      "Insira a descrição da aula:",
+                                      les.descricao,
+                                    );
                                     if (newDesc === null) return;
 
-                                    setLivrosTrilhas(livrosTrilhas.map(b => {
-                                      if (b.id === book.id) {
-                                        return {
-                                          ...b,
-                                          aulas: b.aulas.map(a => a.id === les.id ? { ...a, tema: newTema || a.tema, descricao: newDesc } : a)
-                                        };
-                                      }
-                                      return b;
-                                    }));
+                                    setLivrosTrilhas(
+                                      livrosTrilhas.map((b) => {
+                                        if (b.id === book.id) {
+                                          return {
+                                            ...b,
+                                            aulas: b.aulas.map((a) =>
+                                              a.id === les.id
+                                                ? {
+                                                    ...a,
+                                                    tema: newTema || a.tema,
+                                                    descricao: newDesc,
+                                                  }
+                                                : a,
+                                            ),
+                                          };
+                                        }
+                                        return b;
+                                      }),
+                                    );
                                     toast.success("Aula do livro atualizada!");
                                   }}
                                   className="p-1 rounded hover:bg-white/5 text-muted-foreground hover:text-foreground cursor-pointer border-0 bg-transparent"
@@ -2078,14 +2417,19 @@ function TurmasPage() {
                                 </button>
                                 <button
                                   onClick={() => {
-                                    setLivrosTrilhas(livrosTrilhas.map(b => {
-                                      if (b.id === book.id) {
-                                        const filtered = b.aulas.filter(a => a.id !== les.id);
-                                        const rescaled = filtered.map((a, idx) => ({ ...a, aula: idx + 1 }));
-                                        return { ...b, aulas: rescaled };
-                                      }
-                                      return b;
-                                    }));
+                                    setLivrosTrilhas(
+                                      livrosTrilhas.map((b) => {
+                                        if (b.id === book.id) {
+                                          const filtered = b.aulas.filter((a) => a.id !== les.id);
+                                          const rescaled = filtered.map((a, idx) => ({
+                                            ...a,
+                                            aula: idx + 1,
+                                          }));
+                                          return { ...b, aulas: rescaled };
+                                        }
+                                        return b;
+                                      }),
+                                    );
                                     toast.success("Aula removida da trilha do livro.");
                                   }}
                                   className="p-1 rounded hover:bg-white/5 text-rose-400 hover:text-rose-300 cursor-pointer border-0 bg-transparent"
@@ -2121,12 +2465,16 @@ function TurmasPage() {
             </button>
             <div>
               <h3 className="text-base font-bold text-foreground">Criar Nova Turma</h3>
-              <p className="text-xs text-muted-foreground">Preencha as configurações pedagógicas e horário da turma.</p>
+              <p className="text-xs text-muted-foreground">
+                Preencha as configurações pedagógicas e horário da turma.
+              </p>
             </div>
-            
+
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nome da Turma</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Nome da Turma
+                </label>
                 <input
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
@@ -2138,7 +2486,9 @@ function TurmasPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nível CEFR</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Nível CEFR
+                  </label>
                   <select
                     value={formNivel}
                     onChange={(e) => setFormNivel(e.target.value)}
@@ -2153,7 +2503,9 @@ function TurmasPage() {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vagas Max.</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Vagas Max.
+                  </label>
                   <input
                     type="number"
                     value={formVagas}
@@ -2166,7 +2518,9 @@ function TurmasPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Professor Responsável</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Professor Responsável
+                </label>
                 <select
                   value={formProfessor}
                   onChange={(e) => setFormProfessor(e.target.value)}
@@ -2181,7 +2535,9 @@ function TurmasPage() {
 
               {/* Day selection checkmarks */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dias da Semana</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Dias da Semana
+                </label>
                 <div className="flex flex-wrap gap-2">
                   {CALENDAR_DAYS.map((d) => {
                     const isSelected = formDias.includes(d.key);
@@ -2212,19 +2568,25 @@ function TurmasPage() {
               {/* Time selection slot */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Horário de Início</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Horário de Início
+                  </label>
                   <select
                     value={formHora}
                     onChange={(e) => setFormHora(e.target.value)}
                     className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary cursor-pointer"
                   >
                     {calendarTimes.map((time) => (
-                      <option key={time} value={time}>{time}</option>
+                      <option key={time} value={time}>
+                        {time}
+                      </option>
                     ))}
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Horário de Fim</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Horário de Fim
+                  </label>
                   <input
                     type="text"
                     placeholder="Ex: 09:00"
@@ -2238,7 +2600,9 @@ function TurmasPage() {
 
               {/* Book trail selection */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Livro / Trilha Didática</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Livro / Trilha Didática
+                </label>
                 <select
                   value={formLivroId}
                   onChange={(e) => setFormLivroId(e.target.value)}
@@ -2276,7 +2640,10 @@ function TurmasPage() {
                     <div className="space-y-1 pt-0.5">
                       <div className="flex flex-wrap gap-1">
                         {selRoom.recursos.map((rec, i) => (
-                          <span key={i} className="rounded bg-surface-elevated border border-hairline px-1.5 py-0.2 text-[9px] text-muted-foreground font-medium">
+                          <span
+                            key={i}
+                            className="rounded bg-surface-elevated border border-hairline px-1.5 py-0.2 text-[9px] text-muted-foreground font-medium"
+                          >
                             {rec}
                           </span>
                         ))}
@@ -2284,7 +2651,8 @@ function TurmasPage() {
                       {isExceeded && (
                         <p className="text-[11px] text-amber-400 font-semibold flex items-center gap-1">
                           <AlertTriangle className="size-3.5 shrink-0" />
-                          Atenção: Vagas ({formVagas}) ultrapassam a capacidade física da sala ({selRoom.capacidade} lugares).
+                          Atenção: Vagas ({formVagas}) ultrapassam a capacidade física da sala (
+                          {selRoom.capacidade} lugares).
                         </p>
                       )}
                     </div>
@@ -2296,7 +2664,9 @@ function TurmasPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                   <span>Cor de Identificação da Turma</span>
-                  <span className="text-[10px] text-muted-foreground font-normal">Cor exclusiva no mapa</span>
+                  <span className="text-[10px] text-muted-foreground font-normal">
+                    Cor exclusiva no mapa
+                  </span>
                 </label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {CLASS_COLOR_THEMES.map((theme) => {
@@ -2315,8 +2685,8 @@ function TurmasPage() {
                           isOccupied
                             ? "opacity-35 cursor-not-allowed border-hairline bg-surface/30 text-muted-foreground"
                             : isSelected
-                            ? `${theme.badgeBg} ${theme.border} ${theme.text} shadow-sm ring-1 ring-primary/40 cursor-pointer`
-                            : "border-hairline bg-surface/50 text-muted-foreground hover:text-foreground cursor-pointer hover:border-white/10"
+                              ? `${theme.badgeBg} ${theme.border} ${theme.text} shadow-sm ring-1 ring-primary/40 cursor-pointer`
+                              : "border-hairline bg-surface/50 text-muted-foreground hover:text-foreground cursor-pointer hover:border-white/10"
                         }`}
                       >
                         <span className={`size-2.5 rounded-full ${theme.dot} shrink-0`} />
@@ -2330,17 +2700,25 @@ function TurmasPage() {
 
               {/* Dual Conflict Alert */}
               {(() => {
-                const conflict = checkClassConflicts(formSalaId, formProfessor, formDias, formHora, formHoraFim);
+                const conflict = checkClassConflicts(
+                  formSalaId,
+                  formProfessor,
+                  formDias,
+                  formHora,
+                  formHoraFim,
+                );
                 if (!conflict) return null;
                 return (
                   <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 space-y-1 text-xs text-rose-300 animate-in fade-in">
                     <div className="flex items-center gap-2 font-bold text-rose-400">
                       <AlertTriangle className="size-4 shrink-0" />
-                      <span>{conflict.type === "room" ? "⛔ Choque de Sala Física" : "⚠️ Choque de Docente / Professor"}</span>
+                      <span>
+                        {conflict.type === "room"
+                          ? "⛔ Choque de Sala Física"
+                          : "⚠️ Choque de Docente / Professor"}
+                      </span>
                     </div>
-                    <p className="text-[11px] text-rose-200/90 leading-tight">
-                      {conflict.message}
-                    </p>
+                    <p className="text-[11px] text-rose-200/90 leading-tight">{conflict.message}</p>
                     <p className="text-[10px] text-rose-400 font-bold">
                       ⛔ Bloqueado: Escolha outro horário, dia, sala ou professor para prosseguir.
                     </p>
@@ -2350,7 +2728,9 @@ function TurmasPage() {
 
               <button
                 type="submit"
-                disabled={!!checkClassConflicts(formSalaId, formProfessor, formDias, formHora, formHoraFim)}
+                disabled={
+                  !!checkClassConflicts(formSalaId, formProfessor, formDias, formHora, formHoraFim)
+                }
                 className="w-full rounded-lg bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow cursor-pointer text-center border-0"
               >
                 Confirmar Criação
@@ -2379,7 +2759,8 @@ function TurmasPage() {
               <div>
                 <h3 className="text-lg font-bold text-foreground">Editar Configurações da Turma</h3>
                 <p className="text-xs text-muted-foreground">
-                  Ajuste parâmetros didáticos, horários, cálculo de horas semanais e alocação de alunos com validação pedagógica.
+                  Ajuste parâmetros didáticos, horários, cálculo de horas semanais e alocação de
+                  alunos com validação pedagógica.
                 </p>
               </div>
             </div>
@@ -2390,8 +2771,8 @@ function TurmasPage() {
                 try {
                   const [startH = 19, startM = 0] = startStr.split(":").map(Number);
                   const [endH = 21, endM = 0] = endStr.split(":").map(Number);
-                  const startMin = (startH * 60) + startM;
-                  const endMin = (endH * 60) + endM;
+                  const startMin = startH * 60 + startM;
+                  const endMin = endH * 60 + endM;
                   const diffMin = endMin > startMin ? endMin - startMin : 120;
                   return Number((diffMin / 60).toFixed(1));
                 } catch {
@@ -2404,36 +2785,52 @@ function TurmasPage() {
               const monthlyHours = Number((weeklyHours * 4).toFixed(0));
 
               // Selected book info
-              const selectedBook = livrosTrilhas.find(b => b.id === formLivroId);
+              const selectedBook = livrosTrilhas.find((b) => b.id === formLivroId);
 
               // Students list for this class
               const classNomeLower = selectedClass.nome.toLowerCase();
-              const enrolledStudents = students.filter(s => {
+              const enrolledStudents = students.filter((s) => {
                 const studentTurma = s.turma.toLowerCase();
-                return studentTurma === classNomeLower || studentTurma.includes(classNomeLower) || classNomeLower.includes(studentTurma);
+                return (
+                  studentTurma === classNomeLower ||
+                  studentTurma.includes(classNomeLower) ||
+                  classNomeLower.includes(studentTurma)
+                );
               });
 
-              const availableStudents = students.filter(s => {
+              const availableStudents = students.filter((s) => {
                 const studentTurma = s.turma.toLowerCase();
-                return studentTurma !== classNomeLower && !studentTurma.includes(classNomeLower) && !classNomeLower.includes(studentTurma);
+                return (
+                  studentTurma !== classNomeLower &&
+                  !studentTurma.includes(classNomeLower) &&
+                  !classNomeLower.includes(studentTurma)
+                );
               });
 
               const isFull = enrolledStudents.length >= formVagas;
-              const occupancyPct = Math.min(100, Math.round((enrolledStudents.length / formVagas) * 100));
+              const occupancyPct = Math.min(
+                100,
+                Math.round((enrolledStudents.length / formVagas) * 100),
+              );
 
               // Currently selected student in allocation dropdown
-              const candidateStudent = students.find(s => s.nome === allocateStudentName);
+              const candidateStudent = students.find((s) => s.nome === allocateStudentName);
               const candidateHorasContratadas = candidateStudent?.horasContratadas || 4;
-              const isHoursExceeded = candidateStudent ? weeklyHours > candidateHorasContratadas : false;
-              const isLevelMismatch = candidateStudent ? candidateStudent.nivel !== formNivel : false;
+              const isHoursExceeded = candidateStudent
+                ? weeklyHours > candidateHorasContratadas
+                : false;
+              const isLevelMismatch = candidateStudent
+                ? candidateStudent.nivel !== formNivel
+                : false;
 
               return (
                 <div className="grid lg:grid-cols-2 gap-8 items-start">
-                  
                   {/* COLUMN 1: CLASS CONFIGURATIONS */}
                   <form onSubmit={handleEdit} className="space-y-4">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nome da Turma</label>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Nome da Turma
+                      </label>
                       <input
                         value={formName}
                         onChange={(e) => setFormName(e.target.value)}
@@ -2444,7 +2841,9 @@ function TurmasPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nível CEFR da Turma</label>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          Nível CEFR da Turma
+                        </label>
                         <select
                           value={formNivel}
                           onChange={(e) => setFormNivel(e.target.value)}
@@ -2460,7 +2859,9 @@ function TurmasPage() {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vagas Máximas</label>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          Vagas Máximas
+                        </label>
                         <input
                           type="number"
                           value={formVagas}
@@ -2473,7 +2874,9 @@ function TurmasPage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Professor Responsável</label>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Professor Responsável
+                      </label>
                       <select
                         value={formProfessor}
                         onChange={(e) => setFormProfessor(e.target.value)}
@@ -2489,7 +2892,9 @@ function TurmasPage() {
                     {/* Day selection checkmarks */}
                     <div className="space-y-1.5">
                       <div className="flex justify-between items-center">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dias da Semana ({formDias.length} selecionados)</label>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          Dias da Semana ({formDias.length} selecionados)
+                        </label>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {CALENDAR_DAYS.map((d) => {
@@ -2525,19 +2930,25 @@ function TurmasPage() {
                     {/* Time selection slot */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Horário de Início</label>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          Horário de Início
+                        </label>
                         <select
                           value={formHora}
                           onChange={(e) => setFormHora(e.target.value)}
                           className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-sm text-foreground outline-none focus:border-primary cursor-pointer"
                         >
                           {calendarTimes.map((time) => (
-                            <option key={time} value={time}>{time}</option>
+                            <option key={time} value={time}>
+                              {time}
+                            </option>
                           ))}
                         </select>
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Horário de Término</label>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          Horário de Término
+                        </label>
                         <input
                           type="text"
                           placeholder="Ex: 21:00"
@@ -2566,7 +2977,9 @@ function TurmasPage() {
                         <span className="inline-flex rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-xs font-bold text-primary">
                           {weeklyHours}h / semana
                         </span>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">~{monthlyHours}h / mês</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          ~{monthlyHours}h / mês
+                        </p>
                       </div>
                     </div>
 
@@ -2588,7 +3001,9 @@ function TurmasPage() {
                       </select>
                       {selectedBook && (
                         <p className="text-[11px] text-muted-foreground">
-                          * Este material possui <strong>{selectedBook.aulas.length} aulas estruturadas</strong> voltadas para proficiência <strong>{selectedBook.nivel}</strong>.
+                          * Este material possui{" "}
+                          <strong>{selectedBook.aulas.length} aulas estruturadas</strong> voltadas
+                          para proficiência <strong>{selectedBook.nivel}</strong>.
                         </p>
                       )}
                     </div>
@@ -2617,7 +3032,10 @@ function TurmasPage() {
                           <div className="space-y-1 pt-0.5">
                             <div className="flex flex-wrap gap-1">
                               {selRoom.recursos.map((rec, i) => (
-                                <span key={i} className="rounded bg-surface-elevated border border-hairline px-1.5 py-0.2 text-[9px] text-muted-foreground font-medium">
+                                <span
+                                  key={i}
+                                  className="rounded bg-surface-elevated border border-hairline px-1.5 py-0.2 text-[9px] text-muted-foreground font-medium"
+                                >
                                   {rec}
                                 </span>
                               ))}
@@ -2625,7 +3043,8 @@ function TurmasPage() {
                             {isExceeded && (
                               <p className="text-[11px] text-amber-400 font-semibold flex items-center gap-1">
                                 <AlertTriangle className="size-3.5 shrink-0" />
-                                Atenção: Vagas ({formVagas}) ultrapassam a capacidade física da sala ({selRoom.capacidade} lugares).
+                                Atenção: Vagas ({formVagas}) ultrapassam a capacidade física da sala
+                                ({selRoom.capacidade} lugares).
                               </p>
                             )}
                           </div>
@@ -2637,13 +3056,15 @@ function TurmasPage() {
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                         <span>Cor de Identificação da Turma</span>
-                        <span className="text-[10px] text-muted-foreground font-normal">Cor exclusiva no mapa</span>
+                        <span className="text-[10px] text-muted-foreground font-normal">
+                          Cor exclusiva no mapa
+                        </span>
                       </label>
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                         {CLASS_COLOR_THEMES.map((theme) => {
                           const isSelected = formCorTheme === theme.id;
                           const usedByClass = classes.find(
-                            (c) => c.nome !== selectedClass.nome && c.corTheme === theme.id
+                            (c) => c.nome !== selectedClass.nome && c.corTheme === theme.id,
                           );
                           const isOccupied = !!usedByClass;
 
@@ -2658,13 +3079,15 @@ function TurmasPage() {
                                 isOccupied
                                   ? "opacity-35 cursor-not-allowed border-hairline bg-surface/30 text-muted-foreground"
                                   : isSelected
-                                  ? `${theme.badgeBg} ${theme.border} ${theme.text} shadow-sm ring-1 ring-primary/40 cursor-pointer`
-                                  : "border-hairline bg-surface/50 text-muted-foreground hover:text-foreground cursor-pointer hover:border-white/10"
+                                    ? `${theme.badgeBg} ${theme.border} ${theme.text} shadow-sm ring-1 ring-primary/40 cursor-pointer`
+                                    : "border-hairline bg-surface/50 text-muted-foreground hover:text-foreground cursor-pointer hover:border-white/10"
                               }`}
                             >
                               <span className={`size-2.5 rounded-full ${theme.dot} shrink-0`} />
                               <span className="truncate">{theme.label.split(" ")[0]}</span>
-                              {isSelected && <Check className="size-3 ml-auto text-primary shrink-0" />}
+                              {isSelected && (
+                                <Check className="size-3 ml-auto text-primary shrink-0" />
+                              )}
                             </button>
                           );
                         })}
@@ -2673,19 +3096,31 @@ function TurmasPage() {
 
                     {/* Dual Conflict Alert */}
                     {(() => {
-                      const conflict = checkClassConflicts(formSalaId, formProfessor, formDias, formHora, formHoraFim, selectedClass.nome);
+                      const conflict = checkClassConflicts(
+                        formSalaId,
+                        formProfessor,
+                        formDias,
+                        formHora,
+                        formHoraFim,
+                        selectedClass.nome,
+                      );
                       if (!conflict) return null;
                       return (
                         <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 space-y-1 text-xs text-rose-300 animate-in fade-in">
                           <div className="flex items-center gap-2 font-bold text-rose-400">
                             <AlertTriangle className="size-4 shrink-0" />
-                            <span>{conflict.type === "room" ? "⛔ Choque de Sala Física" : "⚠️ Choque de Docente / Professor"}</span>
+                            <span>
+                              {conflict.type === "room"
+                                ? "⛔ Choque de Sala Física"
+                                : "⚠️ Choque de Docente / Professor"}
+                            </span>
                           </div>
                           <p className="text-[11px] text-rose-200/90 leading-tight">
                             {conflict.message}
                           </p>
                           <p className="text-[10px] text-rose-400 font-bold">
-                            ⛔ Bloqueado: Escolha outro horário, dia, sala ou professor para prosseguir.
+                            ⛔ Bloqueado: Escolha outro horário, dia, sala ou professor para
+                            prosseguir.
                           </p>
                         </div>
                       );
@@ -2693,7 +3128,16 @@ function TurmasPage() {
 
                     <button
                       type="submit"
-                      disabled={!!checkClassConflicts(formSalaId, formProfessor, formDias, formHora, formHoraFim, selectedClass.nome)}
+                      disabled={
+                        !!checkClassConflicts(
+                          formSalaId,
+                          formProfessor,
+                          formDias,
+                          formHora,
+                          formHoraFim,
+                          selectedClass.nome,
+                        )
+                      }
                       className="w-full rounded-lg bg-primary py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/95 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow cursor-pointer text-center border-0 active:scale-[0.98]"
                     >
                       Salvar Alterações da Turma
@@ -2702,7 +3146,6 @@ function TurmasPage() {
 
                   {/* COLUMN 2: STUDENTS ROSTER & PEDAGOGICAL ALLOCATION */}
                   <div className="space-y-5 rounded-xl border border-hairline bg-surface/20 p-5">
-                    
                     {/* Capacity & Occupancy Bar */}
                     <div className="space-y-2">
                       <div className="flex justify-between items-center text-xs">
@@ -2716,7 +3159,11 @@ function TurmasPage() {
                       <div className="h-2 w-full rounded-full bg-surface-elevated overflow-hidden border border-hairline">
                         <div
                           className={`h-full rounded-full transition-all duration-300 ${
-                            isFull ? "bg-rose-500" : occupancyPct > 80 ? "bg-amber-500" : "bg-primary"
+                            isFull
+                              ? "bg-rose-500"
+                              : occupancyPct > 80
+                                ? "bg-amber-500"
+                                : "bg-primary"
                           }`}
                           style={{ width: `${occupancyPct}%` }}
                         />
@@ -2754,8 +3201,12 @@ function TurmasPage() {
                                         <Check className="size-3" /> Nível OK
                                       </span>
                                     ) : (
-                                      <span className="text-amber-400 font-semibold flex items-center gap-0.5" title={`Aluno está no nível ${student.nivel}, enquanto a turma exige ${formNivel}`}>
-                                        <AlertTriangle className="size-3" /> Divergência ({student.nivel})
+                                      <span
+                                        className="text-amber-400 font-semibold flex items-center gap-0.5"
+                                        title={`Aluno está no nível ${student.nivel}, enquanto a turma exige ${formNivel}`}
+                                      >
+                                        <AlertTriangle className="size-3" /> Divergência (
+                                        {student.nivel})
                                       </span>
                                     )}
                                   </div>
@@ -2763,7 +3214,9 @@ function TurmasPage() {
 
                                 <button
                                   type="button"
-                                  onClick={() => handleRemoveStudentFromClass(student.nome, selectedClass.nome)}
+                                  onClick={() =>
+                                    handleRemoveStudentFromClass(student.nome, selectedClass.nome)
+                                  }
                                   className="rounded-lg border border-hairline px-2 py-1 text-[11px] font-semibold text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/30 transition-colors cursor-pointer"
                                   title="Desvincular da turma"
                                 >
@@ -2787,7 +3240,8 @@ function TurmasPage() {
                           <GraduationCap className="size-4 text-primary" /> Alocar Aluno na Turma
                         </h4>
                         <p className="text-[11px] text-muted-foreground">
-                          O sistema valida a compatibilidade de nível CEFR e limite de horas semanais contratadas.
+                          O sistema valida a compatibilidade de nível CEFR e limite de horas
+                          semanais contratadas.
                         </p>
                       </div>
 
@@ -2804,10 +3258,11 @@ function TurmasPage() {
                                 const sHoras = s.horasContratadas || 4;
                                 const isLevelOk = s.nivel === formNivel;
                                 const isHorasOk = weeklyHours <= sHoras;
-                                
+
                                 return (
                                   <option key={s.nome} value={s.nome}>
-                                    {s.nome} · Nível {s.nivel} {isLevelOk ? "✓" : "(!)"} · {sHoras}h/sem {isHorasOk ? "" : "(Excede horas)"}
+                                    {s.nome} · Nível {s.nivel} {isLevelOk ? "✓" : "(!)"} · {sHoras}
+                                    h/sem {isHorasOk ? "" : "(Excede horas)"}
                                   </option>
                                 );
                               })}
@@ -2821,7 +3276,9 @@ function TurmasPage() {
                                   return;
                                 }
 
-                                const studentObj = students.find(s => s.nome === allocateStudentName);
+                                const studentObj = students.find(
+                                  (s) => s.nome === allocateStudentName,
+                                );
                                 if (!studentObj) return;
 
                                 const studentHoras = studentObj.horasContratadas || 4;
@@ -2841,21 +3298,40 @@ function TurmasPage() {
                                   });
                                 }
 
-                                setClasses(classes.map(item => item.nome === selectedClass.nome ? { ...item, alunos: item.alunos + 1 } : item));
-                                setStudents(students.map(s => s.nome === allocateStudentName ? { ...s, turma: selectedClass.nome } : s));
-                                
+                                setClasses(
+                                  classes.map((item) =>
+                                    item.nome === selectedClass.nome
+                                      ? { ...item, alunos: item.alunos + 1 }
+                                      : item,
+                                  ),
+                                );
+                                setStudents(
+                                  students.map((s) =>
+                                    s.nome === allocateStudentName
+                                      ? { ...s, turma: selectedClass.nome }
+                                      : s,
+                                  ),
+                                );
+
                                 try {
-                                  const storedDetails = window.localStorage.getItem("fluency-ai:students:details");
+                                  const storedDetails = window.localStorage.getItem(
+                                    "fluency-ai:students:details",
+                                  );
                                   if (storedDetails) {
                                     const parsed = JSON.parse(storedDetails);
                                     if (parsed[allocateStudentName]) {
                                       parsed[allocateStudentName].turma = selectedClass.nome;
-                                      window.localStorage.setItem("fluency-ai:students:details", JSON.stringify(parsed));
+                                      window.localStorage.setItem(
+                                        "fluency-ai:students:details",
+                                        JSON.stringify(parsed),
+                                      );
                                     }
                                   }
                                 } catch {}
 
-                                toast.success(`Aluno "${allocateStudentName}" matriculado com sucesso na turma "${selectedClass.nome}"!`);
+                                toast.success(
+                                  `Aluno "${allocateStudentName}" matriculado com sucesso na turma "${selectedClass.nome}"!`,
+                                );
                                 setAllocateStudentName("");
                               }}
                               className="h-10 px-4 rounded-lg bg-primary text-xs font-bold text-primary-foreground shadow hover:bg-primary/95 cursor-pointer border-0 transition-all active:scale-95"
@@ -2867,23 +3343,33 @@ function TurmasPage() {
                           {/* Dynamic Validation Feedback Card for Selected Student */}
                           {candidateStudent && (
                             <div className="space-y-2 p-3 rounded-lg border bg-surface-elevated/20 text-xs">
-                              <p className="font-bold text-foreground">Diagnóstico de Alocação para {candidateStudent.nome}:</p>
-                              
+                              <p className="font-bold text-foreground">
+                                Diagnóstico de Alocação para {candidateStudent.nome}:
+                              </p>
+
                               {/* Hours verification */}
                               {isHoursExceeded ? (
                                 <div className="flex items-start gap-2 text-rose-400 bg-rose-500/10 border border-rose-500/20 p-2 rounded-md">
                                   <Ban className="size-4 shrink-0 mt-0.5" />
                                   <div>
-                                    <p className="font-semibold">Bloqueio: Carga Horária Excedida</p>
+                                    <p className="font-semibold">
+                                      Bloqueio: Carga Horária Excedida
+                                    </p>
                                     <p className="text-[11px] text-rose-300">
-                                      O aluno contratou <strong>{candidateHorasContratadas}h/semana</strong>, mas esta turma exige <strong>{weeklyHours}h/semana</strong>. Não é permitido alocar.
+                                      O aluno contratou{" "}
+                                      <strong>{candidateHorasContratadas}h/semana</strong>, mas esta
+                                      turma exige <strong>{weeklyHours}h/semana</strong>. Não é
+                                      permitido alocar.
                                     </p>
                                   </div>
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-2 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 p-2 rounded-md">
                                   <Check className="size-4 shrink-0" />
-                                  <span>Carga horária compatível ({weeklyHours}h da turma ≤ {candidateHorasContratadas}h contratadas).</span>
+                                  <span>
+                                    Carga horária compatível ({weeklyHours}h da turma ≤{" "}
+                                    {candidateHorasContratadas}h contratadas).
+                                  </span>
                                 </div>
                               )}
 
@@ -2892,9 +3378,14 @@ function TurmasPage() {
                                 <div className="flex items-start gap-2 text-amber-400 bg-amber-500/10 border border-amber-500/20 p-2 rounded-md">
                                   <ShieldAlert className="size-4 shrink-0 mt-0.5" />
                                   <div>
-                                    <p className="font-semibold">Aviso: Inconsistência de Nível Pedagógico</p>
+                                    <p className="font-semibold">
+                                      Aviso: Inconsistência de Nível Pedagógico
+                                    </p>
                                     <p className="text-[11px] text-amber-300">
-                                      O aluno está classificado no <strong>Nível {candidateStudent.nivel}</strong>, enquanto a turma e o livro didático exigem <strong>Nível {formNivel}</strong>.
+                                      O aluno está classificado no{" "}
+                                      <strong>Nível {candidateStudent.nivel}</strong>, enquanto a
+                                      turma e o livro didático exigem{" "}
+                                      <strong>Nível {formNivel}</strong>.
                                     </p>
                                   </div>
                                 </div>
@@ -2909,7 +3400,8 @@ function TurmasPage() {
                         </div>
                       ) : (
                         <p className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-3 rounded-lg text-center font-semibold">
-                          Turma com lotação máxima atingida ({formVagas} vagas). Para alocar mais alunos, aumente o número de vagas máximas.
+                          Turma com lotação máxima atingida ({formVagas} vagas). Para alocar mais
+                          alunos, aumente o número de vagas máximas.
                         </p>
                       )}
                     </div>
@@ -2922,14 +3414,16 @@ function TurmasPage() {
                       const classTotalCost = teacherCostMonthly + roomOverheadCost;
                       const classEstimatedRevenue = enrolledStudents.length * 450;
                       const classProfit = classEstimatedRevenue - classTotalCost;
-                      const classMarginPct = classEstimatedRevenue > 0 ? (classProfit / classEstimatedRevenue) * 100 : 0;
+                      const classMarginPct =
+                        classEstimatedRevenue > 0 ? (classProfit / classEstimatedRevenue) * 100 : 0;
                       const breakEvenStudents = Math.ceil(classTotalCost / 450);
 
                       return (
                         <div className="space-y-2.5 pt-3 border-t border-hairline">
                           <div className="flex justify-between items-center">
                             <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
-                              <DollarSign className="size-3.5 text-primary" /> Saúde Financeira & Unit Economics da Turma
+                              <DollarSign className="size-3.5 text-primary" /> Saúde Financeira &
+                              Unit Economics da Turma
                             </h4>
                             <span className="rounded bg-primary/10 border border-primary/20 px-2 py-0.5 text-[9px] font-bold text-primary">
                               Precificação Ativa
@@ -2938,42 +3432,71 @@ function TurmasPage() {
 
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                             <div className="rounded-lg border border-hairline bg-surface/40 p-2.5 space-y-0.5">
-                              <p className="text-[9px] font-semibold text-muted-foreground uppercase">Custo Docente</p>
-                              <p className="font-bold text-foreground">{teacherCostMonthly.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
-                              <p className="text-[8px] text-muted-foreground">~{monthlyHours.toFixed(0)}h/mês × R$ 45/h</p>
+                              <p className="text-[9px] font-semibold text-muted-foreground uppercase">
+                                Custo Docente
+                              </p>
+                              <p className="font-bold text-foreground">
+                                {teacherCostMonthly.toLocaleString("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                })}
+                              </p>
+                              <p className="text-[8px] text-muted-foreground">
+                                ~{monthlyHours.toFixed(0)}h/mês × R$ 45/h
+                              </p>
                             </div>
 
                             <div className="rounded-lg border border-hairline bg-surface/40 p-2.5 space-y-0.5">
-                              <p className="text-[9px] font-semibold text-muted-foreground uppercase">Receita Estimada</p>
-                              <p className="font-bold text-foreground">{classEstimatedRevenue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
-                              <p className="text-[8px] text-muted-foreground">{enrolledStudents.length} alunos × R$ 450</p>
+                              <p className="text-[9px] font-semibold text-muted-foreground uppercase">
+                                Receita Estimada
+                              </p>
+                              <p className="font-bold text-foreground">
+                                {classEstimatedRevenue.toLocaleString("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                })}
+                              </p>
+                              <p className="text-[8px] text-muted-foreground">
+                                {enrolledStudents.length} alunos × R$ 450
+                              </p>
                             </div>
 
-                            <div className={`rounded-lg border p-2.5 space-y-0.5 ${
-                              classProfit >= 0
-                                ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
-                                : "bg-rose-500/10 border-rose-500/25 text-rose-400"
-                            }`}>
+                            <div
+                              className={`rounded-lg border p-2.5 space-y-0.5 ${
+                                classProfit >= 0
+                                  ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
+                                  : "bg-rose-500/10 border-rose-500/25 text-rose-400"
+                              }`}
+                            >
                               <p className="text-[9px] font-semibold uppercase">Lucro Líquido</p>
-                              <p className="font-bold">{classProfit.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
-                              <p className="text-[8px] opacity-90">{classMarginPct.toFixed(0)}% margem líquida</p>
+                              <p className="font-bold">
+                                {classProfit.toLocaleString("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                })}
+                              </p>
+                              <p className="text-[8px] opacity-90">
+                                {classMarginPct.toFixed(0)}% margem líquida
+                              </p>
                             </div>
 
                             <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-2.5 space-y-0.5 text-amber-300">
-                              <p className="text-[9px] font-semibold uppercase text-amber-400">Ponto de Equilíbrio</p>
-                              <p className="font-bold text-foreground">{breakEvenStudents} Alunos</p>
+                              <p className="text-[9px] font-semibold uppercase text-amber-400">
+                                Ponto de Equilíbrio
+                              </p>
+                              <p className="font-bold text-foreground">
+                                {breakEvenStudents} Alunos
+                              </p>
                               <p className="text-[8px] opacity-90">Para cobrir custos da turma</p>
                             </div>
                           </div>
                         </div>
                       );
                     })()}
-
                   </div>
                 </div>
               );
             })()}
-
           </GlassCard>
         </div>
       )}
@@ -2988,20 +3511,22 @@ function TurmasPage() {
             >
               <X className="size-4" />
             </button>
-            
+
             <div className="space-y-2">
               <span className="mx-auto grid size-12 place-items-center rounded-xl bg-overdue/10 border border-overdue/20 text-overdue">
                 <Trash2 className="size-5" />
               </span>
               <h3 className="text-base font-bold text-foreground">Excluir Turma</h3>
               <p className="text-xs text-muted-foreground">
-                Tem certeza que deseja excluir a turma <strong>{selectedClass.nome}</strong>? Esta ação não pode ser desfeita.
+                Tem certeza que deseja excluir a turma <strong>{selectedClass.nome}</strong>? Esta
+                ação não pode ser desfeita.
               </p>
             </div>
 
             {selectedClass.alunos > 0 ? (
               <div className="rounded-lg border border-overdue/20 bg-overdue/5 p-3 text-[11px] text-overdue leading-relaxed">
-                Aviso: Esta turma possui <strong>{selectedClass.alunos}</strong> alunos matriculados. Recomendamos transferir os alunos antes da exclusão.
+                Aviso: Esta turma possui <strong>{selectedClass.alunos}</strong> alunos
+                matriculados. Recomendamos transferir os alunos antes da exclusão.
               </div>
             ) : null}
 
@@ -3034,18 +3559,31 @@ function TurmasPage() {
               <X className="size-4" />
             </button>
             <div>
-              <h3 className="text-base font-bold text-foreground">Transferência Pedagógica de Aluno</h3>
-              <p className="text-xs text-muted-foreground">Selecione o aluno e escolha a turma de destino compatível.</p>
+              <h3 className="text-base font-bold text-foreground">
+                Transferência Pedagógica de Aluno
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Selecione o aluno e escolha a turma de destino compatível.
+              </p>
             </div>
 
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-primary flex items-center justify-between">
-              <span>Turma de Origem: <strong>{selectedClass.nome} (CEFR {selectedClass.nivel})</strong></span>
-              <span className="text-[10px] font-semibold opacity-80">{selectedClass.alunos}/{selectedClass.vagas} alunos</span>
+              <span>
+                Turma de Origem:{" "}
+                <strong>
+                  {selectedClass.nome} (CEFR {selectedClass.nivel})
+                </strong>
+              </span>
+              <span className="text-[10px] font-semibold opacity-80">
+                {selectedClass.alunos}/{selectedClass.vagas} alunos
+              </span>
             </div>
 
             <form onSubmit={handleTransfer} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Selecione o Aluno</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Selecione o Aluno
+                </label>
                 <select
                   value={transferStudent}
                   onChange={(e) => setTransferStudent(e.target.value)}
@@ -3060,7 +3598,9 @@ function TurmasPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Turma de Destino</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Turma de Destino
+                </label>
                 <select
                   value={transferTargetClass}
                   onChange={(e) => setTransferTargetClass(e.target.value)}
@@ -3088,7 +3628,7 @@ function TurmasPage() {
                 if (tObj.horaSelecionada && tObj.horaFimSelecionada) {
                   const [sh = 19, sm = 0] = tObj.horaSelecionada.split(":").map(Number);
                   const [eh = 21, em = 0] = tObj.horaFimSelecionada.split(":").map(Number);
-                  const diff = (eh * 60 + em) - (sh * 60 + sm);
+                  const diff = eh * 60 + em - (sh * 60 + sm);
                   durationHours = diff > 0 ? Number((diff / 60).toFixed(1)) : 2.0;
                 }
                 const targetWeekly = durationHours * daysCount;
@@ -3101,7 +3641,8 @@ function TurmasPage() {
                     {isOver ? (
                       <p className="text-rose-400 font-semibold flex items-center gap-1.5">
                         <Ban className="size-3.5 shrink-0" />
-                        Bloqueio: Turma de destino exige {targetWeekly}h/sem (Aluno contratou {sHoras}h/sem).
+                        Bloqueio: Turma de destino exige {targetWeekly}h/sem (Aluno contratou{" "}
+                        {sHoras}h/sem).
                       </p>
                     ) : (
                       <p className="text-emerald-400 flex items-center gap-1.5">
@@ -3146,16 +3687,20 @@ function TurmasPage() {
             >
               <X className="size-4" />
             </button>
-            
+
             <div>
               <h3 className="text-base font-bold text-foreground">Grade Horária da Escola</h3>
-              <p className="text-xs text-muted-foreground">Adicione ou remova os horários disponíveis para turmas.</p>
+              <p className="text-xs text-muted-foreground">
+                Adicione ou remova os horários disponíveis para turmas.
+              </p>
             </div>
 
             {/* Add New Time Form */}
             <div className="flex gap-2 items-end border-b border-hairline pb-4">
               <div className="flex-1 space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Novo Horário</label>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                  Novo Horário
+                </label>
                 <input
                   type="text"
                   placeholder="Ex: 11:30"
@@ -3185,24 +3730,37 @@ function TurmasPage() {
 
             {/* List of current times */}
             <div className="space-y-2 max-h-60 overflow-y-auto">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Horários Cadastrados</label>
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                Horários Cadastrados
+              </label>
               {calendarTimes.map((t) => {
-                const isTimeInUse = classes.some(c => c.horaSelecionada === t);
+                const isTimeInUse = classes.some((c) => c.horaSelecionada === t);
                 return (
-                  <div key={t} className="flex justify-between items-center bg-white/[0.01] hover:bg-white/[0.03] border border-hairline p-2.5 rounded-lg">
-                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5"><Clock className="size-3.5 text-primary" /> {t}</span>
+                  <div
+                    key={t}
+                    className="flex justify-between items-center bg-white/[0.01] hover:bg-white/[0.03] border border-hairline p-2.5 rounded-lg"
+                  >
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Clock className="size-3.5 text-primary" /> {t}
+                    </span>
                     <div className="flex items-center gap-2">
                       {isTimeInUse && (
-                        <span className="rounded bg-primary/10 text-primary text-[8px] font-bold px-1.5 py-0.5 uppercase">Em Uso</span>
+                        <span className="rounded bg-primary/10 text-primary text-[8px] font-bold px-1.5 py-0.5 uppercase">
+                          Em Uso
+                        </span>
                       )}
                       <button
                         onClick={() => {
                           if (isTimeInUse) {
-                            if (!confirm(`O horário "${t}" está sendo usado por turmas ativas. Tem certeza que deseja removê-lo?`)) {
+                            if (
+                              !confirm(
+                                `O horário "${t}" está sendo usado por turmas ativas. Tem certeza que deseja removê-lo?`,
+                              )
+                            ) {
                               return;
                             }
                           }
-                          setCalendarTimes(calendarTimes.filter(item => item !== t));
+                          setCalendarTimes(calendarTimes.filter((item) => item !== t));
                           toast.success("Horário removido da grade.");
                         }}
                         className="text-rose-400 hover:text-rose-300 cursor-pointer bg-transparent border-0 text-xs font-semibold p-1"
@@ -3224,15 +3782,21 @@ function TurmasPage() {
           <div className="w-full max-w-md rounded-2xl border border-hairline bg-card p-6 shadow-2xl space-y-5">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <h3 className="text-base font-bold text-foreground">Trocar Professor(a) em Massa</h3>
-              <button onClick={() => setIsBulkTeacherModalOpen(false)} className="text-muted-foreground hover:text-foreground">
+              <button
+                onClick={() => setIsBulkTeacherModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <X className="size-5" />
               </button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Selecione o(a) novo(a) docente para <strong>{selectedClassNames.size} turmas selecionadas</strong>:
+              Selecione o(a) novo(a) docente para{" "}
+              <strong>{selectedClassNames.size} turmas selecionadas</strong>:
             </p>
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-bold text-muted-foreground">Professor(a) Responsável</label>
+              <label className="text-[10px] uppercase font-bold text-muted-foreground">
+                Professor(a) Responsável
+              </label>
               <select
                 value={bulkTeacherValue}
                 onChange={(e) => setBulkTeacherValue(e.target.value)}
@@ -3279,7 +3843,8 @@ function TurmasPage() {
             <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 text-xs text-rose-400 space-y-2">
               <p className="font-bold">Atenção:</p>
               <p>
-                Você está prestes a excluir permanentemente <strong>{selectedClassNames.size} turmas</strong>.
+                Você está prestes a excluir permanentemente{" "}
+                <strong>{selectedClassNames.size} turmas</strong>.
               </p>
             </div>
             <div className="flex justify-end gap-3 pt-2">

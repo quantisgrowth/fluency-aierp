@@ -62,8 +62,10 @@ function CrmPage() {
 
   // Sub-modal creation for creating a Lead inside CRM
   const [isCreateLeadOpen, setIsCreateLeadOpen] = useState(false);
-  const [leadActiveTab, setLeadActiveTab] = useState<"contato" | "pessoais" | "endereco" | "anotacoes">("contato");
-  
+  const [leadActiveTab, setLeadActiveTab] = useState<
+    "contato" | "pessoais" | "endereco" | "anotacoes"
+  >("contato");
+
   // Lead creation fields
   const [newLeadNome, setNewLeadNome] = useState("");
   const [newLeadTags, setNewLeadTags] = useState("");
@@ -172,7 +174,7 @@ function CrmPage() {
       setDealOrigem(ORIGEM_IDEAS[0]!);
       return;
     }
-    const found = leadsDb.find(l => l.id === leadId);
+    const found = leadsDb.find((l) => l.id === leadId);
     if (found) {
       setDealName(found.nome);
       setDealOrigem(found.origem);
@@ -272,7 +274,10 @@ function CrmPage() {
     const newLead: Lead = {
       id: nextId,
       nome: newLeadNome,
-      tags: newLeadTags.split(",").map(t => t.trim()).filter(Boolean),
+      tags: newLeadTags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
       telefone: newLeadTelefone,
       email: newLeadEmail,
       site: newLeadSite,
@@ -314,7 +319,7 @@ function CrmPage() {
     }
 
     const nextStage = stages[currentStageIdx + 1]!;
-    
+
     const nextStages = stages.map((s) => {
       if (s.id === stageId) {
         return {
@@ -356,7 +361,7 @@ function CrmPage() {
           cards: s.cards.map((c) =>
             c.nome === selectedLead.nome
               ? { ...c, nome: formName, origem: formOrigem, valor: Number(formValor) }
-              : c
+              : c,
           ),
         };
       }
@@ -391,7 +396,10 @@ function CrmPage() {
           {stages.map((stage) => {
             const totalValue = stage.cards.reduce((sum, c) => sum + c.valor, 0);
             return (
-              <GlassCard key={stage.id} className="p-4 flex flex-col h-[520px] bg-surface/20 border-hairline/60">
+              <GlassCard
+                key={stage.id}
+                className="p-4 flex flex-col h-[520px] bg-surface/20 border-hairline/60"
+              >
                 {/* Column header */}
                 <div className="pb-3 border-b border-hairline flex items-center justify-between">
                   <div>
@@ -419,7 +427,7 @@ function CrmPage() {
                       >
                         {/* Glow effect on hover */}
                         <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/40 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        
+
                         {/* Edit Action trigger overlay */}
                         <div className="absolute top-3.5 right-3.5 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
@@ -434,10 +442,14 @@ function CrmPage() {
                         <div className="space-y-3">
                           <div className="pr-6">
                             <p className="text-sm font-semibold text-foreground">{card.nome}</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">Origem: {card.origem}</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              Origem: {card.origem}
+                            </p>
                           </div>
                           <div className="flex items-center justify-between pt-1">
-                            <span className="text-xs font-bold text-foreground">{brl(card.valor)}</span>
+                            <span className="text-xs font-bold text-foreground">
+                              {brl(card.valor)}
+                            </span>
                             {stage.id !== "fechada" && (
                               <button
                                 onClick={() => simulateMoveCard(stage.id, card.nome)}
@@ -475,14 +487,17 @@ function CrmPage() {
             </button>
             <div>
               <h3 className="text-base font-bold text-foreground">Criar Novo Negócio</h3>
-              <p className="text-xs text-muted-foreground">Puxe informações de um lead existente ou crie um novo na hora.</p>
+              <p className="text-xs text-muted-foreground">
+                Puxe informações de um lead existente ou crie um novo na hora.
+              </p>
             </div>
 
             <form onSubmit={handleNewDealSubmit} className="space-y-4">
-              
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vincular Lead Cadastrado</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Vincular Lead Cadastrado
+                  </label>
                   <button
                     type="button"
                     onClick={handleOpenCreateLeadSubModal}
@@ -491,21 +506,25 @@ function CrmPage() {
                     + Cadastrar Novo Lead
                   </button>
                 </div>
-                
+
                 <select
                   value={selectedLeadId}
                   onChange={(e) => handlePullLeadData(e.target.value)}
                   className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
                 >
                   <option value="">Selecione um Lead da Base (Opcional)</option>
-                  {leadsDb.map(l => (
-                    <option key={l.id} value={l.id}>{l.nome} ({l.origem})</option>
+                  {leadsDb.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.nome} ({l.origem})
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nome da Oportunidade</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Nome da Oportunidade
+                </label>
                 <input
                   placeholder="Nome do cliente/aluno"
                   value={dealName}
@@ -516,20 +535,26 @@ function CrmPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Origem do Negócio</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Origem do Negócio
+                </label>
                 <select
                   value={dealOrigem}
                   onChange={(e) => setDealOrigem(e.target.value)}
                   className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
                 >
-                  {ORIGEM_IDEAS.map(o => (
-                    <option key={o} value={o}>{o}</option>
+                  {ORIGEM_IDEAS.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Valor Estimado (Curso Anual)</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Valor Estimado (Curso Anual)
+                </label>
                 <input
                   type="number"
                   value={dealValor}
@@ -554,7 +579,6 @@ function CrmPage() {
       {isCreateLeadOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <GlassCard className="w-full max-w-lg p-6 space-y-5 shadow-2xl relative text-foreground">
-            
             <button
               onClick={() => setIsCreateLeadOpen(false)}
               className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer"
@@ -564,15 +588,18 @@ function CrmPage() {
 
             <div>
               <h3 className="text-base font-bold text-foreground">Criar novo Lead</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Preencha os dados do prospect para cadastrá-lo na base.</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Preencha os dados do prospect para cadastrá-lo na base.
+              </p>
             </div>
 
             <form onSubmit={handleCreateLeadSubSubmit} className="space-y-4">
-              
               {/* Global Fields: Nome & Tags */}
               <div className="space-y-3">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Nome</label>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Nome
+                  </label>
                   <input
                     placeholder="Informe o nome do lead"
                     value={newLeadNome}
@@ -583,7 +610,9 @@ function CrmPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Tags (Separadas por vírgula)</label>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Tags (Separadas por vírgula)
+                  </label>
                   <input
                     placeholder="Ex: Teen, Inglês, Matutino"
                     value={newLeadTags}
@@ -608,7 +637,9 @@ function CrmPage() {
                       type="button"
                       onClick={() => setLeadActiveTab(t)}
                       className={`py-1.5 text-[10px] font-semibold rounded-md transition-all cursor-pointer ${
-                        leadActiveTab === t ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        leadActiveTab === t
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
                       {labels[t]}
@@ -619,11 +650,12 @@ function CrmPage() {
 
               {/* Tab Content Panel */}
               <div className="min-h-[160px] py-1">
-                
                 {leadActiveTab === "contato" && (
                   <div className="space-y-3 animate-in fade-in duration-200">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Telefone</label>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Telefone
+                      </label>
                       <input
                         placeholder="+55 (11) 99999-9999"
                         value={newLeadTelefone}
@@ -632,7 +664,9 @@ function CrmPage() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">E-mail</label>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        E-mail
+                      </label>
                       <input
                         type="email"
                         placeholder="Exemplo: meulead@gmail.com"
@@ -642,7 +676,9 @@ function CrmPage() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Site</label>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Site
+                      </label>
                       <input
                         placeholder="Exemplo: www.meulead.com.br"
                         value={newLeadSite}
@@ -657,7 +693,9 @@ function CrmPage() {
                   <div className="space-y-3 animate-in fade-in duration-200">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Documento (CPF/CNPJ)</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Documento (CPF/CNPJ)
+                        </label>
                         <input
                           placeholder="Informe o documento"
                           value={newLeadDoc}
@@ -666,7 +704,9 @@ function CrmPage() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Empresa</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Empresa
+                        </label>
                         <input
                           placeholder="Informe a empresa"
                           value={newLeadEmpresa}
@@ -677,21 +717,27 @@ function CrmPage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Origem do Lead</label>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Origem do Lead
+                      </label>
                       <select
                         value={newLeadOrigem}
                         onChange={(e) => setNewLeadOrigem(e.target.value)}
                         className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
                       >
                         {ORIGEM_IDEAS.map((o) => (
-                          <option key={o} value={o}>{o}</option>
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
                         ))}
                       </select>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Pai, Mãe ou Responsável</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Pai, Mãe ou Responsável
+                        </label>
                         <input
                           placeholder="Ex: Mariana Santos (Mãe)"
                           value={newLeadResp}
@@ -700,7 +746,9 @@ function CrmPage() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Data de Nascimento</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Data de Nascimento
+                        </label>
                         <input
                           type="date"
                           value={newLeadNasc}
@@ -726,7 +774,9 @@ function CrmPage() {
                   <div className="space-y-3 animate-in fade-in duration-200">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">País</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          País
+                        </label>
                         <input
                           value={newLeadPais}
                           onChange={(e) => setNewLeadPais(e.target.value)}
@@ -734,7 +784,9 @@ function CrmPage() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">CEP</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          CEP
+                        </label>
                         <input
                           placeholder="ex: 12345-678"
                           value={newLeadCep}
@@ -746,7 +798,9 @@ function CrmPage() {
 
                     <div className="grid grid-cols-3 gap-3">
                       <div className="col-span-2 space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Endereço</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Endereço
+                        </label>
                         <input
                           placeholder="ex: Av. Paulista"
                           value={newLeadEnd}
@@ -755,7 +809,9 @@ function CrmPage() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Número</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Número
+                        </label>
                         <input
                           placeholder="ex: 123"
                           value={newLeadNum}
@@ -767,7 +823,9 @@ function CrmPage() {
 
                     <div className="grid grid-cols-3 gap-3">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Complemento</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Complemento
+                        </label>
                         <input
                           placeholder="ex: Apto 101"
                           value={newLeadCompl}
@@ -776,7 +834,9 @@ function CrmPage() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Bairro</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Bairro
+                        </label>
                         <input
                           placeholder="ex: Centro"
                           value={newLeadBairro}
@@ -785,7 +845,9 @@ function CrmPage() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">UF</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          UF
+                        </label>
                         <input
                           placeholder="ex: SP"
                           value={newLeadUf}
@@ -796,7 +858,9 @@ function CrmPage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Cidade</label>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Cidade
+                      </label>
                       <input
                         placeholder="ex: São Paulo"
                         value={newLeadCidade}
@@ -809,7 +873,9 @@ function CrmPage() {
 
                 {leadActiveTab === "anotacoes" && (
                   <div className="space-y-1.5 animate-in fade-in duration-200">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Anotações do Lead</label>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      Anotações do Lead
+                    </label>
                     <textarea
                       placeholder="Histórico comercial, particularidades, nível, objetivos e etc."
                       value={newLeadAnotacoes}
@@ -819,7 +885,6 @@ function CrmPage() {
                     />
                   </div>
                 )}
-
               </div>
 
               {/* Form Footer */}
@@ -838,7 +903,6 @@ function CrmPage() {
                   Salvar Lead
                 </button>
               </div>
-
             </form>
           </GlassCard>
         </div>
@@ -856,12 +920,16 @@ function CrmPage() {
             </button>
             <div>
               <h3 className="text-base font-bold text-foreground">Editar Lead</h3>
-              <p className="text-xs text-muted-foreground">Modifique o nome, origem ou valor projetado da oportunidade.</p>
+              <p className="text-xs text-muted-foreground">
+                Modifique o nome, origem ou valor projetado da oportunidade.
+              </p>
             </div>
 
             <form onSubmit={handleEditLeadSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nome da Oportunidade</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Nome da Oportunidade
+                </label>
                 <input
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
@@ -871,20 +939,26 @@ function CrmPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Origem do Lead</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Origem do Lead
+                </label>
                 <select
                   value={formOrigem}
                   onChange={(e) => setFormOrigem(e.target.value)}
                   className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
                 >
-                  {ORIGEM_IDEAS.map(o => (
-                    <option key={o} value={o}>{o}</option>
+                  {ORIGEM_IDEAS.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Valor do Curso (Anual/Semestral)</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Valor do Curso (Anual/Semestral)
+                </label>
                 <input
                   type="number"
                   value={formValor}

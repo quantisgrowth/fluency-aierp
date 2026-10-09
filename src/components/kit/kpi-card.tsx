@@ -44,7 +44,11 @@ export function KpiCard({
               positive ? "text-paid" : "text-overdue",
             )}
           >
-            {positive ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}
+            {positive ? (
+              <ArrowUpRight className="size-3.5" />
+            ) : (
+              <ArrowDownRight className="size-3.5" />
+            )}
             {Math.abs(delta).toFixed(1)}%
           </span>
         )}

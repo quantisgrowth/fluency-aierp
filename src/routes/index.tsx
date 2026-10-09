@@ -1,13 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import {
-  AlertTriangle,
-  CalendarClock,
-  Percent,
-  TrendingUp,
-  Users,
-  Wallet,
-} from "lucide-react";
+import { AlertTriangle, CalendarClock, Percent, TrendingUp, Users, Wallet } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -72,13 +65,21 @@ function Dashboard() {
         .maybeSingle();
       if (!membership) return;
       const [students, classes] = await Promise.all([
-        supabase.from("alunos").select("id", { count: "exact", head: true }).eq("escola_id", membership.escola_id),
-        supabase.from("turmas").select("id", { count: "exact", head: true }).eq("escola_id", membership.escola_id),
+        supabase
+          .from("alunos")
+          .select("id", { count: "exact", head: true })
+          .eq("escola_id", membership.escola_id),
+        supabase
+          .from("turmas")
+          .select("id", { count: "exact", head: true })
+          .eq("escola_id", membership.escola_id),
       ]);
       if (mounted) setRealCounts({ students: students.count ?? 0, classes: classes.count ?? 0 });
     }
     void loadRealCounts();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Every school dashboard must use tenant-scoped Supabase counts. The legacy
@@ -95,23 +96,39 @@ function Dashboard() {
         />
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard label="Alunos cadastrados" value={String(realCounts.students)} icon={Users} />
-          <KpiCard label="Turmas cadastradas" value={String(realCounts.classes)} icon={CalendarClock} />
+          <KpiCard
+            label="Turmas cadastradas"
+            value={String(realCounts.classes)}
+            icon={CalendarClock}
+          />
           <KpiCard label="Faturamento registrado" value={brl(0)} icon={Wallet} />
           <KpiCard label="Pendências financeiras" value={brl(0)} icon={AlertTriangle} />
         </div>
         <GlassCard className="p-8">
-          <p className="text-lg font-semibold text-foreground">Seu ambiente está pronto para começar</p>
+          <p className="text-lg font-semibold text-foreground">
+            Seu ambiente está pronto para começar
+          </p>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Esta escola ainda não possui dados cadastrados. Use as opções abaixo para iniciar a configuração.
+            Esta escola ainda não possui dados cadastrados. Use as opções abaixo para iniciar a
+            configuração.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/admin/modulos" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+            <Link
+              to="/admin/modulos"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+            >
               Cadastrar primeiro curso
             </Link>
-            <Link to="/turmas" className="rounded-lg border border-hairline px-4 py-2 text-sm font-semibold text-foreground">
+            <Link
+              to="/turmas"
+              className="rounded-lg border border-hairline px-4 py-2 text-sm font-semibold text-foreground"
+            >
               Criar primeira turma
             </Link>
-            <Link to="/alunos" className="rounded-lg border border-hairline px-4 py-2 text-sm font-semibold text-foreground">
+            <Link
+              to="/alunos"
+              className="rounded-lg border border-hairline px-4 py-2 text-sm font-semibold text-foreground"
+            >
               Cadastrar primeiro aluno
             </Link>
           </div>
@@ -146,9 +163,21 @@ function Dashboard() {
             icon={Wallet}
           />
         )}
-        <KpiCard label="Alunos ativos" value="482" delta={2.7} hint="matrícula contínua" icon={Users} />
+        <KpiCard
+          label="Alunos ativos"
+          value="482"
+          delta={2.7}
+          hint="matrícula contínua"
+          icon={Users}
+        />
         {isActive("crm") && (
-          <KpiCard label="Conversão do funil" value="31,4%" delta={5.2} hint="lead → matrícula" icon={Percent} />
+          <KpiCard
+            label="Conversão do funil"
+            value="31,4%"
+            delta={5.2}
+            hint="lead → matrícula"
+            icon={Percent}
+          />
         )}
         {isActive("financeiro") && (
           <KpiCard
@@ -168,7 +197,9 @@ function Dashboard() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-medium text-foreground">Previsibilidade de caixa</p>
-                <p className="text-xs text-muted-foreground">Realizado vs. previsto — últimos 6 meses</p>
+                <p className="text-xs text-muted-foreground">
+                  Realizado vs. previsto — últimos 6 meses
+                </p>
               </div>
               <StatusPill tone="paid">
                 <TrendingUp className="size-3" /> +12,8% no semestre
@@ -233,17 +264,15 @@ function Dashboard() {
           <GlassCard className="p-6">
             <p className="text-sm font-medium text-foreground">Status de cobrança</p>
             <p className="text-xs text-muted-foreground">Carteira de agosto</p>
-            <p className="tabular mt-5 text-3xl font-semibold text-foreground">{brl(totalBilling)}</p>
+            <p className="tabular mt-5 text-3xl font-semibold text-foreground">
+              {brl(totalBilling)}
+            </p>
             <div className="mt-5 flex h-2 overflow-hidden rounded-full bg-muted">
               {billingStatus.map((s) => (
                 <span
                   key={s.label}
                   className={
-                    s.token === "paid"
-                      ? "bg-paid"
-                      : s.token === "due"
-                        ? "bg-due"
-                        : "bg-overdue"
+                    s.token === "paid" ? "bg-paid" : s.token === "due" ? "bg-due" : "bg-overdue"
                   }
                   style={{ width: `${(s.value / totalBilling) * 100}%` }}
                 />
@@ -295,7 +324,9 @@ function Dashboard() {
                   <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                     <span className="block h-full bg-churn" style={{ width: `${c.score}%` }} />
                   </div>
-                  <p className="text-xs text-muted-foreground">{c.motivo} · {c.turma}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {c.motivo} · {c.turma}
+                  </p>
                 </li>
               ))}
             </ul>
@@ -311,7 +342,9 @@ function Dashboard() {
               <li key={c.turma} className="flex items-center justify-between py-3">
                 <div>
                   <p className="text-sm text-foreground">{c.turma}</p>
-                  <p className="text-xs text-muted-foreground">{c.professor} · {c.sala}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {c.professor} · {c.sala}
+                  </p>
                 </div>
                 <span className="tabular text-sm text-muted-foreground">{c.horario}</span>
               </li>

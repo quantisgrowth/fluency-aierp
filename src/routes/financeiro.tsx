@@ -76,7 +76,10 @@ export const Route = createFileRoute("/financeiro")({
   head: () => ({
     meta: [
       { title: "Motor Financeiro, DRE & Precificação — Fluency AI" },
-      { name: "description", content: "DRE Gerencial, Gestão de Custos, Políticas de Precificação e Previsão de Caixa." },
+      {
+        name: "description",
+        content: "DRE Gerencial, Gestão de Custos, Políticas de Precificação e Previsão de Caixa.",
+      },
     ],
   }),
   component: SchoolFinancePage,
@@ -136,7 +139,9 @@ const MODEL_INFO: Record<
 
 function FinanceiroPage() {
   const { activeRole, currentUser } = useUser();
-  const [activeTab, setActiveTab] = useState<"fluxo-caixa" | "dre" | "custos" | "precificacao">("fluxo-caixa");
+  const [activeTab, setActiveTab] = useState<"fluxo-caixa" | "dre" | "custos" | "precificacao">(
+    "fluxo-caixa",
+  );
 
   // Inadimplência
   const [delinquencyList, setDelinquencyList] = useState<typeof delinquency>(() => {
@@ -168,9 +173,14 @@ function FinanceiroPage() {
         return {
           ...defaultPricingPolicy,
           ...parsed,
-          modelosHabilitados: parsed.modelosHabilitados || ["mensalidade_fixa", "hora_aula", "pacote_fechado"],
+          modelosHabilitados: parsed.modelosHabilitados || [
+            "mensalidade_fixa",
+            "hora_aula",
+            "pacote_fechado",
+          ],
           modeloPadrao: parsed.modeloPadrao || "mensalidade_fixa",
-          historicoAlteracoes: parsed.historicoAlteracoes || defaultPricingPolicy.historicoAlteracoes,
+          historicoAlteracoes:
+            parsed.historicoAlteracoes || defaultPricingPolicy.historicoAlteracoes,
         };
       }
       return defaultPricingPolicy;
@@ -204,7 +214,9 @@ function FinanceiroPage() {
   const [costCat, setCostCat] = useState<CostCategory>("Infraestrutura & Imóvel");
   const [costTipo, setCostTipo] = useState<"fixo" | "variavel">("fixo");
   const [costValor, setCostValor] = useState<number>(1000);
-  const [costFreq, setCostFreq] = useState<"mensal" | "anual" | "por_aluno" | "por_hora_aula">("mensal");
+  const [costFreq, setCostFreq] = useState<"mensal" | "anual" | "por_aluno" | "por_hora_aula">(
+    "mensal",
+  );
   const [costVencimento, setCostVencimento] = useState<number>(10);
   const [costResp, setCostResp] = useState("");
   const [costObs, setCostObs] = useState("");
@@ -282,8 +294,10 @@ function FinanceiroPage() {
   const lucroOperacionalLiquido = margemContribuicao - fixedCostsTotal;
   const margemLiquidaPct = (lucroOperacionalLiquido / receitaLiquida) * 100;
 
-  const margemMediaPorAluno = receitaBrutaMensal / totalAlunosAtivos - custosDiretosEnsino / totalAlunosAtivos;
-  const alunosBreakEven = margemMediaPorAluno > 0 ? Math.ceil(fixedCostsTotal / margemMediaPorAluno) : 0;
+  const margemMediaPorAluno =
+    receitaBrutaMensal / totalAlunosAtivos - custosDiretosEnsino / totalAlunosAtivos;
+  const alunosBreakEven =
+    margemMediaPorAluno > 0 ? Math.ceil(fixedCostsTotal / margemMediaPorAluno) : 0;
   const faturamentoBreakEven = alunosBreakEven * (receitaBrutaMensal / totalAlunosAtivos);
 
   const ticketMedioPorAluno = receitaBrutaMensal / totalAlunosAtivos;
@@ -300,11 +314,14 @@ function FinanceiroPage() {
   });
 
   // Dados para Gráfico de Distribuição de Custos
-  const costsByCategory = costs.reduce((acc, c) => {
-    const val = c.frequencia === "anual" ? c.valor / 12 : c.valor;
-    acc[c.categoria] = (acc[c.categoria] || 0) + val;
-    return acc;
-  }, {} as Record<string, number>);
+  const costsByCategory = costs.reduce(
+    (acc, c) => {
+      const val = c.frequencia === "anual" ? c.valor / 12 : c.valor;
+      acc[c.categoria] = (acc[c.categoria] || 0) + val;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   const pieCostsData = Object.entries(costsByCategory).map(([name, value]) => ({
     name,
@@ -361,8 +378,8 @@ function FinanceiroPage() {
                 responsavel: costResp,
                 observacoes: costObs,
               }
-            : c
-        )
+            : c,
+        ),
       );
       toast.success("Despesa atualizada com sucesso!");
     } else {
@@ -475,24 +492,28 @@ function FinanceiroPage() {
     });
 
     if (draftPricing.valorHoraAula !== pricing.valorHoraAula) {
-      diffs.push(`Valor Hora/Aula: ${brl(pricing.valorHoraAula)} ➜ ${brl(draftPricing.valorHoraAula)}`);
+      diffs.push(
+        `Valor Hora/Aula: ${brl(pricing.valorHoraAula)} ➜ ${brl(draftPricing.valorHoraAula)}`,
+      );
     }
 
     if (draftPricing.valorHoraProfessorMedio !== pricing.valorHoraProfessorMedio) {
       diffs.push(
         `Custo Hora Professor: ${brl(pricing.valorHoraProfessorMedio)} ➜ ${brl(
-          draftPricing.valorHoraProfessorMedio
-        )}`
+          draftPricing.valorHoraProfessorMedio,
+        )}`,
       );
     }
 
     if (draftPricing.taxaMatricula !== pricing.taxaMatricula) {
-      diffs.push(`Taxa de Matrícula: ${brl(pricing.taxaMatricula)} ➜ ${brl(draftPricing.taxaMatricula)}`);
+      diffs.push(
+        `Taxa de Matrícula: ${brl(pricing.taxaMatricula)} ➜ ${brl(draftPricing.taxaMatricula)}`,
+      );
     }
 
     if (draftPricing.taxaMaterialDidatico !== pricing.taxaMaterialDidatico) {
       diffs.push(
-        `Material Didático: ${brl(pricing.taxaMaterialDidatico)} ➜ ${brl(draftPricing.taxaMaterialDidatico)}`
+        `Material Didático: ${brl(pricing.taxaMaterialDidatico)} ➜ ${brl(draftPricing.taxaMaterialDidatico)}`,
       );
     }
 
@@ -594,7 +615,9 @@ function FinanceiroPage() {
               <GlassCard className="p-6 xl:col-span-2">
                 <div>
                   <p className="text-sm font-semibold text-foreground">Previsibilidade de Caixa</p>
-                  <p className="text-xs text-muted-foreground">Realizado vs. previsto — últimos 6 meses</p>
+                  <p className="text-xs text-muted-foreground">
+                    Realizado vs. previsto — últimos 6 meses
+                  </p>
                 </div>
                 <div className="mt-6 h-64">
                   <ResponsiveContainer width="100%" height="100%">
@@ -605,7 +628,11 @@ function FinanceiroPage() {
                           <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--hairline)" vertical={false} />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="var(--hairline)"
+                        vertical={false}
+                      />
                       <XAxis
                         dataKey="mes"
                         stroke="var(--muted-foreground)"
@@ -652,8 +679,12 @@ function FinanceiroPage() {
 
               {/* Dunning Configuration Preview */}
               <GlassCard className="p-6">
-                <h3 className="text-sm font-semibold text-foreground">Régua de Cobrança Inteligente</h3>
-                <p className="text-xs text-muted-foreground">Regras ativas no plano de comunicação da unidade</p>
+                <h3 className="text-sm font-semibold text-foreground">
+                  Régua de Cobrança Inteligente
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Regras ativas no plano de comunicação da unidade
+                </p>
 
                 <div className="mt-5 space-y-4">
                   {dunningSteps.map((step) => (
@@ -684,8 +715,12 @@ function FinanceiroPage() {
               <GlassCard className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-semibold text-foreground">Controle de Inadimplência</h3>
-                    <p className="text-xs text-muted-foreground">Faturas vencidas que requerem atenção</p>
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Controle de Inadimplência
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Faturas vencidas que requerem atenção
+                    </p>
                   </div>
                   <span className="rounded-full bg-overdue/10 border border-overdue/20 px-2.5 py-1 text-xs text-overdue flex items-center gap-1.5 font-bold">
                     <AlertTriangle className="size-3.5" /> Foco de Caixa
@@ -702,7 +737,9 @@ function FinanceiroPage() {
                       <div className="flex items-center gap-4">
                         <div className="text-right">
                           <p className="text-sm font-semibold text-foreground">{brl(d.valor)}</p>
-                          <p className="text-[10px] text-overdue font-semibold">{d.dias} dias de atraso</p>
+                          <p className="text-[10px] text-overdue font-semibold">
+                            {d.dias} dias de atraso
+                          </p>
                         </div>
                         <button
                           onClick={() => triggerDunningSim(d.aluno)}
@@ -713,7 +750,11 @@ function FinanceiroPage() {
                         </button>
                         <button
                           onClick={() => handleCancelBilling(d.aluno)}
-                          title={activeRole === "operador" ? "Operador não pode cancelar cobranças" : "Cancelar Cobrança"}
+                          title={
+                            activeRole === "operador"
+                              ? "Operador não pode cancelar cobranças"
+                              : "Cancelar Cobrança"
+                          }
                           className={`grid size-8 place-items-center rounded-lg border border-hairline transition-all ${
                             activeRole === "operador"
                               ? "opacity-25 cursor-not-allowed"
@@ -735,9 +776,12 @@ function FinanceiroPage() {
                     <Wallet className="size-5 text-primary" />
                   </span>
                   <div>
-                    <h3 className="text-base font-semibold text-foreground">Gerador Simulado de Cobranças</h3>
+                    <h3 className="text-base font-semibold text-foreground">
+                      Gerador Simulado de Cobranças
+                    </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Gere arquivos de boleto ou QR codes de Pix em ambiente de testes para demonstração da emissão unificada.
+                      Gere arquivos de boleto ou QR codes de Pix em ambiente de testes para
+                      demonstração da emissão unificada.
                     </p>
                   </div>
                 </div>
@@ -772,16 +816,22 @@ function FinanceiroPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <GlassCard className="p-5 space-y-2 border-primary/20">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="font-semibold uppercase tracking-wider">Receita Líquida Operacional</span>
+                  <span className="font-semibold uppercase tracking-wider">
+                    Receita Líquida Operacional
+                  </span>
                   <ArrowUpRight className="size-4 text-emerald-400" />
                 </div>
                 <p className="text-2xl font-bold text-foreground">{brl(receitaLiquida)}</p>
-                <p className="text-[11px] text-muted-foreground">Faturamento bruto: {brl(faturamentoBrutoTotal)}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Faturamento bruto: {brl(faturamentoBrutoTotal)}
+                </p>
               </GlassCard>
 
               <GlassCard className="p-5 space-y-2">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="font-semibold uppercase tracking-wider">Margem de Contribuição</span>
+                  <span className="font-semibold uppercase tracking-wider">
+                    Margem de Contribuição
+                  </span>
                   <Percent className="size-4 text-blue-400" />
                 </div>
                 <p className="text-2xl font-bold text-blue-400">{brl(margemContribuicao)}</p>
@@ -792,7 +842,9 @@ function FinanceiroPage() {
 
               <GlassCard className="p-5 space-y-2">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="font-semibold uppercase tracking-wider">Despesas Fixas da Escola</span>
+                  <span className="font-semibold uppercase tracking-wider">
+                    Despesas Fixas da Escola
+                  </span>
                   <ArrowDownRight className="size-4 text-rose-400" />
                 </div>
                 <p className="text-2xl font-bold text-rose-400">{brl(fixedCostsTotal)}</p>
@@ -809,7 +861,9 @@ function FinanceiroPage() {
                 }`}
               >
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="font-semibold uppercase tracking-wider">EBITDA / Lucro Operacional</span>
+                  <span className="font-semibold uppercase tracking-wider">
+                    EBITDA / Lucro Operacional
+                  </span>
                   <TrendingUp
                     className={`size-4 ${lucroOperacionalLiquido >= 0 ? "text-emerald-400" : "text-rose-400"}`}
                   />
@@ -839,15 +893,17 @@ function FinanceiroPage() {
                       Ponto de Equilíbrio Geral (Break-Even da Escola)
                     </h3>
                     <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                      Para cobrir 100% de todas as despesas fixas (Aluguel, Folha Adm, Energia, Marketing) e custos
-                      docentes, sua escola precisa manter no mínimo:
+                      Para cobrir 100% de todas as despesas fixas (Aluguel, Folha Adm, Energia,
+                      Marketing) e custos docentes, sua escola precisa manter no mínimo:
                     </p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4 pt-2 border-t border-hairline/60">
                   <div>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Alunos Necessários</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">
+                      Alunos Necessários
+                    </p>
                     <p className="text-xl font-bold text-amber-500">{alunosBreakEven} Alunos</p>
                     <p className="text-[10px] text-muted-foreground">
                       Atualmente: {totalAlunosAtivos} (
@@ -858,12 +914,18 @@ function FinanceiroPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Faturamento Mínimo</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">
+                      Faturamento Mínimo
+                    </p>
                     <p className="text-xl font-bold text-foreground">{brl(faturamentoBreakEven)}</p>
-                    <p className="text-[10px] text-muted-foreground">Ponto zero de lucro/prejuízo</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Ponto zero de lucro/prejuízo
+                    </p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">Ticket Médio / Aluno</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">
+                      Ticket Médio / Aluno
+                    </p>
                     <p className="text-xl font-bold text-foreground">{brl(ticketMedioPorAluno)}</p>
                     <p className="text-[10px] text-muted-foreground">Mensalidade média apurada</p>
                   </div>
@@ -872,7 +934,9 @@ function FinanceiroPage() {
 
               {/* Distribution Chart */}
               <GlassCard className="p-6 space-y-4">
-                <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Composição das Despesas</h4>
+                <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                  Composição das Despesas
+                </h4>
                 <div className="h-44">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -895,12 +959,20 @@ function FinanceiroPage() {
                 </div>
                 <div className="space-y-1 text-[11px] max-h-24 overflow-y-auto pr-1">
                   {pieCostsData.map((item) => (
-                    <div key={item.name} className="flex justify-between items-center text-muted-foreground">
+                    <div
+                      key={item.name}
+                      className="flex justify-between items-center text-muted-foreground"
+                    >
                       <span className="flex items-center gap-1.5 truncate">
-                        <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                        <span
+                          className="size-2 rounded-full shrink-0"
+                          style={{ backgroundColor: item.color }}
+                        />
                         <span className="truncate">{item.name}</span>
                       </span>
-                      <span className="font-semibold text-foreground shrink-0">{brl(item.value)}</span>
+                      <span className="font-semibold text-foreground shrink-0">
+                        {brl(item.value)}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -914,7 +986,9 @@ function FinanceiroPage() {
                   <h3 className="text-base font-bold text-foreground">
                     Demonstrativo de Resultado do Exercício (DRE Gerencial)
                   </h3>
-                  <p className="text-xs text-muted-foreground">Visão analítica mensal consolidada da escola.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Visão analítica mensal consolidada da escola.
+                  </p>
                 </div>
                 <span className="rounded-lg bg-surface border border-hairline px-3 py-1 text-xs font-semibold text-foreground">
                   Agosto 2026
@@ -974,7 +1048,9 @@ function FinanceiroPage() {
 
                 {/* 5. MARGEM DE CONTRIBUIÇÃO */}
                 <div className="py-3 flex justify-between items-center font-bold text-blue-400 bg-blue-500/5 px-3 rounded-lg border border-blue-500/20">
-                  <span>(=) 5. MARGEM DE CONTRIBUIÇÃO BRUTA ({margemContribuicaoPct.toFixed(1)}%)</span>
+                  <span>
+                    (=) 5. MARGEM DE CONTRIBUIÇÃO BRUTA ({margemContribuicaoPct.toFixed(1)}%)
+                  </span>
                   <span>{brl(margemContribuicao)}</span>
                 </div>
 
@@ -1003,7 +1079,9 @@ function FinanceiroPage() {
                       : "bg-rose-500/10 border-rose-500/30 text-rose-400"
                   }`}
                 >
-                  <span>(=) 7. EBITDA / RESULTADO OPERACIONAL LÍQUIDO ({margemLiquidaPct.toFixed(1)}%)</span>
+                  <span>
+                    (=) 7. EBITDA / RESULTADO OPERACIONAL LÍQUIDO ({margemLiquidaPct.toFixed(1)}%)
+                  </span>
                   <span>{brl(lucroOperacionalLiquido)}</span>
                 </div>
               </div>
@@ -1017,7 +1095,9 @@ function FinanceiroPage() {
             {/* Header & Controls */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-foreground">Catálogo de Despesas & Custos da Unidade</h3>
+                <h3 className="text-base font-bold text-foreground">
+                  Catálogo de Despesas & Custos da Unidade
+                </h3>
                 <p className="text-xs text-muted-foreground">
                   Despesas fixas mensais consolidadas:{" "}
                   <strong className="text-rose-400">{brl(fixedCostsTotal)}/mês</strong>
@@ -1053,7 +1133,9 @@ function FinanceiroPage() {
                   <option value="Utilidades & Consumo">Utilidades & Consumo</option>
                   <option value="Administrativo & Operacional">Administrativo & Operacional</option>
                   <option value="Marketing & Captação">Marketing & Captação</option>
-                  <option value="Materiais & Recursos Pedagógicos">Materiais & Recursos Pedagógicos</option>
+                  <option value="Materiais & Recursos Pedagógicos">
+                    Materiais & Recursos Pedagógicos
+                  </option>
                   <option value="Sistemas, TI & Licenças">Sistemas, TI & Licenças</option>
                 </select>
 
@@ -1125,9 +1207,13 @@ function FinanceiroPage() {
                         </span>
                       </div>
 
-                      <h4 className="text-sm font-bold text-foreground leading-snug">{cost.descricao}</h4>
+                      <h4 className="text-sm font-bold text-foreground leading-snug">
+                        {cost.descricao}
+                      </h4>
                       {cost.observacoes && (
-                        <p className="text-[11px] text-muted-foreground line-clamp-2">{cost.observacoes}</p>
+                        <p className="text-[11px] text-muted-foreground line-clamp-2">
+                          {cost.observacoes}
+                        </p>
                       )}
                     </div>
 
@@ -1140,10 +1226,10 @@ function FinanceiroPage() {
                             {cost.frequencia === "mensal"
                               ? "/mês"
                               : cost.frequencia === "anual"
-                              ? "/ano"
-                              : cost.frequencia === "por_hora_aula"
-                              ? "/hora"
-                              : "/aluno"}
+                                ? "/ano"
+                                : cost.frequencia === "por_hora_aula"
+                                  ? "/hora"
+                                  : "/aluno"}
                           </span>
                         </span>
                       </div>
@@ -1183,11 +1269,13 @@ function FinanceiroPage() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
                   <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                    <Tag className="size-4 text-primary" /> Modelos de Cobrança Habilitados na Escola
+                    <Tag className="size-4 text-primary" /> Modelos de Cobrança Habilitados na
+                    Escola
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Ative ou desative as modalidades que sua escola oferece (chave liga/desliga). Você pode operar com
-                    múltiplos modelos simultâneos e definir o padrão para novas matrículas.
+                    Ative ou desative as modalidades que sua escola oferece (chave liga/desliga).
+                    Você pode operar com múltiplos modelos simultâneos e definir o padrão para novas
+                    matrículas.
                   </p>
                 </div>
 
@@ -1195,7 +1283,8 @@ function FinanceiroPage() {
                   onClick={() => setShowBestPractices(!showBestPractices)}
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline bg-transparent border-0 cursor-pointer self-start sm:self-auto"
                 >
-                  <BookOpen className="size-3.5" /> {showBestPractices ? "Ocultar Guia Estratégico" : "Ver Guia de Melhores Práticas"}
+                  <BookOpen className="size-3.5" />{" "}
+                  {showBestPractices ? "Ocultar Guia Estratégico" : "Ver Guia de Melhores Práticas"}
                 </button>
               </div>
 
@@ -1203,7 +1292,8 @@ function FinanceiroPage() {
               {showBestPractices && (
                 <GlassCard className="p-5 space-y-3 border-primary/30 bg-primary/5 animate-in fade-in">
                   <div className="flex items-center gap-2 font-bold text-xs text-primary uppercase tracking-wider">
-                    <Sparkles className="size-4" /> Melhores Práticas de Gestão Financeira para Escolas de Idiomas & Lei nº 9.870/99
+                    <Sparkles className="size-4" /> Melhores Práticas de Gestão Financeira para
+                    Escolas de Idiomas & Lei nº 9.870/99
                   </div>
                   <div className="grid gap-3 sm:grid-cols-3 text-xs text-muted-foreground leading-relaxed">
                     <div className="space-y-1 rounded-lg border border-hairline bg-surface/40 p-3">
@@ -1211,25 +1301,33 @@ function FinanceiroPage() {
                         <Check className="size-3.5 text-primary" /> 1. Convivência Multi-Modelo
                       </p>
                       <p className="text-[11px]">
-                        Ofereça <strong>Mensalidade Recorrente</strong> para garantir previsibilidade de caixa nas turmas regulares e <strong>Hora/Aula</strong> para flexibilizar pacotes VIP.
+                        Ofereça <strong>Mensalidade Recorrente</strong> para garantir
+                        previsibilidade de caixa nas turmas regulares e <strong>Hora/Aula</strong>{" "}
+                        para flexibilizar pacotes VIP.
                       </p>
                     </div>
 
                     <div className="space-y-1 rounded-lg border border-hairline bg-surface/40 p-3">
                       <p className="font-bold text-foreground flex items-center gap-1">
-                        <Check className="size-3.5 text-primary" /> 2. Margem de Contribuição & Break-Even
+                        <Check className="size-3.5 text-primary" /> 2. Margem de Contribuição &
+                        Break-Even
                       </p>
                       <p className="text-[11px]">
-                        Garanta que cada turma tenha pelo menos <strong>4 a 6 alunos</strong> para cobrir o custo da hora docente e do ar-condicionado/sala antes de abrir o horário.
+                        Garanta que cada turma tenha pelo menos <strong>4 a 6 alunos</strong> para
+                        cobrir o custo da hora docente e do ar-condicionado/sala antes de abrir o
+                        horário.
                       </p>
                     </div>
 
                     <div className="space-y-1 rounded-lg border border-hairline bg-surface/40 p-3">
                       <p className="font-bold text-foreground flex items-center gap-1">
-                        <Check className="size-3.5 text-primary" /> 3. Governança & Histórico de Reajustes
+                        <Check className="size-3.5 text-primary" /> 3. Governança & Histórico de
+                        Reajustes
                       </p>
                       <p className="text-[11px]">
-                        A <strong>Lei nº 9.870/99</strong> exige justificativa contábil em reajustes anuais. Nosso sistema registra quem alterou, quando e o motivo em um log auditável.
+                        A <strong>Lei nº 9.870/99</strong> exige justificativa contábil em reajustes
+                        anuais. Nosso sistema registra quem alterou, quando e o motivo em um log
+                        auditável.
                       </p>
                     </div>
                   </div>
@@ -1238,86 +1336,103 @@ function FinanceiroPage() {
 
               {/* 4 Cards with Toggle Switches */}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {(["mensalidade_fixa", "hora_aula", "frequencia_semanal", "pacote_fechado"] as PricingModelType[]).map(
-                  (modelKey) => {
-                    const isEnabled = pricing.modelosHabilitados.includes(modelKey);
-                    const isDefault = pricing.modeloPadrao === modelKey;
-                    const info = MODEL_INFO[modelKey];
+                {(
+                  [
+                    "mensalidade_fixa",
+                    "hora_aula",
+                    "frequencia_semanal",
+                    "pacote_fechado",
+                  ] as PricingModelType[]
+                ).map((modelKey) => {
+                  const isEnabled = pricing.modelosHabilitados.includes(modelKey);
+                  const isDefault = pricing.modeloPadrao === modelKey;
+                  const info = MODEL_INFO[modelKey];
 
-                    return (
-                      <GlassCard
-                        key={modelKey}
-                        className={`p-5 flex flex-col justify-between space-y-3 transition-all relative ${
-                          isEnabled
-                            ? "border-primary/40 bg-surface/60 shadow-sm"
-                            : "border-hairline bg-surface/20 opacity-60 hover:opacity-85"
-                        }`}
-                      >
-                        <div className="space-y-2.5">
-                          {/* Top: Header and Switch */}
-                          <div className="flex justify-between items-center">
-                            <span className="font-bold text-xs uppercase tracking-wider text-primary">
-                              {info.title.split(" ")[0]} {info.title.split(" ")[1]}
-                            </span>
+                  return (
+                    <GlassCard
+                      key={modelKey}
+                      className={`p-5 flex flex-col justify-between space-y-3 transition-all relative ${
+                        isEnabled
+                          ? "border-primary/40 bg-surface/60 shadow-sm"
+                          : "border-hairline bg-surface/20 opacity-60 hover:opacity-85"
+                      }`}
+                    >
+                      <div className="space-y-2.5">
+                        {/* Top: Header and Switch */}
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-xs uppercase tracking-wider text-primary">
+                            {info.title.split(" ")[0]} {info.title.split(" ")[1]}
+                          </span>
 
-                            {/* Switch ON / OFF */}
+                          {/* Switch ON / OFF */}
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePricingModel(modelKey)}
+                            title={
+                              isEnabled
+                                ? "Desativar este modelo na escola"
+                                : "Habilitar este modelo na escola"
+                            }
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                              isEnabled ? "bg-primary" : "bg-hairline"
+                            }`}
+                          >
+                            <span
+                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                isEnabled ? "translate-x-5" : "translate-x-0"
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        <div>
+                          <h4 className="text-xs font-bold text-foreground">{info.subtitle}</h4>
+                          <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                            {info.desc}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-hairline space-y-2">
+                        <p className="text-xs font-bold text-foreground">{info.sample}</p>
+
+                        <div className="flex justify-between items-center pt-1">
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                              isEnabled
+                                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                : "bg-surface-elevated text-muted-foreground border border-hairline"
+                            }`}
+                          >
+                            {isEnabled ? "🟢 Habilitado" : "⚪ Inativo"}
+                          </span>
+
+                          {isEnabled && (
                             <button
                               type="button"
-                              onClick={() => handleTogglePricingModel(modelKey)}
-                              title={isEnabled ? "Desativar este modelo na escola" : "Habilitar este modelo na escola"}
-                              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                                isEnabled ? "bg-primary" : "bg-hairline"
+                              onClick={() => handleSetDefaultModel(modelKey)}
+                              title={
+                                isDefault
+                                  ? "Modelo Principal Padrão"
+                                  : "Definir como modelo padrão na matrícula"
+                              }
+                              className={`flex items-center gap-1 text-[10px] font-bold transition-all px-2 py-0.5 rounded cursor-pointer border ${
+                                isDefault
+                                  ? "bg-amber-500/15 border-amber-500/30 text-amber-400"
+                                  : "border-transparent text-muted-foreground hover:text-foreground hover:bg-surface-elevated"
                               }`}
                             >
-                              <span
-                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                  isEnabled ? "translate-x-5" : "translate-x-0"
-                                }`}
+                              <Star
+                                className={`size-3 ${isDefault ? "fill-amber-400 text-amber-400" : ""}`}
                               />
+                              {isDefault ? "Padrão" : "Tornar Padrão"}
                             </button>
-                          </div>
-
-                          <div>
-                            <h4 className="text-xs font-bold text-foreground">{info.subtitle}</h4>
-                            <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{info.desc}</p>
-                          </div>
+                          )}
                         </div>
-
-                        <div className="pt-3 border-t border-hairline space-y-2">
-                          <p className="text-xs font-bold text-foreground">{info.sample}</p>
-
-                          <div className="flex justify-between items-center pt-1">
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
-                                isEnabled
-                                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                                  : "bg-surface-elevated text-muted-foreground border border-hairline"
-                              }`}
-                            >
-                              {isEnabled ? "🟢 Habilitado" : "⚪ Inativo"}
-                            </span>
-
-                            {isEnabled && (
-                              <button
-                                type="button"
-                                onClick={() => handleSetDefaultModel(modelKey)}
-                                title={isDefault ? "Modelo Principal Padrão" : "Definir como modelo padrão na matrícula"}
-                                className={`flex items-center gap-1 text-[10px] font-bold transition-all px-2 py-0.5 rounded cursor-pointer border ${
-                                  isDefault
-                                    ? "bg-amber-500/15 border-amber-500/30 text-amber-400"
-                                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-surface-elevated"
-                                }`}
-                              >
-                                <Star className={`size-3 ${isDefault ? "fill-amber-400 text-amber-400" : ""}`} />
-                                {isDefault ? "Padrão" : "Tornar Padrão"}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </GlassCard>
-                    );
-                  }
-                )}
+                      </div>
+                    </GlassCard>
+                  );
+                })}
               </div>
             </div>
 
@@ -1348,7 +1463,9 @@ function FinanceiroPage() {
                   <div className="grid grid-cols-3 gap-3">
                     {Object.entries(draftPricing.mensalidadesPorNivel).map(([lvl, val]) => (
                       <div key={lvl} className="space-y-1">
-                        <span className="text-[10px] font-bold text-muted-foreground">CEFR {lvl}</span>
+                        <span className="text-[10px] font-bold text-muted-foreground">
+                          CEFR {lvl}
+                        </span>
                         <div className="relative">
                           <input
                             type="number"
@@ -1380,7 +1497,9 @@ function FinanceiroPage() {
                     <input
                       type="number"
                       value={draftPricing.valorHoraAula}
-                      onChange={(e) => setDraftPricing({ ...draftPricing, valorHoraAula: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setDraftPricing({ ...draftPricing, valorHoraAula: Number(e.target.value) })
+                      }
                       className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
                     />
                   </div>
@@ -1393,7 +1512,10 @@ function FinanceiroPage() {
                       type="number"
                       value={draftPricing.valorHoraProfessorMedio}
                       onChange={(e) =>
-                        setDraftPricing({ ...draftPricing, valorHoraProfessorMedio: Number(e.target.value) })
+                        setDraftPricing({
+                          ...draftPricing,
+                          valorHoraProfessorMedio: Number(e.target.value),
+                        })
                       }
                       className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
                     />
@@ -1409,7 +1531,9 @@ function FinanceiroPage() {
                     <input
                       type="number"
                       value={draftPricing.taxaMatricula}
-                      onChange={(e) => setDraftPricing({ ...draftPricing, taxaMatricula: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setDraftPricing({ ...draftPricing, taxaMatricula: Number(e.target.value) })
+                      }
                       className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
                     />
                   </div>
@@ -1422,7 +1546,10 @@ function FinanceiroPage() {
                       type="number"
                       value={draftPricing.taxaMaterialDidatico}
                       onChange={(e) =>
-                        setDraftPricing({ ...draftPricing, taxaMaterialDidatico: Number(e.target.value) })
+                        setDraftPricing({
+                          ...draftPricing,
+                          taxaMaterialDidatico: Number(e.target.value),
+                        })
                       }
                       className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
                     />
@@ -1437,7 +1564,9 @@ function FinanceiroPage() {
                         <AlertTriangle className="size-4 shrink-0" />
                         {changedDifferences.length} parâmetro(s) alterado(s)
                       </p>
-                      <span className="text-[10px] text-muted-foreground">Clique para salvar no histórico</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        Clique para salvar no histórico
+                      </span>
                     </div>
 
                     <div className="flex gap-2">
@@ -1460,7 +1589,8 @@ function FinanceiroPage() {
                 ) : (
                   <div className="pt-2 text-center">
                     <p className="text-[11px] text-muted-foreground italic">
-                      Altere qualquer valor acima para habilitar o botão de salvamento e registro de histórico.
+                      Altere qualquer valor acima para habilitar o botão de salvamento e registro de
+                      histórico.
                     </p>
                   </div>
                 )}
@@ -1470,10 +1600,12 @@ function FinanceiroPage() {
               <GlassCard className="lg:col-span-6 p-6 space-y-6 border-primary/20 bg-surface-elevated/40">
                 <div className="border-b border-hairline pb-3">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-2">
-                    <TrendingUp className="size-4" /> Simulador de Precificação & Margem de Lucro por Turma
+                    <TrendingUp className="size-4" /> Simulador de Precificação & Margem de Lucro
+                    por Turma
                   </h4>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Descubra quanto cobrar e qual será o lucro gerado com base no número de alunos e carga horária.
+                    Descubra quanto cobrar e qual será o lucro gerado com base no número de alunos e
+                    carga horária.
                   </p>
                 </div>
 
@@ -1497,7 +1629,9 @@ function FinanceiroPage() {
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs font-semibold">
                       <span className="text-muted-foreground">Carga Horária Semanal da Turma</span>
-                      <span className="text-foreground font-bold">{simHorasSemanais} horas / semana</span>
+                      <span className="text-foreground font-bold">
+                        {simHorasSemanais} horas / semana
+                      </span>
                     </div>
                     <input
                       type="range"
@@ -1534,7 +1668,8 @@ function FinanceiroPage() {
                   const custoTotalTurma = custoDocente + custoRateioSala;
 
                   const faturamentoNecessario = custoTotalTurma / (1 - simMargemAlvo / 100);
-                  const mensalidadeSugeridaPorAluno = faturamentoNecessario / Math.max(1, simAlunos);
+                  const mensalidadeSugeridaPorAluno =
+                    faturamentoNecessario / Math.max(1, simAlunos);
                   const faturamentoTotalTurma = mensalidadeSugeridaPorAluno * simAlunos;
                   const lucroTurma = faturamentoTotalTurma - custoTotalTurma;
 
@@ -1543,7 +1678,9 @@ function FinanceiroPage() {
                   return (
                     <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
                       <div className="flex justify-between items-center border-b border-primary/20 pb-2">
-                        <span className="text-xs font-bold text-foreground">Preço Sugerido por Aluno</span>
+                        <span className="text-xs font-bold text-foreground">
+                          Preço Sugerido por Aluno
+                        </span>
                         <span className="text-xl font-extrabold text-primary">
                           {brl(mensalidadeSugeridaPorAluno)}/mês
                         </span>
@@ -1551,27 +1688,45 @@ function FinanceiroPage() {
 
                       <div className="grid grid-cols-2 gap-3 text-xs">
                         <div>
-                          <p className="text-[10px] text-muted-foreground font-semibold uppercase">Custo Total da Turma</p>
+                          <p className="text-[10px] text-muted-foreground font-semibold uppercase">
+                            Custo Total da Turma
+                          </p>
                           <p className="font-bold text-foreground">{brl(custoTotalTurma)}/mês</p>
-                          <p className="text-[9px] text-muted-foreground">{horasMes.toFixed(1)}h prof. + energia/sala</p>
+                          <p className="text-[9px] text-muted-foreground">
+                            {horasMes.toFixed(1)}h prof. + energia/sala
+                          </p>
                         </div>
 
                         <div>
-                          <p className="text-[10px] text-muted-foreground font-semibold uppercase">Faturamento da Turma</p>
-                          <p className="font-bold text-foreground">{brl(faturamentoTotalTurma)}/mês</p>
-                          <p className="text-[9px] text-muted-foreground">{simAlunos} alunos pagantes</p>
+                          <p className="text-[10px] text-muted-foreground font-semibold uppercase">
+                            Faturamento da Turma
+                          </p>
+                          <p className="font-bold text-foreground">
+                            {brl(faturamentoTotalTurma)}/mês
+                          </p>
+                          <p className="text-[9px] text-muted-foreground">
+                            {simAlunos} alunos pagantes
+                          </p>
                         </div>
 
                         <div>
-                          <p className="text-[10px] text-muted-foreground font-semibold uppercase">Lucro Líquido Mensal</p>
+                          <p className="text-[10px] text-muted-foreground font-semibold uppercase">
+                            Lucro Líquido Mensal
+                          </p>
                           <p className="font-bold text-emerald-400">{brl(lucroTurma)}</p>
-                          <p className="text-[9px] text-emerald-400 font-medium">Margem de {simMargemAlvo}%</p>
+                          <p className="text-[9px] text-emerald-400 font-medium">
+                            Margem de {simMargemAlvo}%
+                          </p>
                         </div>
 
                         <div>
-                          <p className="text-[10px] text-muted-foreground font-semibold uppercase">Break-Even da Turma</p>
+                          <p className="text-[10px] text-muted-foreground font-semibold uppercase">
+                            Break-Even da Turma
+                          </p>
                           <p className="font-bold text-amber-400">{breakEvenTurma} Alunos</p>
-                          <p className="text-[9px] text-muted-foreground">Turma se paga com {breakEvenTurma} alunos</p>
+                          <p className="text-[9px] text-muted-foreground">
+                            Turma se paga com {breakEvenTurma} alunos
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -1585,10 +1740,12 @@ function FinanceiroPage() {
               <div className="flex items-center justify-between border-b border-hairline pb-3">
                 <div>
                   <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                    <History className="size-4 text-primary" /> Histórico de Alterações de Preço & Auditoria Contábil
+                    <History className="size-4 text-primary" /> Histórico de Alterações de Preço &
+                    Auditoria Contábil
                   </h4>
                   <p className="text-xs text-muted-foreground">
-                    Registro de todas as versões salvas, reajustes anuais e alterações de parâmetros na escola.
+                    Registro de todas as versões salvas, reajustes anuais e alterações de parâmetros
+                    na escola.
                   </p>
                 </div>
                 <span className="rounded-lg bg-surface border border-hairline px-3 py-1 text-xs font-semibold text-muted-foreground">
@@ -1609,7 +1766,9 @@ function FinanceiroPage() {
                     <div className="flex-1 space-y-2">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                         <p className="text-xs font-bold text-foreground">{hist.motivo}</p>
-                        <span className="text-[10px] text-muted-foreground shrink-0">{hist.dataHora}</span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {hist.dataHora}
+                        </span>
                       </div>
 
                       <p className="text-[11px] text-muted-foreground">
@@ -1650,7 +1809,9 @@ function FinanceiroPage() {
                   <Save className="size-4" />
                 </span>
                 <div>
-                  <h3 className="text-sm font-bold text-foreground">Confirmar Salvamento & Registrar Reajuste</h3>
+                  <h3 className="text-sm font-bold text-foreground">
+                    Confirmar Salvamento & Registrar Reajuste
+                  </h3>
                   <p className="text-[10px] text-muted-foreground">
                     Documente a justificativa contábil para o histórico da escola (Lei 9.870/99).
                   </p>
@@ -1687,7 +1848,8 @@ function FinanceiroPage() {
                     required
                   />
                   <p className="text-[10px] text-muted-foreground">
-                    Essa justificativa será salva permanentemente no log de auditoria com a assinatura do seu usuário.
+                    Essa justificativa será salva permanentemente no log de auditoria com a
+                    assinatura do seu usuário.
                   </p>
                 </div>
 
@@ -1730,7 +1892,9 @@ function FinanceiroPage() {
                   <h3 className="text-sm font-bold text-foreground">
                     {editingCost ? "Editar Custo / Despesa" : "Nova Despesa / Custo Operacional"}
                   </h3>
-                  <p className="text-[10px] text-muted-foreground">Cadastre no DRE para controle financeiro preciso.</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Cadastre no DRE para controle financeiro preciso.
+                  </p>
                 </div>
               </div>
 
@@ -1760,10 +1924,16 @@ function FinanceiroPage() {
                     >
                       <option value="Infraestrutura & Imóvel">Infraestrutura & Imóvel</option>
                       <option value="Utilidades & Consumo">Utilidades & Consumo</option>
-                      <option value="Administrativo & Operacional">Administrativo & Operacional</option>
-                      <option value="Folha Docente (Professores)">Folha Docente (Professores)</option>
+                      <option value="Administrativo & Operacional">
+                        Administrativo & Operacional
+                      </option>
+                      <option value="Folha Docente (Professores)">
+                        Folha Docente (Professores)
+                      </option>
                       <option value="Marketing & Captação">Marketing & Captação</option>
-                      <option value="Materiais & Recursos Pedagógicos">Materiais & Recursos Pedagógicos</option>
+                      <option value="Materiais & Recursos Pedagógicos">
+                        Materiais & Recursos Pedagógicos
+                      </option>
                       <option value="Sistemas, TI & Licenças">Sistemas, TI & Licenças</option>
                     </select>
                   </div>

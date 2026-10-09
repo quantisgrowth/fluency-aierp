@@ -40,7 +40,12 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: "Visão geral",
     items: [
       { to: "/", label: "Dashboard", icon: LayoutDashboard },
-      { to: "/portal/aluno", label: "Portal do Aluno", icon: GraduationCap, module: "portal_aluno" },
+      {
+        to: "/portal/aluno",
+        label: "Portal do Aluno",
+        icon: GraduationCap,
+        module: "portal_aluno",
+      },
     ],
   },
   {
@@ -115,14 +120,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const { dark, toggle } = useTheme();
   const { isActive } = useModules();
-  const {
-    activeRole,
-    adminProfile,
-    activeCompany,
-    setActiveCompany,
-    companies,
-    users,
-  } = useUser();
+  const { activeRole, adminProfile, activeCompany, setActiveCompany, companies, users } = useUser();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
 
@@ -151,7 +149,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           u.companies.length === 0 ||
           u.companies.includes(activeCompany) ||
           activeCompany === "Todas as Unidades" ||
-          u.company === activeCompany)
+          u.company === activeCompany),
     );
 
     if (simulatedUser) {
@@ -193,7 +191,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               collapsed && "absolute right-[-14px] top-5 z-20 bg-surface",
             )}
           >
-            <ChevronLeft className={cn("size-3.5 transition-transform", collapsed && "rotate-180")} />
+            <ChevronLeft
+              className={cn("size-3.5 transition-transform", collapsed && "rotate-180")}
+            />
           </button>
         </div>
 
@@ -233,8 +233,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-
-
         {/* Logout section at the bottom of sidebar */}
         <div className="p-3 border-t border-hairline">
           <button
@@ -250,7 +248,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             }}
             className={cn(
               "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors cursor-pointer",
-              collapsed && "justify-center"
+              collapsed && "justify-center",
             )}
             title="Sair do sistema"
           >
@@ -269,12 +267,18 @@ export function AppShell({ children }: { children: ReactNode }) {
               className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
           </div>
-          
+
           {/* Authenticated role */}
           <div className="flex items-center gap-2">
             <span className="hidden text-xs text-muted-foreground sm:inline">Cargo:</span>
             <span className="rounded-lg border border-hairline bg-surface/60 px-2 py-1 text-xs font-semibold text-foreground">
-              {activeRole === "admin" ? "Administrador" : activeRole === "coordenador" ? "Coordenador" : activeRole === "professor" ? "Professor" : "Operador"}
+              {activeRole === "admin"
+                ? "Administrador"
+                : activeRole === "coordenador"
+                  ? "Coordenador"
+                  : activeRole === "professor"
+                    ? "Professor"
+                    : "Operador"}
             </span>
           </div>
 
@@ -304,7 +308,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </button>
-          
+
           <Link
             to="/admin/perfil"
             title="Meu Perfil"
@@ -321,9 +325,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
           </Link>
         </header>
-        <main className="flex-1 px-5 py-8 sm:px-8">
-          {children}
-        </main>
+        <main className="flex-1 px-5 py-8 sm:px-8">{children}</main>
       </div>
     </div>
   );

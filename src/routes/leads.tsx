@@ -39,7 +39,10 @@ export const Route = createFileRoute("/leads")({
   head: () => ({
     meta: [
       { title: "Base de Leads — Fluency AI" },
-      { name: "description", content: "Cadastro centralizado de leads, origens e histórico pedagógico." },
+      {
+        name: "description",
+        content: "Cadastro centralizado de leads, origens e histórico pedagógico.",
+      },
     ],
   }),
   component: SchoolLeadsPage,
@@ -136,7 +139,9 @@ function LeadsPage() {
 
   // Modal creation states
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"contato" | "pessoais" | "endereco" | "anotacoes">("contato");
+  const [activeTab, setActiveTab] = useState<"contato" | "pessoais" | "endereco" | "anotacoes">(
+    "contato",
+  );
 
   const [selectedDetails, setSelectedDetails] = useState<Lead | null>(null);
 
@@ -189,7 +194,9 @@ function LeadsPage() {
 
   const handleApplyBulkOrigem = () => {
     if (selectedLeadIds.size === 0) return;
-    const updated = leads.map((l) => (selectedLeadIds.has(l.id) ? { ...l, origem: bulkOrigemValue } : l));
+    const updated = leads.map((l) =>
+      selectedLeadIds.has(l.id) ? { ...l, origem: bulkOrigemValue } : l,
+    );
     saveLeads(updated);
     toast.success(`Origem atualizada para "${bulkOrigemValue}" em ${selectedLeadIds.size} leads!`);
     setIsBulkOrigemModalOpen(false);
@@ -260,8 +267,12 @@ function LeadsPage() {
         storageKeyRef.current = storageKey;
         loadLeads(storageKey);
 
-        const storedSubs = window.localStorage.getItem(`fluency-ai:captacao:submissions:v3:${schoolId}`);
-        const storedQuestions = window.localStorage.getItem(`fluency-ai:captacao:questions:v3:${schoolId}`);
+        const storedSubs = window.localStorage.getItem(
+          `fluency-ai:captacao:submissions:v3:${schoolId}`,
+        );
+        const storedQuestions = window.localStorage.getItem(
+          `fluency-ai:captacao:questions:v3:${schoolId}`,
+        );
         setSubmissions(storedSubs ? JSON.parse(storedSubs) : []);
         setQuestions(storedQuestions ? JSON.parse(storedQuestions) : []);
       } catch {
@@ -356,25 +367,51 @@ function LeadsPage() {
     const headers = parsedRows[0]!.map((h) => h.toLowerCase());
 
     // Check if first row is a header
-    const hasHeader =
-      headers.some((h) =>
-        ["nome", "name", "email", "e-mail", "telefone", "phone", "celular", "origem", "contato"].some((k) =>
-          h.includes(k)
-        )
-      );
+    const hasHeader = headers.some((h) =>
+      ["nome", "name", "email", "e-mail", "telefone", "phone", "celular", "origem", "contato"].some(
+        (k) => h.includes(k),
+      ),
+    );
 
     const dataRows = hasHeader ? parsedRows.slice(1) : parsedRows;
 
     // Detect column indexes
     let nameIdx = hasHeader ? headers.findIndex((h) => h.includes("nom") || h.includes("name")) : 0;
-    let phoneIdx = hasHeader ? headers.findIndex((h) => h.includes("tel") || h.includes("cel") || h.includes("phone") || h.includes("whats")) : 1;
-    let emailIdx = hasHeader ? headers.findIndex((h) => h.includes("mail") || h.includes("e-mail")) : 2;
-    let origemIdx = hasHeader ? headers.findIndex((h) => h.includes("orig") || h.includes("canal") || h.includes("fonte")) : 3;
-    let tagsIdx = hasHeader ? headers.findIndex((h) => h.includes("tag") || h.includes("nivel") || h.includes("nível") || h.includes("curso")) : 4;
-    let respIdx = hasHeader ? headers.findIndex((h) => h.includes("resp") || h.includes("pai") || h.includes("mãe") || h.includes("mae")) : 5;
-    let cityIdx = hasHeader ? headers.findIndex((h) => h.includes("cid") || h.includes("city") || h.includes("uf") || h.includes("estado")) : 6;
-    let docIdx = hasHeader ? headers.findIndex((h) => h.includes("doc") || h.includes("cpf") || h.includes("cnpj")) : 7;
-    let notesIdx = hasHeader ? headers.findIndex((h) => h.includes("anot") || h.includes("obs") || h.includes("note")) : 8;
+    let phoneIdx = hasHeader
+      ? headers.findIndex(
+          (h) =>
+            h.includes("tel") || h.includes("cel") || h.includes("phone") || h.includes("whats"),
+        )
+      : 1;
+    let emailIdx = hasHeader
+      ? headers.findIndex((h) => h.includes("mail") || h.includes("e-mail"))
+      : 2;
+    const origemIdx = hasHeader
+      ? headers.findIndex((h) => h.includes("orig") || h.includes("canal") || h.includes("fonte"))
+      : 3;
+    const tagsIdx = hasHeader
+      ? headers.findIndex(
+          (h) =>
+            h.includes("tag") || h.includes("nivel") || h.includes("nível") || h.includes("curso"),
+        )
+      : 4;
+    const respIdx = hasHeader
+      ? headers.findIndex(
+          (h) => h.includes("resp") || h.includes("pai") || h.includes("mãe") || h.includes("mae"),
+        )
+      : 5;
+    const cityIdx = hasHeader
+      ? headers.findIndex(
+          (h) =>
+            h.includes("cid") || h.includes("city") || h.includes("uf") || h.includes("estado"),
+        )
+      : 6;
+    const docIdx = hasHeader
+      ? headers.findIndex((h) => h.includes("doc") || h.includes("cpf") || h.includes("cnpj"))
+      : 7;
+    const notesIdx = hasHeader
+      ? headers.findIndex((h) => h.includes("anot") || h.includes("obs") || h.includes("note"))
+      : 8;
 
     if (nameIdx === -1) nameIdx = 0;
     if (phoneIdx === -1) phoneIdx = 1;
@@ -388,7 +425,10 @@ function LeadsPage() {
         const leadEmail = row[emailIdx] || "";
         const leadOrigem = row[origemIdx] || "Importação de Planilha";
         const leadTagsRaw = row[tagsIdx] || "Importado";
-        const leadTags = leadTagsRaw.split(/[,\/|]/).map((t) => t.trim()).filter(Boolean);
+        const leadTags = leadTagsRaw
+          .split(/[,/|]/)
+          .map((t) => t.trim())
+          .filter(Boolean);
         const leadResp = row[respIdx] || "";
         const leadCity = row[cityIdx] || "";
         const leadDoc = row[docIdx] || "";
@@ -436,11 +476,25 @@ function LeadsPage() {
     }
   };
 
-  const leadTemplateHeaders = ["Nome", "Telefone", "Email", "Origem", "Tags / Nivel", "Responsavel (Pai/Mae)", "Cidade", "CPF/Documento", "Anotacoes"];
+  const leadTemplateHeaders = [
+    "Nome",
+    "Telefone",
+    "Email",
+    "Origem",
+    "Tags / Nivel",
+    "Responsavel (Pai/Mae)",
+    "Cidade",
+    "CPF/Documento",
+    "Anotacoes",
+  ];
   const handleDownloadTemplate = (format: "csv" | "xlsx") => {
     if (format === "xlsx") {
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([leadTemplateHeaders]), "Modelo Leads");
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.aoa_to_sheet([leadTemplateHeaders]),
+        "Modelo Leads",
+      );
       XLSX.writeFile(workbook, "modelo_importacao_leads_fluency_ai.xlsx");
       toast.success("Modelo XLSX baixado.");
       return;
@@ -510,7 +564,10 @@ function LeadsPage() {
     const newLead: Lead = {
       id: "lead-" + Date.now(),
       nome,
-      tags: tagsInput.split(",").map(t => t.trim()).filter(Boolean),
+      tags: tagsInput
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
       telefone,
       email,
       site,
@@ -543,7 +600,7 @@ function LeadsPage() {
   const handleDeleteLead = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (confirm("Tem certeza que deseja excluir este Lead?")) {
-      const nextLeads = leads.filter(l => l.id !== id);
+      const nextLeads = leads.filter((l) => l.id !== id);
       saveLeads(nextLeads);
       toast.success("Lead removido com sucesso.");
       if (selectedDetails?.id === id) {
@@ -554,21 +611,21 @@ function LeadsPage() {
 
   // Filters logic
   const filteredLeads = leads.filter((l) => {
-    const matchesSearch = l.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          l.responsavel.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          l.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
+    const matchesSearch =
+      l.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      l.responsavel.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      l.email.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesOrigem = filterOrigem ? l.origem === filterOrigem : true;
-    
-    const matchesTeste = filterTeste === "todos" ? true :
-                         filterTeste === "sim" ? l.fezTesteNivel : !l.fezTesteNivel;
+
+    const matchesTeste =
+      filterTeste === "todos" ? true : filterTeste === "sim" ? l.fezTesteNivel : !l.fezTesteNivel;
 
     return matchesSearch && matchesOrigem && matchesTeste;
   });
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-8 animate-in fade-in duration-300">
-      
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <SectionHeader
           eyebrow="Base Comercial"
@@ -618,8 +675,10 @@ function LeadsPage() {
             className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
           >
             <option value="">Origem: Todas</option>
-            {ORIGEM_IDEAS.map(o => (
-              <option key={o} value={o}>{o}</option>
+            {ORIGEM_IDEAS.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
             ))}
           </select>
         </div>
@@ -643,10 +702,8 @@ function LeadsPage() {
 
       {/* Main Grid View: Table list on left, details on right if selected */}
       <div className="grid gap-6 lg:grid-cols-3 items-start">
-        
         {/* Table/List */}
         <div className="lg:col-span-2 space-y-4">
-
           {/* Bulk Action Sticky Bar for Leads */}
           {selectedLeadIds.size > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/10 p-4 shadow-xl backdrop-blur-md animate-in slide-in-from-top-2 duration-200">
@@ -655,7 +712,9 @@ function LeadsPage() {
                   {selectedLeadIds.size}
                 </span>
                 <span className="text-xs font-bold text-foreground">
-                  {selectedLeadIds.size === 1 ? "1 lead selecionado" : `${selectedLeadIds.size} leads selecionados`}
+                  {selectedLeadIds.size === 1
+                    ? "1 lead selecionado"
+                    : `${selectedLeadIds.size} leads selecionados`}
                 </span>
               </div>
 
@@ -710,7 +769,9 @@ function LeadsPage() {
                     <th className="w-12 px-4 py-4 text-center">
                       <input
                         type="checkbox"
-                        checked={filteredLeads.length > 0 && selectedLeadIds.size === filteredLeads.length}
+                        checked={
+                          filteredLeads.length > 0 && selectedLeadIds.size === filteredLeads.length
+                        }
                         onChange={toggleSelectAllLeads}
                         title="Selecionar todos os leads filtrados"
                         className="size-4 rounded border-hairline accent-primary cursor-pointer align-middle"
@@ -730,11 +791,12 @@ function LeadsPage() {
                       onClick={() => setSelectedDetails(l)}
                       className={`cursor-pointer transition-colors hover:bg-surface/30 ${
                         selectedLeadIds.has(l.id) ? "bg-primary/5" : ""
-                      } ${
-                        selectedDetails?.id === l.id ? "border-l-2 border-l-primary" : ""
-                      }`}
+                      } ${selectedDetails?.id === l.id ? "border-l-2 border-l-primary" : ""}`}
                     >
-                      <td className="w-12 px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                      <td
+                        className="w-12 px-4 py-4 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <input
                           type="checkbox"
                           checked={selectedLeadIds.has(l.id)}
@@ -746,26 +808,37 @@ function LeadsPage() {
                         <p className="font-semibold text-foreground">{l.nome}</p>
                         <div className="flex gap-1 mt-1 flex-wrap">
                           {l.tags.map((t) => (
-                            <span key={t} className="rounded bg-accent/60 px-1.5 py-0.5 text-[9px] font-medium text-foreground">
+                            <span
+                              key={t}
+                              className="rounded bg-accent/60 px-1.5 py-0.5 text-[9px] font-medium text-foreground"
+                            >
                               {t}
                             </span>
                           ))}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-xs text-muted-foreground font-medium">{l.responsavel}</td>
+                      <td className="px-6 py-4 text-xs text-muted-foreground font-medium">
+                        {l.responsavel}
+                      </td>
                       <td className="px-6 py-4">
                         <span className="rounded-full bg-primary/5 border border-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
                           {l.origem}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold ${
-                          l.fezTesteNivel ? "text-paid" : "text-muted-foreground"
-                        }`}>
+                        <span
+                          className={`inline-flex items-center gap-1 text-[10px] font-bold ${
+                            l.fezTesteNivel ? "text-paid" : "text-muted-foreground"
+                          }`}
+                        >
                           {l.fezTesteNivel ? (
-                            <><CheckCircle2 className="size-3.5" /> Sim</>
+                            <>
+                              <CheckCircle2 className="size-3.5" /> Sim
+                            </>
                           ) : (
-                            <><XCircle className="size-3.5" /> Não</>
+                            <>
+                              <XCircle className="size-3.5" /> Não
+                            </>
                           )}
                         </span>
                       </td>
@@ -781,7 +854,10 @@ function LeadsPage() {
                   ))}
                   {filteredLeads.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground text-xs">
+                      <td
+                        colSpan={5}
+                        className="px-6 py-12 text-center text-muted-foreground text-xs"
+                      >
                         Nenhum lead encontrado com os filtros aplicados.
                       </td>
                     </tr>
@@ -799,7 +875,9 @@ function LeadsPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-base font-bold text-foreground">{selectedDetails.nome}</h3>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Criado em: {new Date(selectedDetails.createdAt).toLocaleDateString("pt-BR")}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    Criado em: {new Date(selectedDetails.createdAt).toLocaleDateString("pt-BR")}
+                  </p>
                 </div>
                 <button
                   onClick={() => setSelectedDetails(null)}
@@ -811,33 +889,55 @@ function LeadsPage() {
 
               {/* Tags */}
               <div className="space-y-1.5">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Tags do Lead</p>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Tags do Lead
+                </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {selectedDetails.tags.map(t => (
-                    <span key={t} className="rounded bg-primary/10 border border-primary/10 px-2 py-0.5 text-xs text-primary font-medium">
+                  {selectedDetails.tags.map((t) => (
+                    <span
+                      key={t}
+                      className="rounded bg-primary/10 border border-primary/10 px-2 py-0.5 text-xs text-primary font-medium"
+                    >
                       {t}
                     </span>
                   ))}
-                  {selectedDetails.tags.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma tag cadastrada.</span>}
+                  {selectedDetails.tags.length === 0 && (
+                    <span className="text-xs text-muted-foreground">Nenhuma tag cadastrada.</span>
+                  )}
                 </div>
               </div>
 
               {/* Contatos */}
               <div className="space-y-3">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-hairline pb-1">Contato</p>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-hairline pb-1">
+                  Contato
+                </p>
                 <div className="grid gap-2.5 text-xs">
                   <div className="flex items-center gap-2">
                     <Phone className="size-3.5 text-muted-foreground" />
-                    <span>Telefone: <strong>{selectedDetails.telefone}</strong></span>
+                    <span>
+                      Telefone: <strong>{selectedDetails.telefone}</strong>
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Mail className="size-3.5 text-muted-foreground" />
-                    <span>E-mail: <strong>{selectedDetails.email}</strong></span>
+                    <span>
+                      E-mail: <strong>{selectedDetails.email}</strong>
+                    </span>
                   </div>
                   {selectedDetails.site && (
                     <div className="flex items-center gap-2">
                       <Eye className="size-3.5 text-muted-foreground" />
-                      <span>Site: <a href={`https://${selectedDetails.site}`} target="_blank" className="text-primary hover:underline">{selectedDetails.site}</a></span>
+                      <span>
+                        Site:{" "}
+                        <a
+                          href={`https://${selectedDetails.site}`}
+                          target="_blank"
+                          className="text-primary hover:underline"
+                        >
+                          {selectedDetails.site}
+                        </a>
+                      </span>
                     </div>
                   )}
                 </div>
@@ -845,51 +945,89 @@ function LeadsPage() {
 
               {/* Dados Pessoais */}
               <div className="space-y-3">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-hairline pb-1">Dados Pessoais</p>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-hairline pb-1">
+                  Dados Pessoais
+                </p>
                 <div className="grid gap-2.5 text-xs">
-                  <div>Responsável (Pai/Mãe): <strong>{selectedDetails.responsavel}</strong></div>
-                  <div>Origem de Captação: <strong className="text-primary">{selectedDetails.origem}</strong></div>
-                  {selectedDetails.documento && <div>Documento: <strong>{selectedDetails.documento}</strong></div>}
-                  {selectedDetails.empresa && <div>Empresa: <strong>{selectedDetails.empresa}</strong></div>}
-                  {selectedDetails.dataNascimento && <div>Data Nasc.: <strong>{new Date(selectedDetails.dataNascimento).toLocaleDateString("pt-BR")}</strong></div>}
+                  <div>
+                    Responsável (Pai/Mãe): <strong>{selectedDetails.responsavel}</strong>
+                  </div>
+                  <div>
+                    Origem de Captação:{" "}
+                    <strong className="text-primary">{selectedDetails.origem}</strong>
+                  </div>
+                  {selectedDetails.documento && (
+                    <div>
+                      Documento: <strong>{selectedDetails.documento}</strong>
+                    </div>
+                  )}
+                  {selectedDetails.empresa && (
+                    <div>
+                      Empresa: <strong>{selectedDetails.empresa}</strong>
+                    </div>
+                  )}
+                  {selectedDetails.dataNascimento && (
+                    <div>
+                      Data Nasc.:{" "}
+                      <strong>
+                        {new Date(selectedDetails.dataNascimento).toLocaleDateString("pt-BR")}
+                      </strong>
+                    </div>
+                  )}
                   <div>
                     Fez Teste de Nivelamento:{" "}
-                    <strong className={selectedDetails.fezTesteNivel ? "text-paid" : "text-muted-foreground"}>
+                    <strong
+                      className={
+                        selectedDetails.fezTesteNivel ? "text-paid" : "text-muted-foreground"
+                      }
+                    >
                       {selectedDetails.fezTesteNivel ? "Sim (Classificado)" : "Não"}
                     </strong>
-                    {selectedDetails.fezTesteNivel && (() => {
-                      const matchingSub = submissions.find(
-                        (s) =>
-                          s.email.toLowerCase() === selectedDetails.email.toLowerCase() ||
-                          s.nome.toLowerCase() === selectedDetails.nome.toLowerCase()
-                      );
-                      if (!matchingSub) return null;
-                      return (
-                        <button
-                          onClick={() => setSelectedLead(matchingSub)}
-                          className="ml-2 inline-flex items-center gap-1 rounded bg-primary/20 hover:bg-primary/30 px-2 py-0.5 text-[10px] font-bold text-primary cursor-pointer transition-all border-0 align-middle"
-                        >
-                          Visualizar Respostas
-                        </button>
-                      );
-                    })()}
+                    {selectedDetails.fezTesteNivel &&
+                      (() => {
+                        const matchingSub = submissions.find(
+                          (s) =>
+                            s.email.toLowerCase() === selectedDetails.email.toLowerCase() ||
+                            s.nome.toLowerCase() === selectedDetails.nome.toLowerCase(),
+                        );
+                        if (!matchingSub) return null;
+                        return (
+                          <button
+                            onClick={() => setSelectedLead(matchingSub)}
+                            className="ml-2 inline-flex items-center gap-1 rounded bg-primary/20 hover:bg-primary/30 px-2 py-0.5 text-[10px] font-bold text-primary cursor-pointer transition-all border-0 align-middle"
+                          >
+                            Visualizar Respostas
+                          </button>
+                        );
+                      })()}
                   </div>
                 </div>
               </div>
 
               {/* Endereço */}
               <div className="space-y-3">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-hairline pb-1">Endereço</p>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-hairline pb-1">
+                  Endereço
+                </p>
                 <div className="grid gap-1 text-xs leading-relaxed">
-                  <p>CEP: <strong>{selectedDetails.cep || "Não informado"}</strong></p>
-                  <p>{selectedDetails.endereco}, {selectedDetails.numero} {selectedDetails.complemento && `(${selectedDetails.complemento})`}</p>
-                  <p>{selectedDetails.bairro} — {selectedDetails.cidade}/{selectedDetails.uf}</p>
+                  <p>
+                    CEP: <strong>{selectedDetails.cep || "Não informado"}</strong>
+                  </p>
+                  <p>
+                    {selectedDetails.endereco}, {selectedDetails.numero}{" "}
+                    {selectedDetails.complemento && `(${selectedDetails.complemento})`}
+                  </p>
+                  <p>
+                    {selectedDetails.bairro} — {selectedDetails.cidade}/{selectedDetails.uf}
+                  </p>
                 </div>
               </div>
 
               {/* Ações Comerciais Rápidas */}
               <div className="space-y-2 pt-2 border-t border-hairline">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Ações Comerciais Rápidas</p>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Ações Comerciais Rápidas
+                </p>
                 <div className="grid grid-cols-2 gap-2">
                   <a
                     href={`https://wa.me/${selectedDetails.telefone.replace(/\D/g, "")}`}
@@ -907,24 +1045,23 @@ function LeadsPage() {
                   </a>
                 </div>
               </div>
-
             </GlassCard>
           ) : (
             <GlassCard className="p-8 text-center sticky top-24 border-dashed border-hairline flex flex-col items-center justify-center min-h-[300px] text-muted-foreground">
               <Info className="size-7 mb-3 text-muted-foreground/60" />
               <p className="text-sm font-semibold">Detalhes do Lead</p>
-              <p className="text-xs max-w-[200px] mt-1 leading-relaxed">Selecione um lead da tabela para carregar a ficha completa.</p>
+              <p className="text-xs max-w-[200px] mt-1 leading-relaxed">
+                Selecione um lead da tabela para carregar a ficha completa.
+              </p>
             </GlassCard>
           )}
         </div>
-
       </div>
 
       {/* --- MOCK MULTI-TAB LEAD CREATION DIALOG --- */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <GlassCard className="w-full max-w-3xl max-h-[90vh] overflow-y-auto p-7 md:p-8 space-y-6 shadow-2xl relative text-foreground">
-            
             <button
               onClick={() => setIsModalOpen(false)}
               className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer"
@@ -934,15 +1071,18 @@ function LeadsPage() {
 
             <div>
               <h3 className="text-base font-bold text-foreground">Criar novo Lead</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Preencha os dados do prospect para cadastrá-lo na base.</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Preencha os dados do prospect para cadastrá-lo na base.
+              </p>
             </div>
 
             <form onSubmit={handleCreateLeadSubmit} className="space-y-4">
-              
               {/* Global Fields: Nome & Tags */}
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Nome</label>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Nome
+                  </label>
                   <input
                     placeholder="Informe o nome do lead"
                     value={nome}
@@ -953,7 +1093,9 @@ function LeadsPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Tags (Separadas por vírgula)</label>
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Tags (Separadas por vírgula)
+                  </label>
                   <input
                     placeholder="Ex: Teen, Inglês, Matutino"
                     value={tagsInput}
@@ -978,7 +1120,9 @@ function LeadsPage() {
                       type="button"
                       onClick={() => setActiveTab(t)}
                       className={`py-1.5 text-[10px] font-semibold rounded-md transition-all cursor-pointer ${
-                        activeTab === t ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        activeTab === t
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
                       {labels[t]}
@@ -989,11 +1133,12 @@ function LeadsPage() {
 
               {/* Tab Content Panel */}
               <div className="min-h-[160px] py-1">
-                
                 {activeTab === "contato" && (
                   <div className="grid gap-4 md:grid-cols-2 animate-in fade-in duration-200">
                     <div className="space-y-1.5 md:col-span-2">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Telefone</label>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Telefone
+                      </label>
                       <input
                         placeholder="+55 (11) 99999-9999"
                         value={telefone}
@@ -1002,7 +1147,9 @@ function LeadsPage() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">E-mail</label>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        E-mail
+                      </label>
                       <input
                         type="email"
                         placeholder="Exemplo: meulead@gmail.com"
@@ -1012,7 +1159,9 @@ function LeadsPage() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Site</label>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Site
+                      </label>
                       <input
                         placeholder="Exemplo: www.meulead.com.br"
                         value={site}
@@ -1027,7 +1176,9 @@ function LeadsPage() {
                   <div className="space-y-3 animate-in fade-in duration-200">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Documento (CPF/CNPJ)</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Documento (CPF/CNPJ)
+                        </label>
                         <input
                           placeholder="Informe o documento"
                           value={documento}
@@ -1036,7 +1187,9 @@ function LeadsPage() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Empresa</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Empresa
+                        </label>
                         <input
                           placeholder="Informe a empresa"
                           value={empresa}
@@ -1047,21 +1200,27 @@ function LeadsPage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Origem do Lead</label>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Origem do Lead
+                      </label>
                       <select
                         value={origem}
                         onChange={(e) => setOrigem(e.target.value)}
                         className="h-10 w-full rounded-lg border border-hairline bg-surface/50 px-3 text-xs text-foreground outline-none focus:border-primary"
                       >
                         {ORIGEM_IDEAS.map((o) => (
-                          <option key={o} value={o}>{o}</option>
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
                         ))}
                       </select>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Pai, Mãe ou Responsável</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Pai, Mãe ou Responsável
+                        </label>
                         <input
                           placeholder="Ex: Mariana Santos (Mãe)"
                           value={responsavel}
@@ -1070,7 +1229,9 @@ function LeadsPage() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Data de Nascimento</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Data de Nascimento
+                        </label>
                         <input
                           type="date"
                           value={dataNascimento}
@@ -1096,7 +1257,9 @@ function LeadsPage() {
                   <div className="space-y-3 animate-in fade-in duration-200">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">País</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          País
+                        </label>
                         <input
                           value={pais}
                           onChange={(e) => setPais(e.target.value)}
@@ -1104,7 +1267,9 @@ function LeadsPage() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">CEP</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          CEP
+                        </label>
                         <input
                           placeholder="ex: 12345-678"
                           value={cep}
@@ -1116,7 +1281,9 @@ function LeadsPage() {
 
                     <div className="grid grid-cols-3 gap-3">
                       <div className="col-span-2 space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Endereço</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Endereço
+                        </label>
                         <input
                           placeholder="ex: Av. Paulista"
                           value={endereco}
@@ -1125,7 +1292,9 @@ function LeadsPage() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Número</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Número
+                        </label>
                         <input
                           placeholder="ex: 123"
                           value={numero}
@@ -1137,7 +1306,9 @@ function LeadsPage() {
 
                     <div className="grid grid-cols-3 gap-3">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Complemento</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Complemento
+                        </label>
                         <input
                           placeholder="ex: Apto 101"
                           value={complemento}
@@ -1146,7 +1317,9 @@ function LeadsPage() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Bairro</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Bairro
+                        </label>
                         <input
                           placeholder="ex: Centro"
                           value={bairro}
@@ -1155,7 +1328,9 @@ function LeadsPage() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">UF</label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          UF
+                        </label>
                         <input
                           placeholder="ex: SP"
                           value={uf}
@@ -1166,7 +1341,9 @@ function LeadsPage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Cidade</label>
+                      <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        Cidade
+                      </label>
                       <input
                         placeholder="ex: São Paulo"
                         value={cidade}
@@ -1179,7 +1356,9 @@ function LeadsPage() {
 
                 {activeTab === "anotacoes" && (
                   <div className="space-y-1.5 animate-in fade-in duration-200">
-                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Anotações do Lead</label>
+                    <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      Anotações do Lead
+                    </label>
                     <textarea
                       placeholder="Histórico comercial, particularidades, nível, objetivos e etc."
                       value={anotacoes}
@@ -1189,7 +1368,6 @@ function LeadsPage() {
                     />
                   </div>
                 )}
-
               </div>
 
               {/* Form Footer */}
@@ -1208,7 +1386,6 @@ function LeadsPage() {
                   Confirmar
                 </button>
               </div>
-
             </form>
           </GlassCard>
         </div>
@@ -1226,13 +1403,24 @@ function LeadsPage() {
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-hairline pb-4">
               <div>
-                <span className="rounded bg-primary/10 text-primary text-[8px] font-extrabold px-1.5 py-0.5 uppercase">Resultado Nivelamento</span>
+                <span className="rounded bg-primary/10 text-primary text-[8px] font-extrabold px-1.5 py-0.5 uppercase">
+                  Resultado Nivelamento
+                </span>
                 <h3 className="text-lg font-bold text-foreground mt-1">{selectedLead.nome}</h3>
-                <p className="text-xs text-muted-foreground">Preenchido em {new Date(selectedLead.date).toLocaleString("pt-BR")}</p>
+                <p className="text-xs text-muted-foreground">
+                  Preenchido em {new Date(selectedLead.date).toLocaleString("pt-BR")}
+                </p>
               </div>
               <div className="text-right">
-                <span className="text-2xl font-extrabold text-foreground">{selectedLead.level}</span>
-                <p className="text-xs text-muted-foreground">Pontuação: <span className="font-bold text-primary">{selectedLead.score} / {selectedLead.total} acertos</span></p>
+                <span className="text-2xl font-extrabold text-foreground">
+                  {selectedLead.level}
+                </span>
+                <p className="text-xs text-muted-foreground">
+                  Pontuação:{" "}
+                  <span className="font-bold text-primary">
+                    {selectedLead.score} / {selectedLead.total} acertos
+                  </span>
+                </p>
               </div>
             </div>
 
@@ -1240,35 +1428,56 @@ function LeadsPage() {
               <div className="space-y-2">
                 <h4 className="font-bold text-foreground">Dados de Contato</h4>
                 <div className="space-y-1.5 text-muted-foreground">
-                  <p className="flex items-center gap-1.5"><Mail className="size-3.5 text-primary shrink-0" /> <strong>E-mail:</strong> {selectedLead.email}</p>
-                  <p className="flex items-center gap-1.5"><Phone className="size-3.5 text-primary shrink-0" /> <strong>Telefone:</strong> {selectedLead.telefone}</p>
+                  <p className="flex items-center gap-1.5">
+                    <Mail className="size-3.5 text-primary shrink-0" /> <strong>E-mail:</strong>{" "}
+                    {selectedLead.email}
+                  </p>
+                  <p className="flex items-center gap-1.5">
+                    <Phone className="size-3.5 text-primary shrink-0" /> <strong>Telefone:</strong>{" "}
+                    {selectedLead.telefone}
+                  </p>
                 </div>
               </div>
             </div>
 
             <div className="space-y-4">
-              <h4 className="font-bold text-foreground text-xs uppercase tracking-wider border-b border-hairline pb-2">Gabarito de Respostas</h4>
+              <h4 className="font-bold text-foreground text-xs uppercase tracking-wider border-b border-hairline pb-2">
+                Gabarito de Respostas
+              </h4>
               <div className="space-y-4">
                 {questions.map((q, idx) => {
                   const leadAnswer = selectedLead.respostas?.[q.id];
                   const isCorrect = leadAnswer === q.correta;
 
                   return (
-                    <div key={q.id} className="rounded-lg border border-hairline bg-white/[0.01] p-4 space-y-2.5">
+                    <div
+                      key={q.id}
+                      className="rounded-lg border border-hairline bg-white/[0.01] p-4 space-y-2.5"
+                    >
                       <div className="flex justify-between items-center text-xs">
-                        <span className="font-bold text-muted-foreground">Questão #{idx + 1} ({q.nivel})</span>
+                        <span className="font-bold text-muted-foreground">
+                          Questão #{idx + 1} ({q.nivel})
+                        </span>
                         {leadAnswer ? (
                           isCorrect ? (
-                            <span className="rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5">Correto</span>
+                            <span className="rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5">
+                              Correto
+                            </span>
                           ) : (
-                            <span className="rounded bg-rose-500/10 text-rose-400 text-[10px] font-bold px-2 py-0.5">Incorreto</span>
+                            <span className="rounded bg-rose-500/10 text-rose-400 text-[10px] font-bold px-2 py-0.5">
+                              Incorreto
+                            </span>
                           )
                         ) : (
-                          <span className="rounded bg-zinc-500/10 text-zinc-400 text-[10px] font-bold px-2 py-0.5">Não Respondido</span>
+                          <span className="rounded bg-zinc-500/10 text-zinc-400 text-[10px] font-bold px-2 py-0.5">
+                            Não Respondido
+                          </span>
                         )}
                       </div>
 
-                      <p className="text-xs font-semibold text-foreground leading-relaxed">{q.enunciado}</p>
+                      <p className="text-xs font-semibold text-foreground leading-relaxed">
+                        {q.enunciado}
+                      </p>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                         {[
@@ -1282,24 +1491,36 @@ function LeadsPage() {
 
                           let optClass = "border-hairline text-muted-foreground bg-transparent";
                           if (isChosen) {
-                            optClass = isCorrect 
+                            optClass = isCorrect
                               ? "border-emerald-500 bg-emerald-500/10 text-foreground font-semibold"
                               : "border-rose-500 bg-rose-500/10 text-foreground font-semibold";
                           } else if (isAnswerCorrect && !isCorrect && leadAnswer !== undefined) {
-                            optClass = "border-emerald-500/50 bg-emerald-500/5 text-emerald-400 font-semibold";
+                            optClass =
+                              "border-emerald-500/50 bg-emerald-500/5 text-emerald-400 font-semibold";
                           }
 
                           return (
-                            <div key={opt.key} className={`border rounded p-2 flex items-center justify-between ${optClass}`}>
-                              <span>({opt.key}) {opt.val}</span>
-                              {isChosen && (
-                                isCorrect 
-                                  ? <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" />
-                                  : <XCircle className="size-3.5 text-rose-400 shrink-0" />
-                              )}
-                              {!isChosen && isAnswerCorrect && !isCorrect && leadAnswer !== undefined && (
-                                <span className="text-[9px] text-emerald-400 uppercase font-bold">Gabarito</span>
-                              )}
+                            <div
+                              key={opt.key}
+                              className={`border rounded p-2 flex items-center justify-between ${optClass}`}
+                            >
+                              <span>
+                                ({opt.key}) {opt.val}
+                              </span>
+                              {isChosen &&
+                                (isCorrect ? (
+                                  <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" />
+                                ) : (
+                                  <XCircle className="size-3.5 text-rose-400 shrink-0" />
+                                ))}
+                              {!isChosen &&
+                                isAnswerCorrect &&
+                                !isCorrect &&
+                                leadAnswer !== undefined && (
+                                  <span className="text-[9px] text-emerald-400 uppercase font-bold">
+                                    Gabarito
+                                  </span>
+                                )}
                             </div>
                           );
                         })}
@@ -1370,8 +1591,20 @@ function LeadsPage() {
 
               <div className="flex items-center gap-3 text-xs font-medium">
                 <Download className="size-3.5 text-primary" />
-                <button type="button" onClick={() => handleDownloadTemplate("csv")} className="text-primary hover:underline">Modelo CSV</button>
-                <button type="button" onClick={() => handleDownloadTemplate("xlsx")} className="text-primary hover:underline">Modelo XLSX</button>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadTemplate("csv")}
+                  className="text-primary hover:underline"
+                >
+                  Modelo CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadTemplate("xlsx")}
+                  className="text-primary hover:underline"
+                >
+                  Modelo XLSX
+                </button>
               </div>
             </div>
 
@@ -1459,7 +1692,9 @@ function LeadsPage() {
                     <Sparkles className="size-4 text-primary" />
                     Pré-visualização ({previewLeads.length} leads identificados)
                   </span>
-                  <span className="text-[11px] text-muted-foreground">Mostrando os primeiros 4 registros</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    Mostrando os primeiros 4 registros
+                  </span>
                 </div>
 
                 <div className="rounded-xl border border-hairline overflow-hidden">
@@ -1512,7 +1747,9 @@ function LeadsPage() {
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-xs font-bold text-primary-foreground shadow hover:bg-primary/95 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 <Check className="size-4 stroke-[3]" />
-                <span>Confirmar e Importar {previewLeads.length > 0 ? `(${previewLeads.length})` : ""}</span>
+                <span>
+                  Confirmar e Importar {previewLeads.length > 0 ? `(${previewLeads.length})` : ""}
+                </span>
               </button>
             </div>
           </GlassCard>
@@ -1525,15 +1762,21 @@ function LeadsPage() {
           <div className="w-full max-w-md rounded-2xl border border-hairline bg-card p-6 shadow-2xl space-y-5">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <h3 className="text-base font-bold text-foreground">Alterar Origem em Massa</h3>
-              <button onClick={() => setIsBulkOrigemModalOpen(false)} className="text-muted-foreground hover:text-foreground">
+              <button
+                onClick={() => setIsBulkOrigemModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <X className="size-5" />
               </button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Selecione o novo canal de origem para <strong>{selectedLeadIds.size} leads selecionados</strong>:
+              Selecione o novo canal de origem para{" "}
+              <strong>{selectedLeadIds.size} leads selecionados</strong>:
             </p>
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-bold text-muted-foreground">Canal de Origem</label>
+              <label className="text-[10px] uppercase font-bold text-muted-foreground">
+                Canal de Origem
+              </label>
               <select
                 value={bulkOrigemValue}
                 onChange={(e) => setBulkOrigemValue(e.target.value)}
@@ -1570,15 +1813,21 @@ function LeadsPage() {
           <div className="w-full max-w-md rounded-2xl border border-hairline bg-card p-6 shadow-2xl space-y-5">
             <div className="flex items-center justify-between border-b border-hairline pb-3">
               <h3 className="text-base font-bold text-foreground">Adicionar Tag em Massa</h3>
-              <button onClick={() => setIsBulkTagModalOpen(false)} className="text-muted-foreground hover:text-foreground">
+              <button
+                onClick={() => setIsBulkTagModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <X className="size-5" />
               </button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Informe a etiqueta que deseja adicionar aos <strong>{selectedLeadIds.size} leads selecionados</strong>:
+              Informe a etiqueta que deseja adicionar aos{" "}
+              <strong>{selectedLeadIds.size} leads selecionados</strong>:
             </p>
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-bold text-muted-foreground">Nome da Tag</label>
+              <label className="text-[10px] uppercase font-bold text-muted-foreground">
+                Nome da Tag
+              </label>
               <input
                 type="text"
                 placeholder="Ex: Campanha VIP, Follow-up, Interessado"
@@ -1622,7 +1871,8 @@ function LeadsPage() {
             <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 text-xs text-rose-400 space-y-2">
               <p className="font-bold">Atenção:</p>
               <p>
-                Você está prestes a excluir permanentemente <strong>{selectedLeadIds.size} leads</strong> da base comercial.
+                Você está prestes a excluir permanentemente{" "}
+                <strong>{selectedLeadIds.size} leads</strong> da base comercial.
               </p>
             </div>
             <div className="flex justify-end gap-3 pt-2">

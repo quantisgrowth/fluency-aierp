@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ClipboardList,
   Search,
@@ -23,7 +23,7 @@ import {
   Award,
   BookOpen,
   Mail,
-  Phone
+  Phone,
 } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
@@ -40,21 +40,29 @@ import {
   XAxis,
   YAxis,
   Tooltip as ChartTooltip,
-  Legend
+  Legend,
 } from "recharts";
 
 export const Route = createFileRoute("/captacao")({
   head: () => ({
     meta: [
       { title: "Captação & Testes — Fluency AI" },
-      { name: "description", content: "Criador de formulários estilo Tally, testes de nivelamento CEFR e captura de leads." },
+      {
+        name: "description",
+        content:
+          "Criador de formulários estilo Tally, testes de nivelamento CEFR e captura de leads.",
+      },
     ],
   }),
   component: CaptacaoPage,
 });
 
 function EmptyChart({ message }: { message: string }) {
-  return <div className="grid h-full place-items-center rounded-xl border border-dashed border-hairline px-6 text-center text-xs text-muted-foreground">{message}</div>;
+  return (
+    <div className="grid h-full place-items-center rounded-xl border border-dashed border-hairline px-6 text-center text-xs text-muted-foreground">
+      {message}
+    </div>
+  );
 }
 
 type Question = {
@@ -89,7 +97,7 @@ const DEFAULT_QUESTIONS: Question[] = [
     opcaoB: "goes",
     opcaoC: "going",
     opcaoD: "gone",
-    correta: "B"
+    correta: "B",
   },
   {
     id: "q-2",
@@ -99,7 +107,7 @@ const DEFAULT_QUESTIONS: Question[] = [
     opcaoB: "on",
     opcaoC: "-",
     opcaoD: "in",
-    correta: "C"
+    correta: "C",
   },
   {
     id: "q-3",
@@ -109,7 +117,7 @@ const DEFAULT_QUESTIONS: Question[] = [
     opcaoB: "won't",
     opcaoC: "didn't",
     opcaoD: "wouldn't have",
-    correta: "B"
+    correta: "B",
   },
   {
     id: "q-4",
@@ -119,7 +127,7 @@ const DEFAULT_QUESTIONS: Question[] = [
     opcaoB: "have had",
     opcaoC: "had",
     opcaoD: "would have",
-    correta: "A"
+    correta: "A",
   },
   {
     id: "q-5",
@@ -129,13 +137,15 @@ const DEFAULT_QUESTIONS: Question[] = [
     opcaoB: "I had",
     opcaoC: "did I",
     opcaoD: "I did",
-    correta: "A"
-  }
+    correta: "A",
+  },
 ];
 
 function CaptacaoPage() {
-  const [activeTab, setActiveTab] = useState<"gerenciador" | "editor" | "respostas" | "playground">("gerenciador");
-  
+  const [activeTab, setActiveTab] = useState<"gerenciador" | "editor" | "respostas" | "playground">(
+    "gerenciador",
+  );
+
   // Data lists
   const [questions, setQuestions] = useState<Question[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -152,7 +162,7 @@ function CaptacaoPage() {
   // Editor modal/creation states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
-  
+
   // Question Form states
   const [formEnunciado, setFormEnunciado] = useState("");
   const [formNivel, setFormNivel] = useState("A1");
@@ -171,8 +181,10 @@ function CaptacaoPage() {
   const [calculatedLevel, setCalculatedLevel] = useState("");
   const [calculatedScore, setCalculatedScore] = useState(0);
 
-  const scopedKey = (base: string, schoolId = storageSchoolId) =>
-    schoolId ? `${base}:v3:${schoolId}` : "";
+  const scopedKey = useCallback(
+    (base: string, schoolId = storageSchoolId) => (schoolId ? `${base}:v3:${schoolId}` : ""),
+    [storageSchoolId],
+  );
 
   // Load only the current school's local configuration and responses.
   useEffect(() => {
@@ -187,32 +199,53 @@ function CaptacaoPage() {
         const storedQuestions = window.localStorage.getItem(questionKey);
         const storedSubmissions = window.localStorage.getItem(submissionKey);
         const parsedQuestions: Question[] = storedQuestions ? JSON.parse(storedQuestions) : [];
-        const parsedSubmissions: Submission[] = storedSubmissions ? JSON.parse(storedSubmissions) : [];
-        const isLegacyDemo = parsedSubmissions.length === 0
-          && parsedQuestions.length === DEFAULT_QUESTIONS.length
-          && parsedQuestions.every((item, index) => item.id === DEFAULT_QUESTIONS[index]?.id && item.enunciado === DEFAULT_QUESTIONS[index]?.enunciado);
+        const parsedSubmissions: Submission[] = storedSubmissions
+          ? JSON.parse(storedSubmissions)
+          : [];
+        const isLegacyDemo =
+          parsedSubmissions.length === 0 &&
+          parsedQuestions.length === DEFAULT_QUESTIONS.length &&
+          parsedQuestions.every(
+            (item, index) =>
+              item.id === DEFAULT_QUESTIONS[index]?.id &&
+              item.enunciado === DEFAULT_QUESTIONS[index]?.enunciado,
+          );
         setQuestions(isLegacyDemo ? [] : parsedQuestions);
         setSubmissions(parsedSubmissions);
         if (isLegacyDemo) window.localStorage.removeItem(questionKey);
 
-        const activeNivel = window.localStorage.getItem(scopedKey("fluency-ai:captacao:formStatus:nivelamento", schoolId));
-        const activeMatricula = window.localStorage.getItem(scopedKey("fluency-ai:captacao:formStatus:matricula", schoolId));
-        const unlockedMatricula = window.localStorage.getItem(scopedKey("fluency-ai:captacao:premium-unlocked", schoolId));
-        setIsNivelamentoActive(isLegacyDemo ? false : activeNivel !== null ? JSON.parse(activeNivel) : false);
+        const activeNivel = window.localStorage.getItem(
+          scopedKey("fluency-ai:captacao:formStatus:nivelamento", schoolId),
+        );
+        const activeMatricula = window.localStorage.getItem(
+          scopedKey("fluency-ai:captacao:formStatus:matricula", schoolId),
+        );
+        const unlockedMatricula = window.localStorage.getItem(
+          scopedKey("fluency-ai:captacao:premium-unlocked", schoolId),
+        );
+        setIsNivelamentoActive(
+          isLegacyDemo ? false : activeNivel !== null ? JSON.parse(activeNivel) : false,
+        );
         setIsMatriculaActive(activeMatricula !== null ? JSON.parse(activeMatricula) : false);
         setIsMatriculaUnlocked(unlockedMatricula !== null ? JSON.parse(unlockedMatricula) : false);
       } catch {
         if (active) setSubmissions([]);
       }
     })();
-    return () => { active = false; };
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [scopedKey]);
 
   // Save changes
   const saveQuestionsList = (next: Question[]) => {
     setQuestions(next);
     try {
-      if (storageSchoolId) window.localStorage.setItem(scopedKey("fluency-ai:captacao:questions"), JSON.stringify(next));
+      if (storageSchoolId)
+        window.localStorage.setItem(
+          scopedKey("fluency-ai:captacao:questions"),
+          JSON.stringify(next),
+        );
     } catch {
       /* ignore */
     }
@@ -221,7 +254,11 @@ function CaptacaoPage() {
   const saveSubmissionsList = (next: Submission[]) => {
     setSubmissions(next);
     try {
-      if (storageSchoolId) window.localStorage.setItem(scopedKey("fluency-ai:captacao:submissions"), JSON.stringify(next));
+      if (storageSchoolId)
+        window.localStorage.setItem(
+          scopedKey("fluency-ai:captacao:submissions"),
+          JSON.stringify(next),
+        );
     } catch {
       /* ignore */
     }
@@ -237,7 +274,11 @@ function CaptacaoPage() {
     const next = !isNivelamentoActive;
     setIsNivelamentoActive(next);
     try {
-      if (storageSchoolId) window.localStorage.setItem(scopedKey("fluency-ai:captacao:formStatus:nivelamento"), JSON.stringify(next));
+      if (storageSchoolId)
+        window.localStorage.setItem(
+          scopedKey("fluency-ai:captacao:formStatus:nivelamento"),
+          JSON.stringify(next),
+        );
       toast.success(next ? "Teste de Nivelamento ativado!" : "Teste de Nivelamento desativado!");
     } catch {
       /* ignore */
@@ -248,8 +289,14 @@ function CaptacaoPage() {
     const next = !isMatriculaActive;
     setIsMatriculaActive(next);
     try {
-      if (storageSchoolId) window.localStorage.setItem(scopedKey("fluency-ai:captacao:formStatus:matricula"), JSON.stringify(next));
-      toast.success(next ? "Formulário de Pré-Matrícula ativado!" : "Formulário de Pré-Matrícula desativado!");
+      if (storageSchoolId)
+        window.localStorage.setItem(
+          scopedKey("fluency-ai:captacao:formStatus:matricula"),
+          JSON.stringify(next),
+        );
+      toast.success(
+        next ? "Formulário de Pré-Matrícula ativado!" : "Formulário de Pré-Matrícula desativado!",
+      );
     } catch {
       /* ignore */
     }
@@ -261,8 +308,14 @@ function CaptacaoPage() {
     setIsUnlockModalOpen(false);
     try {
       if (storageSchoolId) {
-        window.localStorage.setItem(scopedKey("fluency-ai:captacao:premium-unlocked"), JSON.stringify(true));
-        window.localStorage.setItem(scopedKey("fluency-ai:captacao:formStatus:matricula"), JSON.stringify(true));
+        window.localStorage.setItem(
+          scopedKey("fluency-ai:captacao:premium-unlocked"),
+          JSON.stringify(true),
+        );
+        window.localStorage.setItem(
+          scopedKey("fluency-ai:captacao:formStatus:matricula"),
+          JSON.stringify(true),
+        );
       }
       toast.success("Módulo Premium Pré-Matrícula Online ativado com sucesso!");
     } catch {
@@ -271,7 +324,15 @@ function CaptacaoPage() {
   };
 
   // Reusable custom toggle switch component
-  const ToggleSwitch = ({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) => {
+  const ToggleSwitch = ({
+    checked,
+    onChange,
+    disabled,
+  }: {
+    checked: boolean;
+    onChange: () => void;
+    disabled?: boolean;
+  }) => {
     return (
       <button
         onClick={(e) => {
@@ -339,7 +400,7 @@ function CaptacaoPage() {
               opcaoD: formOpcaoD,
               correta: formCorreta,
             }
-          : q
+          : q,
       );
       saveQuestionsList(next);
       toast.success("Questão atualizada com sucesso.");
@@ -385,7 +446,7 @@ function CaptacaoPage() {
 
   const handleFinishSim = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Evaluate score
     let correct = 0;
     questions.forEach((q) => {
@@ -452,7 +513,11 @@ function CaptacaoPage() {
         anotacoes: `Lead captado automaticamente através do formulário de nivelamento. Resultado: ${level} (${correct}/${questions.length} corretas).`,
         createdAt: new Date().toISOString(),
       };
-      if (storageSchoolId) window.localStorage.setItem(`fluency-ai:leads-db:v2:${storageSchoolId}`, JSON.stringify([...currentLeads, newLead]));
+      if (storageSchoolId)
+        window.localStorage.setItem(
+          `fluency-ai:leads-db:v2:${storageSchoolId}`,
+          JSON.stringify([...currentLeads, newLead]),
+        );
     } catch (e) {
       console.error(e);
     }
@@ -468,15 +533,16 @@ function CaptacaoPage() {
           if (stage.id === "lead") {
             return {
               ...stage,
-              cards: [
-                ...stage.cards,
-                { nome: simName, origem: "Teste de Nível", valor: 2800 },
-              ],
+              cards: [...stage.cards, { nome: simName, origem: "Teste de Nível", valor: 2800 }],
             };
           }
           return stage;
         });
-        if (storageSchoolId) window.localStorage.setItem(`fluency-ai:crm:stages:v3:${storageSchoolId}`, JSON.stringify(nextStages));
+        if (storageSchoolId)
+          window.localStorage.setItem(
+            `fluency-ai:crm:stages:v3:${storageSchoolId}`,
+            JSON.stringify(nextStages),
+          );
       }
     } catch (e) {
       console.error(e);
@@ -506,8 +572,17 @@ function CaptacaoPage() {
       toast.error("Nenhuma resposta disponível para exportar.");
       return;
     }
-    const headers = ["ID", "Nome", "Email", "Telefone", "Acertos", "Total", "Nivel Estimado", "Data"];
-    const rows = submissions.map(s => [
+    const headers = [
+      "ID",
+      "Nome",
+      "Email",
+      "Telefone",
+      "Acertos",
+      "Total",
+      "Nivel Estimado",
+      "Data",
+    ];
+    const rows = submissions.map((s) => [
       s.id,
       s.nome,
       s.email,
@@ -515,14 +590,21 @@ function CaptacaoPage() {
       s.score,
       s.total,
       s.level,
-      new Date(s.date).toISOString()
+      new Date(s.date).toISOString(),
     ]);
-    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
-      + [headers.join(";"), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(";"))].join("\n");
+    const csvContent =
+      "data:text/csv;charset=utf-8,\uFEFF" +
+      [
+        headers.join(";"),
+        ...rows.map((e) => e.map((val) => `"${String(val).replace(/"/g, '""')}"`).join(";")),
+      ].join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `leads_nivelamento_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute(
+      "download",
+      `leads_nivelamento_${new Date().toISOString().split("T")[0]}.csv`,
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -541,22 +623,39 @@ function CaptacaoPage() {
     { name: "A2", value: cefrDistribution["A2"] || 0, color: "#fb923c" },
     { name: "B1", value: cefrDistribution["B1"] || 0, color: "#60a5fa" },
     { name: "B2", value: cefrDistribution["B2"] || 0, color: "#34d399" },
-    { name: "C1/C2", value: (cefrDistribution["C1"] || 0) + (cefrDistribution["C2"] || 0), color: "#a78bfa" },
-  ].filter(item => item.value > 0);
+    {
+      name: "C1/C2",
+      value: (cefrDistribution["C1"] || 0) + (cefrDistribution["C2"] || 0),
+      color: "#a78bfa",
+    },
+  ].filter((item) => item.value > 0);
 
   const conversionRate = submissions.length
-    ? Math.round((submissions.filter((item) => item.email.trim() || item.telefone.replace(/\D/g, "").length > 4).length / submissions.length) * 100)
+    ? Math.round(
+        (submissions.filter(
+          (item) => item.email.trim() || item.telefone.replace(/\D/g, "").length > 4,
+        ).length /
+          submissions.length) *
+          100,
+      )
     : 0;
-  const mostCommonLevel = Object.entries(cefrDistribution).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
-  const timelineData = Object.entries(submissions.reduce((acc: Record<string, number>, item) => {
-    const date = new Date(item.date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
-    acc[date] = (acc[date] || 0) + 1;
-    return acc;
-  }, {})).map(([date, leads]) => ({ date, leads }));
+  const mostCommonLevel =
+    Object.entries(cefrDistribution).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
+  const timelineData = Object.entries(
+    submissions.reduce((acc: Record<string, number>, item) => {
+      const date = new Date(item.date).toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+      });
+      acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {}),
+  ).map(([date, leads]) => ({ date, leads }));
 
-  const filteredSubmissions = submissions.filter((s) =>
-    s.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.email.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredSubmissions = submissions.filter(
+    (s) =>
+      s.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.email.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -617,21 +716,29 @@ function CaptacaoPage() {
             {/* KPI metrics row */}
             <div className="grid gap-4 sm:grid-cols-3">
               <GlassCard className="p-6 flex flex-col justify-between">
-                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Leads Totais Captados</span>
+                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
+                  Leads Totais Captados
+                </span>
                 <div className="flex items-baseline gap-2 mt-2">
                   <span className="text-3xl font-bold text-foreground">{submissions.length}</span>
-                  <span className="text-xs text-muted-foreground font-semibold">respostas recebidas</span>
+                  <span className="text-xs text-muted-foreground font-semibold">
+                    respostas recebidas
+                  </span>
                 </div>
               </GlassCard>
               <GlassCard className="p-6 flex flex-col justify-between">
-                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Conversão em Lead Real</span>
+                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
+                  Conversão em Lead Real
+                </span>
                 <div className="flex items-baseline gap-2 mt-2">
                   <span className="text-3xl font-bold text-foreground">{conversionRate}%</span>
                   <span className="text-xs text-muted-foreground">Preencheram contatos</span>
                 </div>
               </GlassCard>
               <GlassCard className="p-6 flex flex-col justify-between">
-                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Nível Mais Comum</span>
+                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
+                  Nível Mais Comum
+                </span>
                 <div className="flex items-baseline gap-2 mt-2">
                   <span className="text-3xl font-bold text-foreground">{mostCommonLevel}</span>
                   <span className="text-xs text-muted-foreground">resultado das respostas</span>
@@ -643,107 +750,154 @@ function CaptacaoPage() {
             <div className="grid gap-6 md:grid-cols-2">
               <GlassCard className="p-6 space-y-4">
                 <div>
-                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Distribuição de Nível CEFR</h4>
-                  <p className="text-[10px] text-muted-foreground">Distribuição estimada dos leads captados por nível CEFR.</p>
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                    Distribuição de Nível CEFR
+                  </h4>
+                  <p className="text-[10px] text-muted-foreground">
+                    Distribuição estimada dos leads captados por nível CEFR.
+                  </p>
                 </div>
                 <div className="h-64 w-full">
-                  {pieChartData.length ? <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={pieChartData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {pieChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <ChartTooltip
-                        contentStyle={{ background: "#09090b", borderColor: "#27272a", borderRadius: "8px" }}
-                        itemStyle={{ fontSize: "12px", color: "#f4f4f5" }}
-                      />
-                      <Legend 
-                        verticalAlign="bottom" 
-                        height={36} 
-                        iconType="circle"
-                        formatter={(value) => <span className="text-[10px] font-semibold text-muted-foreground uppercase">{value}</span>}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer> : <EmptyChart message="A distribuição aparecerá após a primeira resposta." />}
+                  {pieChartData.length ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={pieChartData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {pieChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip
+                          contentStyle={{
+                            background: "#09090b",
+                            borderColor: "#27272a",
+                            borderRadius: "8px",
+                          }}
+                          itemStyle={{ fontSize: "12px", color: "#f4f4f5" }}
+                        />
+                        <Legend
+                          verticalAlign="bottom"
+                          height={36}
+                          iconType="circle"
+                          formatter={(value) => (
+                            <span className="text-[10px] font-semibold text-muted-foreground uppercase">
+                              {value}
+                            </span>
+                          )}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <EmptyChart message="A distribuição aparecerá após a primeira resposta." />
+                  )}
                 </div>
               </GlassCard>
 
               <GlassCard className="p-6 space-y-4">
                 <div>
-                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Histórico de Captação de Leads</h4>
-                  <p className="text-[10px] text-muted-foreground">Volume diário de novos leads captados através dos formulários.</p>
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                    Histórico de Captação de Leads
+                  </h4>
+                  <p className="text-[10px] text-muted-foreground">
+                    Volume diário de novos leads captados através dos formulários.
+                  </p>
                 </div>
                 <div className="h-64 w-full">
-                  {timelineData.length ? <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={timelineData}>
-                      <defs>
-                        <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="var(--color-primary, #6366f1)" stopOpacity={0.4}/>
-                          <stop offset="95%" stopColor="var(--color-primary, #6366f1)" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <XAxis 
-                        dataKey="date" 
-                        stroke="#71717a" 
-                        fontSize={10} 
-                        tickLine={false} 
-                        axisLine={false} 
-                      />
-                      <YAxis 
-                        stroke="#71717a" 
-                        fontSize={10} 
-                        tickLine={false} 
-                        axisLine={false} 
-                        allowDecimals={false}
-                      />
-                      <ChartTooltip
-                        contentStyle={{ background: "#09090b", borderColor: "#27272a", borderRadius: "8px" }}
-                        itemStyle={{ fontSize: "12px", color: "#f4f4f5" }}
-                        labelStyle={{ fontSize: "10px", color: "#a1a1aa" }}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="leads" 
-                        stroke="var(--color-primary, #6366f1)" 
-                        strokeWidth={2}
-                        fillOpacity={1} 
-                        fill="url(#colorLeads)" 
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer> : <EmptyChart message="O histórico começará após a primeira captação." />}
+                  {timelineData.length ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={timelineData}>
+                        <defs>
+                          <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
+                            <stop
+                              offset="5%"
+                              stopColor="var(--color-primary, #6366f1)"
+                              stopOpacity={0.4}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor="var(--color-primary, #6366f1)"
+                              stopOpacity={0}
+                            />
+                          </linearGradient>
+                        </defs>
+                        <XAxis
+                          dataKey="date"
+                          stroke="#71717a"
+                          fontSize={10}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <YAxis
+                          stroke="#71717a"
+                          fontSize={10}
+                          tickLine={false}
+                          axisLine={false}
+                          allowDecimals={false}
+                        />
+                        <ChartTooltip
+                          contentStyle={{
+                            background: "#09090b",
+                            borderColor: "#27272a",
+                            borderRadius: "8px",
+                          }}
+                          itemStyle={{ fontSize: "12px", color: "#f4f4f5" }}
+                          labelStyle={{ fontSize: "10px", color: "#a1a1aa" }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="leads"
+                          stroke="var(--color-primary, #6366f1)"
+                          strokeWidth={2}
+                          fillOpacity={1}
+                          fill="url(#colorLeads)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <EmptyChart message="O histórico começará após a primeira captação." />
+                  )}
                 </div>
               </GlassCard>
             </div>
 
             {/* List of active forms */}
             <div className="grid gap-6">
-              <GlassCard className={`p-6 space-y-4 hover:border-white/10 transition-all ${!isNivelamentoActive ? "opacity-75" : ""}`}>
+              <GlassCard
+                className={`p-6 space-y-4 hover:border-white/10 transition-all ${!isNivelamentoActive ? "opacity-75" : ""}`}
+              >
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-3">
-                      <span className="rounded bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 uppercase">Nivelamento</span>
-                      <span className={`rounded text-[10px] font-bold px-2 py-0.5 uppercase ${
-                        isNivelamentoActive 
-                          ? "bg-emerald-500/10 text-emerald-400" 
-                          : "bg-rose-500/10 text-rose-400"
-                      }`}>
+                      <span className="rounded bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 uppercase">
+                        Nivelamento
+                      </span>
+                      <span
+                        className={`rounded text-[10px] font-bold px-2 py-0.5 uppercase ${
+                          isNivelamentoActive
+                            ? "bg-emerald-500/10 text-emerald-400"
+                            : "bg-rose-500/10 text-rose-400"
+                        }`}
+                      >
                         {isNivelamentoActive ? "Ativo" : "Inativo"}
                       </span>
                       <ToggleSwitch checked={isNivelamentoActive} onChange={toggleNivelamento} />
                     </div>
-                    <h3 className="text-lg font-bold text-foreground mt-1.5">Teste de Nivelamento de Inglês (CEFR)</h3>
-                    <p className="text-xs text-muted-foreground">Avaliação gramatical e de vocabulário contendo {questions.length} questões com skip-logic adaptativa.</p>
+                    <h3 className="text-lg font-bold text-foreground mt-1.5">
+                      Teste de Nivelamento de Inglês (CEFR)
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Avaliação gramatical e de vocabulário contendo {questions.length} questões com
+                      skip-logic adaptativa.
+                    </p>
                   </div>
-                  
+
                   <div className="flex gap-2">
                     <button
                       onClick={() => copyPublicLink("nivelamento")}
@@ -763,7 +917,9 @@ function CaptacaoPage() {
                 <div className="border-t border-hairline pt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-medium">
                   <div>
                     <span className="text-muted-foreground block">Questões Ativas</span>
-                    <span className="font-semibold text-foreground">{questions.length} Questões</span>
+                    <span className="font-semibold text-foreground">
+                      {questions.length} Questões
+                    </span>
                   </div>
                   <div>
                     <span className="text-muted-foreground block">Estilo de Layout</span>
@@ -786,12 +942,23 @@ function CaptacaoPage() {
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="rounded bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 uppercase">Matrícula</span>
-                        <span className="rounded bg-white/10 text-muted-foreground text-[10px] font-bold px-2 py-0.5 uppercase">Inativo</span>
-                        <span className="rounded bg-amber-500/10 text-amber-400 text-[10px] font-bold px-2 py-0.5 uppercase">Premium</span>
+                        <span className="rounded bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 uppercase">
+                          Matrícula
+                        </span>
+                        <span className="rounded bg-white/10 text-muted-foreground text-[10px] font-bold px-2 py-0.5 uppercase">
+                          Inativo
+                        </span>
+                        <span className="rounded bg-amber-500/10 text-amber-400 text-[10px] font-bold px-2 py-0.5 uppercase">
+                          Premium
+                        </span>
                       </div>
-                      <h3 className="text-lg font-bold text-foreground mt-1.5">Formulário de Pré-Matrícula Online</h3>
-                      <p className="text-xs text-muted-foreground">Ficha de matrícula padrão para novos alunos. Captura dados residenciais, de responsáveis e financeiros.</p>
+                      <h3 className="text-lg font-bold text-foreground mt-1.5">
+                        Formulário de Pré-Matrícula Online
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        Ficha de matrícula padrão para novos alunos. Captura dados residenciais, de
+                        responsáveis e financeiros.
+                      </p>
                     </div>
                     <button
                       onClick={() => setIsUnlockModalOpen(true)}
@@ -802,24 +969,35 @@ function CaptacaoPage() {
                   </div>
                 </GlassCard>
               ) : (
-                <GlassCard className={`p-6 space-y-4 hover:border-white/10 transition-all ${!isMatriculaActive ? "opacity-75" : ""}`}>
+                <GlassCard
+                  className={`p-6 space-y-4 hover:border-white/10 transition-all ${!isMatriculaActive ? "opacity-75" : ""}`}
+                >
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-3">
-                        <span className="rounded bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 uppercase">Matrícula</span>
-                        <span className={`rounded text-[10px] font-bold px-2 py-0.5 uppercase ${
-                          isMatriculaActive 
-                            ? "bg-emerald-500/10 text-emerald-400" 
-                            : "bg-rose-500/10 text-rose-400"
-                        }`}>
+                        <span className="rounded bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 uppercase">
+                          Matrícula
+                        </span>
+                        <span
+                          className={`rounded text-[10px] font-bold px-2 py-0.5 uppercase ${
+                            isMatriculaActive
+                              ? "bg-emerald-500/10 text-emerald-400"
+                              : "bg-rose-500/10 text-rose-400"
+                          }`}
+                        >
                           {isMatriculaActive ? "Ativo" : "Inativo"}
                         </span>
                         <ToggleSwitch checked={isMatriculaActive} onChange={toggleMatricula} />
                       </div>
-                      <h3 className="text-lg font-bold text-foreground mt-1.5">Formulário de Pré-Matrícula Online</h3>
-                      <p className="text-xs text-muted-foreground">Ficha de matrícula padrão para novos alunos. Captura dados residenciais, de responsáveis e financeiros.</p>
+                      <h3 className="text-lg font-bold text-foreground mt-1.5">
+                        Formulário de Pré-Matrícula Online
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        Ficha de matrícula padrão para novos alunos. Captura dados residenciais, de
+                        responsáveis e financeiros.
+                      </p>
                     </div>
-                    
+
                     <div className="flex gap-2">
                       <button
                         onClick={() => copyPublicLink("pre-matricula")}
@@ -847,7 +1025,9 @@ function CaptacaoPage() {
                     </div>
                     <div>
                       <span className="text-muted-foreground block">Destino do Lead</span>
-                      <span className="font-semibold text-foreground">Base de Alunos (Pré-Matrícula)</span>
+                      <span className="font-semibold text-foreground">
+                        Base de Alunos (Pré-Matrícula)
+                      </span>
                     </div>
                     <div>
                       <span className="text-muted-foreground block">White-label</span>
@@ -867,13 +1047,18 @@ function CaptacaoPage() {
               <Sparkles className="size-4.5 shrink-0 mt-0.5" />
               <div>
                 <p className="font-bold uppercase tracking-wider">Editor Adaptativo CEFR</p>
-                <p className="mt-1 opacity-90">Edite as questões abaixo. O sistema calcula a proficiência recomendada do lead com base no peso e complexidade das questões respondidas corretamente.</p>
+                <p className="mt-1 opacity-90">
+                  Edite as questões abaixo. O sistema calcula a proficiência recomendada do lead com
+                  base no peso e complexidade das questões respondidas corretamente.
+                </p>
               </div>
             </div>
 
             {/* Questions header */}
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-foreground uppercase tracking-wider">{questions.length} Questões Cadastradas</span>
+              <span className="text-xs font-bold text-foreground uppercase tracking-wider">
+                {questions.length} Questões Cadastradas
+              </span>
               <button
                 onClick={handleOpenAddQuestion}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/90 transition-all cursor-pointer"
@@ -886,27 +1071,46 @@ function CaptacaoPage() {
             <div className="space-y-4">
               {questions.map((q, idx) => {
                 let lvlColor = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-                if (q.nivel.startsWith("B")) lvlColor = "bg-blue-500/10 text-blue-400 border-blue-500/20";
-                if (q.nivel.startsWith("C")) lvlColor = "bg-purple-500/10 text-purple-400 border-purple-500/20";
+                if (q.nivel.startsWith("B"))
+                  lvlColor = "bg-blue-500/10 text-blue-400 border-blue-500/20";
+                if (q.nivel.startsWith("C"))
+                  lvlColor = "bg-purple-500/10 text-purple-400 border-purple-500/20";
 
                 return (
-                  <GlassCard key={q.id} className="p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <GlassCard
+                    key={q.id}
+                    className="p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+                  >
                     <div className="space-y-2 flex-1">
                       <div className="flex items-center gap-2.5">
-                        <span className="text-xs font-extrabold text-muted-foreground">#{idx + 1}</span>
-                        <span className={`rounded border px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide ${lvlColor}`}>
+                        <span className="text-xs font-extrabold text-muted-foreground">
+                          #{idx + 1}
+                        </span>
+                        <span
+                          className={`rounded border px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide ${lvlColor}`}
+                        >
                           CEFR {q.nivel}
                         </span>
-                        <span className="text-xs font-bold text-emerald-400">Opção Correta: ({q.correta})</span>
+                        <span className="text-xs font-bold text-emerald-400">
+                          Opção Correta: ({q.correta})
+                        </span>
                       </div>
                       <h4 className="text-sm font-semibold text-foreground">{q.enunciado}</h4>
-                      
+
                       {/* Sub-grid with answer options */}
                       <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 pt-2 text-xs text-muted-foreground">
-                        <div><span className="font-semibold text-foreground/80">(A)</span> {q.opcaoA}</div>
-                        <div><span className="font-semibold text-foreground/80">(B)</span> {q.opcaoB}</div>
-                        <div><span className="font-semibold text-foreground/80">(C)</span> {q.opcaoC}</div>
-                        <div><span className="font-semibold text-foreground/80">(D)</span> {q.opcaoD}</div>
+                        <div>
+                          <span className="font-semibold text-foreground/80">(A)</span> {q.opcaoA}
+                        </div>
+                        <div>
+                          <span className="font-semibold text-foreground/80">(B)</span> {q.opcaoB}
+                        </div>
+                        <div>
+                          <span className="font-semibold text-foreground/80">(C)</span> {q.opcaoC}
+                        </div>
+                        <div>
+                          <span className="font-semibold text-foreground/80">(D)</span> {q.opcaoD}
+                        </div>
                       </div>
                     </div>
 
@@ -957,19 +1161,31 @@ function CaptacaoPage() {
               <table className="w-full border-collapse text-left min-w-[800px]">
                 <thead>
                   <tr className="border-b border-hairline bg-surface/50">
-                    <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Lead</th>
-                    <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contato</th>
-                    <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nível Estimado</th>
-                    <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Acertos</th>
-                    <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Data</th>
-                    <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Ação</th>
+                    <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Lead
+                    </th>
+                    <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Contato
+                    </th>
+                    <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Nível Estimado
+                    </th>
+                    <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">
+                      Acertos
+                    </th>
+                    <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Data
+                    </th>
+                    <th className="p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">
+                      Ação
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-hairline">
                   {filteredSubmissions.length > 0 ? (
                     filteredSubmissions.map((s) => {
                       const waText = encodeURIComponent(
-                        `Olá ${s.nome}! Vi que você completou o nosso teste de nivelamento de inglês e seu resultado foi estimado em ${s.level}. Que tal agendarmos uma conversa gratuita para avaliarmos suas metas?`
+                        `Olá ${s.nome}! Vi que você completou o nosso teste de nivelamento de inglês e seu resultado foi estimado em ${s.level}. Que tal agendarmos uma conversa gratuita para avaliarmos suas metas?`,
                       );
                       const waLink = `https://wa.me/${s.telefone.replace(/\D/g, "")}?text=${waText}`;
 
@@ -986,15 +1202,19 @@ function CaptacaoPage() {
                             >
                               {s.nome}
                             </button>
-                            <span className="rounded bg-primary/10 text-primary text-[8px] font-extrabold px-1 py-0.5 uppercase mt-0.5 inline-block">Lead Gerado</span>
+                            <span className="rounded bg-primary/10 text-primary text-[8px] font-extrabold px-1 py-0.5 uppercase mt-0.5 inline-block">
+                              Lead Gerado
+                            </span>
                           </td>
                           <td className="p-4 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1.5"><Mail className="size-3" /> {s.email}</div>
-                            <div className="flex items-center gap-1.5 mt-1"><Phone className="size-3" /> {s.telefone}</div>
+                            <div className="flex items-center gap-1.5">
+                              <Mail className="size-3" /> {s.email}
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <Phone className="size-3" /> {s.telefone}
+                            </div>
                           </td>
-                          <td className="p-4 text-xs font-bold text-foreground">
-                            {s.level}
-                          </td>
+                          <td className="p-4 text-xs font-bold text-foreground">{s.level}</td>
                           <td className="p-4 text-xs font-bold text-center">
                             <span className={scoreColor}>{s.score}</span> / {s.total}
                           </td>
@@ -1037,13 +1257,17 @@ function CaptacaoPage() {
           <div className="space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto">
             {/* Explanation card */}
             <div className="text-center space-y-2">
-              <h3 className="text-base font-bold text-foreground">Simulador de Formulário / Teste de Nivelamento</h3>
-              <p className="text-xs text-muted-foreground">Tente realizar o teste abaixo para simular a jornada de captação de leads. Ao concluir, o lead será injetado automaticamente na Base de Leads e no funil do CRM.</p>
+              <h3 className="text-base font-bold text-foreground">
+                Simulador de Formulário / Teste de Nivelamento
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Tente realizar o teste abaixo para simular a jornada de captação de leads. Ao
+                concluir, o lead será injetado automaticamente na Base de Leads e no funil do CRM.
+              </p>
             </div>
 
             {/* Web browser mockup container */}
             <div className="rounded-xl border border-hairline bg-surface/40 overflow-hidden shadow-2xl relative">
-              
               {/* Browser mockup top bar */}
               <div className="bg-surface-elevated/70 border-b border-hairline px-4 py-2 flex items-center gap-2">
                 <span className="size-2.5 rounded-full bg-rose-500" />
@@ -1056,7 +1280,6 @@ function CaptacaoPage() {
 
               {/* Wizard Content container */}
               <div className="p-8 min-h-[360px] flex flex-col justify-between">
-                
                 {simStep === 0 ? (
                   /* Welcome Slide */
                   <div className="text-center py-6 space-y-6 animate-in zoom-in duration-200">
@@ -1064,8 +1287,13 @@ function CaptacaoPage() {
                       <ClipboardList className="size-8" />
                     </div>
                     <div className="space-y-2">
-                      <h4 className="text-xl font-extrabold text-foreground tracking-tight">Placement English Test</h4>
-                      <p className="text-xs text-muted-foreground max-w-md mx-auto">Descubra seu nível de proficiência em inglês de acordo com o quadro europeu comum CEFR (A1 a C2) em apenas 5 questões rápidas.</p>
+                      <h4 className="text-xl font-extrabold text-foreground tracking-tight">
+                        Placement English Test
+                      </h4>
+                      <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                        Descubra seu nível de proficiência em inglês de acordo com o quadro europeu
+                        comum CEFR (A1 a C2) em apenas 5 questões rápidas.
+                      </p>
                     </div>
                     <button
                       onClick={handleStartSim}
@@ -1082,17 +1310,19 @@ function CaptacaoPage() {
                       { key: "A", text: currentQ.opcaoA },
                       { key: "B", text: currentQ.opcaoB },
                       { key: "C", text: currentQ.opcaoC },
-                      { key: "D", text: currentQ.opcaoD }
+                      { key: "D", text: currentQ.opcaoD },
                     ];
 
                     return (
                       <div className="space-y-6 animate-in slide-in-from-right duration-300">
                         {/* Progress header */}
                         <div className="flex justify-between items-center text-xs text-muted-foreground">
-                          <span className="font-bold text-primary">Questão {simStep} de {questions.length}</span>
+                          <span className="font-bold text-primary">
+                            Questão {simStep} de {questions.length}
+                          </span>
                           <span>Estágio: CEFR {currentQ.nivel}</span>
                         </div>
-                        
+
                         <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
                           <div
                             className="h-full bg-primary transition-all duration-300"
@@ -1117,8 +1347,12 @@ function CaptacaoPage() {
                                     : "border-hairline bg-surface/50 text-muted-foreground hover:text-foreground hover:bg-surface-elevated"
                                 }`}
                               >
-                                <span><span className="font-bold mr-2">({opt.key})</span> {opt.text}</span>
-                                {isSelected && <CheckCircle2 className="size-4 text-primary shrink-0" />}
+                                <span>
+                                  <span className="font-bold mr-2">({opt.key})</span> {opt.text}
+                                </span>
+                                {isSelected && (
+                                  <CheckCircle2 className="size-4 text-primary shrink-0" />
+                                )}
                               </button>
                             );
                           })}
@@ -1148,12 +1382,17 @@ function CaptacaoPage() {
                         <Award className="size-6" />
                       </span>
                       <h4 className="text-lg font-bold text-foreground">Falta muito pouco!</h4>
-                      <p className="text-xs text-muted-foreground max-w-sm mx-auto">Parabéns por concluir as questões. Preencha seus dados para receber o relatório pedagógico do seu nível.</p>
+                      <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                        Parabéns por concluir as questões. Preencha seus dados para receber o
+                        relatório pedagógico do seu nível.
+                      </p>
                     </div>
 
                     <form onSubmit={handleFinishSim} className="space-y-4 max-w-md mx-auto">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Seu Nome Completo</label>
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
+                          Seu Nome Completo
+                        </label>
                         <input
                           placeholder="Ex: João da Silva"
                           value={simName}
@@ -1162,10 +1401,12 @@ function CaptacaoPage() {
                           required
                         />
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">WhatsApp / Telefone</label>
+                          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
+                            WhatsApp / Telefone
+                          </label>
                           <input
                             placeholder="+55 (11) 99999-9999"
                             value={simPhone}
@@ -1175,7 +1416,9 @@ function CaptacaoPage() {
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">E-mail</label>
+                          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">
+                            E-mail
+                          </label>
                           <input
                             type="email"
                             placeholder="exemplo@email.com"
@@ -1203,24 +1446,40 @@ function CaptacaoPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">Proficiência Estimada</p>
-                      <h4 className="text-2xl font-extrabold text-foreground tracking-tight">CEFR {calculatedLevel}</h4>
-                      <p className="text-xs text-muted-foreground">Você acertou <span className="font-bold text-primary">{calculatedScore} de {questions.length}</span> questões do teste adaptativo.</p>
+                      <p className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">
+                        Proficiência Estimada
+                      </p>
+                      <h4 className="text-2xl font-extrabold text-foreground tracking-tight">
+                        CEFR {calculatedLevel}
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        Você acertou{" "}
+                        <span className="font-bold text-primary">
+                          {calculatedScore} de {questions.length}
+                        </span>{" "}
+                        questões do teste adaptativo.
+                      </p>
                     </div>
 
                     {/* Radars mockup details */}
                     <GlassCard className="p-4 max-w-sm mx-auto grid grid-cols-3 gap-2 text-center text-xs">
                       <div>
                         <span className="text-muted-foreground block text-[10px]">Vocabulário</span>
-                        <span className="font-bold text-foreground">{calculatedScore >= 3 ? "B2 (Bom)" : "A2 (Básico)"}</span>
+                        <span className="font-bold text-foreground">
+                          {calculatedScore >= 3 ? "B2 (Bom)" : "A2 (Básico)"}
+                        </span>
                       </div>
                       <div>
                         <span className="text-muted-foreground block text-[10px]">Gramática</span>
-                        <span className="font-bold text-foreground">{calculatedScore >= 4 ? "B2 (Forte)" : "A1 (Precisa treinar)"}</span>
+                        <span className="font-bold text-foreground">
+                          {calculatedScore >= 4 ? "B2 (Forte)" : "A1 (Precisa treinar)"}
+                        </span>
                       </div>
                       <div>
                         <span className="text-muted-foreground block text-[10px]">Compreensão</span>
-                        <span className="font-bold text-foreground">{calculatedScore === 5 ? "C1 (Avançado)" : "B1 (Médio)"}</span>
+                        <span className="font-bold text-foreground">
+                          {calculatedScore === 5 ? "C1 (Avançado)" : "B1 (Médio)"}
+                        </span>
                       </div>
                     </GlassCard>
 
@@ -1243,7 +1502,6 @@ function CaptacaoPage() {
                     </div>
                   </div>
                 )}
-                
               </div>
             </div>
           </div>
@@ -1263,12 +1521,16 @@ function CaptacaoPage() {
                 <h3 className="text-base font-bold text-foreground">
                   {selectedQuestion ? "Editar Questão CEFR" : "Inserir Questão CEFR"}
                 </h3>
-                <p className="text-xs text-muted-foreground">Configure o enunciado, opções de resposta e peso pedagógico.</p>
+                <p className="text-xs text-muted-foreground">
+                  Configure o enunciado, opções de resposta e peso pedagógico.
+                </p>
               </div>
 
               <form onSubmit={handleSaveQuestion} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Enunciado / Pergunta</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Enunciado / Pergunta
+                  </label>
                   <textarea
                     rows={3}
                     value={formEnunciado}
@@ -1281,7 +1543,9 @@ function CaptacaoPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nível de Dificuldade</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Nível de Dificuldade
+                    </label>
                     <select
                       value={formNivel}
                       onChange={(e) => setFormNivel(e.target.value)}
@@ -1296,7 +1560,9 @@ function CaptacaoPage() {
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Opção Correta</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Opção Correta
+                    </label>
                     <select
                       value={formCorreta}
                       onChange={(e) => setFormCorreta(e.target.value as "A" | "B" | "C" | "D")}
@@ -1311,7 +1577,9 @@ function CaptacaoPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Opções de Respostas</label>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+                    Opções de Respostas
+                  </label>
                   <div className="space-y-1.5">
                     <div className="flex gap-2 items-center">
                       <span className="text-xs font-bold text-muted-foreground w-6">A:</span>
@@ -1372,27 +1640,45 @@ function CaptacaoPage() {
               >
                 <X className="size-4" />
               </button>
-              
+
               <div className="text-center space-y-3">
                 <div className="mx-auto size-16 grid place-items-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-orange-500/20">
                   <Sparkles className="size-8 animate-pulse" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-lg font-extrabold text-foreground tracking-tight">Ativar Pré-Matrícula Online</h3>
-                  <p className="text-xs text-amber-400 font-bold uppercase tracking-wider">Módulo Premium</p>
+                  <h3 className="text-lg font-extrabold text-foreground tracking-tight">
+                    Ativar Pré-Matrícula Online
+                  </h3>
+                  <p className="text-xs text-amber-400 font-bold uppercase tracking-wider">
+                    Módulo Premium
+                  </p>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Automatize a captação de matrículas da sua escola de idiomas com um portal digital. Permita que os alunos enviem dados cadastrais, endereço e dados financeiros diretamente.
+                  Automatize a captação de matrículas da sua escola de idiomas com um portal
+                  digital. Permita que os alunos enviem dados cadastrais, endereço e dados
+                  financeiros diretamente.
                 </p>
               </div>
 
               <div className="space-y-3 bg-white/[0.02] border border-hairline rounded-xl p-4 text-xs">
                 <h4 className="font-bold text-foreground">O que está incluso:</h4>
                 <ul className="space-y-2 text-muted-foreground">
-                  <li className="flex items-center gap-2"><Check className="size-3.5 text-emerald-400 shrink-0" /> Portal público de Matrícula White-Label</li>
-                  <li className="flex items-center gap-2"><Check className="size-3.5 text-emerald-400 shrink-0" /> Coleta de dados pessoais, residenciais e CPF</li>
-                  <li className="flex items-center gap-2"><Check className="size-3.5 text-emerald-400 shrink-0" /> Integração automática com a base de Alunos</li>
-                  <li className="flex items-center gap-2"><Check className="size-3.5 text-emerald-400 shrink-0" /> Faturamento financeiro inicial automatizado</li>
+                  <li className="flex items-center gap-2">
+                    <Check className="size-3.5 text-emerald-400 shrink-0" /> Portal público de
+                    Matrícula White-Label
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="size-3.5 text-emerald-400 shrink-0" /> Coleta de dados
+                    pessoais, residenciais e CPF
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="size-3.5 text-emerald-400 shrink-0" /> Integração automática
+                    com a base de Alunos
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="size-3.5 text-emerald-400 shrink-0" /> Faturamento financeiro
+                    inicial automatizado
+                  </li>
                 </ul>
               </div>
 
@@ -1427,13 +1713,24 @@ function CaptacaoPage() {
 
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-hairline pb-4">
                 <div>
-                  <span className="rounded bg-primary/10 text-primary text-[8px] font-extrabold px-1.5 py-0.5 uppercase">Resultado Nivelamento</span>
+                  <span className="rounded bg-primary/10 text-primary text-[8px] font-extrabold px-1.5 py-0.5 uppercase">
+                    Resultado Nivelamento
+                  </span>
                   <h3 className="text-lg font-bold text-foreground mt-1">{selectedLead.nome}</h3>
-                  <p className="text-xs text-muted-foreground">Preenchido em {new Date(selectedLead.date).toLocaleString("pt-BR")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Preenchido em {new Date(selectedLead.date).toLocaleString("pt-BR")}
+                  </p>
                 </div>
                 <div className="text-right">
-                  <span className="text-2xl font-extrabold text-foreground">{selectedLead.level}</span>
-                  <p className="text-xs text-muted-foreground">Pontuação: <span className="font-bold text-primary">{selectedLead.score} / {selectedLead.total} acertos</span></p>
+                  <span className="text-2xl font-extrabold text-foreground">
+                    {selectedLead.level}
+                  </span>
+                  <p className="text-xs text-muted-foreground">
+                    Pontuação:{" "}
+                    <span className="font-bold text-primary">
+                      {selectedLead.score} / {selectedLead.total} acertos
+                    </span>
+                  </p>
                 </div>
               </div>
 
@@ -1441,8 +1738,14 @@ function CaptacaoPage() {
                 <div className="space-y-2">
                   <h4 className="font-bold text-foreground">Dados de Contato</h4>
                   <div className="space-y-1.5 text-muted-foreground">
-                    <p className="flex items-center gap-1.5"><Mail className="size-3.5 text-primary shrink-0" /> <strong>E-mail:</strong> {selectedLead.email}</p>
-                    <p className="flex items-center gap-1.5"><Phone className="size-3.5 text-primary shrink-0" /> <strong>Telefone:</strong> {selectedLead.telefone}</p>
+                    <p className="flex items-center gap-1.5">
+                      <Mail className="size-3.5 text-primary shrink-0" /> <strong>E-mail:</strong>{" "}
+                      {selectedLead.email}
+                    </p>
+                    <p className="flex items-center gap-1.5">
+                      <Phone className="size-3.5 text-primary shrink-0" />{" "}
+                      <strong>Telefone:</strong> {selectedLead.telefone}
+                    </p>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -1469,28 +1772,43 @@ function CaptacaoPage() {
               </div>
 
               <div className="space-y-4">
-                <h4 className="font-bold text-foreground text-xs uppercase tracking-wider border-b border-hairline pb-2">Gabarito de Respostas</h4>
+                <h4 className="font-bold text-foreground text-xs uppercase tracking-wider border-b border-hairline pb-2">
+                  Gabarito de Respostas
+                </h4>
                 <div className="space-y-4">
                   {questions.map((q, idx) => {
                     const leadAnswer = selectedLead.respostas?.[q.id];
                     const isCorrect = leadAnswer === q.correta;
 
                     return (
-                      <div key={q.id} className="rounded-lg border border-hairline bg-white/[0.01] p-4 space-y-2.5">
+                      <div
+                        key={q.id}
+                        className="rounded-lg border border-hairline bg-white/[0.01] p-4 space-y-2.5"
+                      >
                         <div className="flex justify-between items-center text-xs">
-                          <span className="font-bold text-muted-foreground">Questão #{idx + 1} ({q.nivel})</span>
+                          <span className="font-bold text-muted-foreground">
+                            Questão #{idx + 1} ({q.nivel})
+                          </span>
                           {leadAnswer ? (
                             isCorrect ? (
-                              <span className="rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5">Correto</span>
+                              <span className="rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5">
+                                Correto
+                              </span>
                             ) : (
-                              <span className="rounded bg-rose-500/10 text-rose-400 text-[10px] font-bold px-2 py-0.5">Incorreto</span>
+                              <span className="rounded bg-rose-500/10 text-rose-400 text-[10px] font-bold px-2 py-0.5">
+                                Incorreto
+                              </span>
                             )
                           ) : (
-                            <span className="rounded bg-zinc-500/10 text-zinc-400 text-[10px] font-bold px-2 py-0.5">Não Respondido</span>
+                            <span className="rounded bg-zinc-500/10 text-zinc-400 text-[10px] font-bold px-2 py-0.5">
+                              Não Respondido
+                            </span>
                           )}
                         </div>
 
-                        <p className="text-xs font-semibold text-foreground leading-relaxed">{q.enunciado}</p>
+                        <p className="text-xs font-semibold text-foreground leading-relaxed">
+                          {q.enunciado}
+                        </p>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                           {[
@@ -1504,24 +1822,36 @@ function CaptacaoPage() {
 
                             let optClass = "border-hairline text-muted-foreground bg-transparent";
                             if (isChosen) {
-                              optClass = isCorrect 
+                              optClass = isCorrect
                                 ? "border-emerald-500 bg-emerald-500/10 text-foreground font-semibold"
                                 : "border-rose-500 bg-rose-500/10 text-foreground font-semibold";
                             } else if (isAnswerCorrect && !isCorrect && leadAnswer !== undefined) {
-                              optClass = "border-emerald-500/50 bg-emerald-500/5 text-emerald-400 font-semibold";
+                              optClass =
+                                "border-emerald-500/50 bg-emerald-500/5 text-emerald-400 font-semibold";
                             }
 
                             return (
-                              <div key={opt.key} className={`border rounded p-2 flex items-center justify-between ${optClass}`}>
-                                <span>({opt.key}) {opt.val}</span>
-                                {isChosen && (
-                                  isCorrect 
-                                    ? <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" />
-                                    : <X className="size-3.5 text-rose-400 shrink-0" />
-                                )}
-                                {!isChosen && isAnswerCorrect && !isCorrect && leadAnswer !== undefined && (
-                                  <span className="text-[9px] text-emerald-400 uppercase font-bold">Gabarito</span>
-                                )}
+                              <div
+                                key={opt.key}
+                                className={`border rounded p-2 flex items-center justify-between ${optClass}`}
+                              >
+                                <span>
+                                  ({opt.key}) {opt.val}
+                                </span>
+                                {isChosen &&
+                                  (isCorrect ? (
+                                    <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" />
+                                  ) : (
+                                    <X className="size-3.5 text-rose-400 shrink-0" />
+                                  ))}
+                                {!isChosen &&
+                                  isAnswerCorrect &&
+                                  !isCorrect &&
+                                  leadAnswer !== undefined && (
+                                    <span className="text-[9px] text-emerald-400 uppercase font-bold">
+                                      Gabarito
+                                    </span>
+                                  )}
                               </div>
                             );
                           })}

@@ -59,14 +59,70 @@ export type EducationalLevel = {
 };
 
 export const initialEducationalLevels: EducationalLevel[] = [
-  { id: "lvl-a1", codigo: "A1", nome: "Beginner / Kids", descricao: "Vocabulário básico cotidiano, saudações e frases simples.", horasSugeridas: 60, ordem: 1 },
-  { id: "lvl-a2", codigo: "A2", nome: "Elementary / Básico", descricao: "Comunicação em tarefas rotineiras, tempos passados e compras.", horasSugeridas: 60, ordem: 2 },
-  { id: "lvl-b1", codigo: "B1", nome: "Intermediate / Intermediário", descricao: "Expressão de opiniões, redação de e-mails e narrativas.", horasSugeridas: 80, ordem: 3 },
-  { id: "lvl-b2", codigo: "B2", nome: "Upper-Intermediate / Avançado", descricao: "Fluência em conversação e debates de negócios e atualidades.", horasSugeridas: 90, ordem: 4 },
-  { id: "lvl-c1", codigo: "C1", nome: "Advanced / Fluência Plena", descricao: "Compreensão de textos complexos e argumentação sofisticada.", horasSugeridas: 100, ordem: 5 },
-  { id: "lvl-c2", codigo: "C2", nome: "Mastery / Proficiência", descricao: "Domínio nativo e precisão idiomática para fins acadêmicos/exames.", horasSugeridas: 120, ordem: 6 },
-  { id: "lvl-all", codigo: "TRILHA", nome: "Todos os Níveis (A1 a C2)", descricao: "Trilha progressiva completa em múltiplos semestres.", horasSugeridas: 360, ordem: 7 },
-  { id: "lvl-vip", codigo: "VIP", nome: "Personalizado / VIP Individual", descricao: "Grade modular sob medida conforme necessidade do aluno.", horasSugeridas: 60, ordem: 8 },
+  {
+    id: "lvl-a1",
+    codigo: "A1",
+    nome: "Beginner / Kids",
+    descricao: "Vocabulário básico cotidiano, saudações e frases simples.",
+    horasSugeridas: 60,
+    ordem: 1,
+  },
+  {
+    id: "lvl-a2",
+    codigo: "A2",
+    nome: "Elementary / Básico",
+    descricao: "Comunicação em tarefas rotineiras, tempos passados e compras.",
+    horasSugeridas: 60,
+    ordem: 2,
+  },
+  {
+    id: "lvl-b1",
+    codigo: "B1",
+    nome: "Intermediate / Intermediário",
+    descricao: "Expressão de opiniões, redação de e-mails e narrativas.",
+    horasSugeridas: 80,
+    ordem: 3,
+  },
+  {
+    id: "lvl-b2",
+    codigo: "B2",
+    nome: "Upper-Intermediate / Avançado",
+    descricao: "Fluência em conversação e debates de negócios e atualidades.",
+    horasSugeridas: 90,
+    ordem: 4,
+  },
+  {
+    id: "lvl-c1",
+    codigo: "C1",
+    nome: "Advanced / Fluência Plena",
+    descricao: "Compreensão de textos complexos e argumentação sofisticada.",
+    horasSugeridas: 100,
+    ordem: 5,
+  },
+  {
+    id: "lvl-c2",
+    codigo: "C2",
+    nome: "Mastery / Proficiência",
+    descricao: "Domínio nativo e precisão idiomática para fins acadêmicos/exames.",
+    horasSugeridas: 120,
+    ordem: 6,
+  },
+  {
+    id: "lvl-all",
+    codigo: "TRILHA",
+    nome: "Todos os Níveis (A1 a C2)",
+    descricao: "Trilha progressiva completa em múltiplos semestres.",
+    horasSugeridas: 360,
+    ordem: 7,
+  },
+  {
+    id: "lvl-vip",
+    codigo: "VIP",
+    nome: "Personalizado / VIP Individual",
+    descricao: "Grade modular sob medida conforme necessidade do aluno.",
+    horasSugeridas: 60,
+    ordem: 8,
+  },
 ];
 
 // --- EDUCATIONAL PRODUCTS & COURSE CATALOG TYPES ---
@@ -106,7 +162,8 @@ export const initialEducationalProducts: EducationalProduct[] = [
     livroPadraoId: "livro-2",
     livroPadraoNome: "English File - Elementary & Pre-Int",
     valorBase: 450.0,
-    descricao: "Curso presencial em turmas de até 14 alunos com foco em conversação, gramática aplicada e dinâmicas interativas.",
+    descricao:
+      "Curso presencial em turmas de até 14 alunos com foco em conversação, gramática aplicada e dinâmicas interativas.",
     publicoAlvo: "Jovens e Adultos (Geral)",
     ativo: true,
     permiteTurma: true,
@@ -126,7 +183,8 @@ export const initialEducationalProducts: EducationalProduct[] = [
     livroPadraoId: "livro-3",
     livroPadraoNome: "Oxford Grammar & Business English",
     valorBase: 75.0, // R$ 75 / hora lecionada
-    descricao: "Aulas individuais 1-on-1 com professor dedicado e flexibilidade de horários. Cobrança proporcional às horas consumidas no mês.",
+    descricao:
+      "Aulas individuais 1-on-1 com professor dedicado e flexibilidade de horários. Cobrança proporcional às horas consumidas no mês.",
     publicoAlvo: "Executivos, Médicos e Profissionais com agenda dinâmica",
     ativo: true,
     permiteTurma: false,
@@ -146,7 +204,8 @@ export const initialEducationalProducts: EducationalProduct[] = [
     livroPadraoId: "livro-4",
     livroPadraoNome: "Cambridge - Conversation Mastery & C1",
     valorBase: 2800.0, // Valor total do módulo em até 6x
-    descricao: "Módulo fechado de 60 horas focado em simulados cronometrados, redação acadêmica e estratégias de pontuação máxima em testes internacionais.",
+    descricao:
+      "Módulo fechado de 60 horas focado em simulados cronometrados, redação acadêmica e estratégias de pontuação máxima em testes internacionais.",
     publicoAlvo: "Candidatos a bolsas internacionais, imigração e mestrados",
     ativo: true,
     permiteTurma: true,
@@ -166,7 +225,8 @@ export const initialEducationalProducts: EducationalProduct[] = [
     livroPadraoId: "livro-1",
     livroPadraoNome: "Kids Explorer - Stage 1",
     valorBase: 290.0, // 1x na semana aos sábados
-    descricao: "Imersão lúdica e interativa de 3 horas aos sábados com jogos pedagógicos, contação de histórias e gamificação.",
+    descricao:
+      "Imersão lúdica e interativa de 3 horas aos sábados com jogos pedagógicos, contação de histórias e gamificação.",
     publicoAlvo: "Crianças e Adolescentes (7 a 14 anos)",
     ativo: true,
     permiteTurma: true,
@@ -186,7 +246,8 @@ export const initialEducationalProducts: EducationalProduct[] = [
     livroPadraoId: "livro-3",
     livroPadraoNome: "Oxford Grammar & Business English",
     valorBase: 490.0,
-    descricao: "Focado em apresentações corporativas, reuniões executivas, negociações globais e vocabulário financeiro.",
+    descricao:
+      "Focado em apresentações corporativas, reuniões executivas, negociações globais e vocabulário financeiro.",
     publicoAlvo: "Profissionais de empresas multinacionais",
     ativo: true,
     permiteTurma: true,
@@ -293,27 +354,195 @@ export type ClassColorTheme = {
 };
 
 export const CLASS_COLOR_THEMES: ClassColorTheme[] = [
-  { id: "emerald", label: "Verde Esmeralda", badgeBg: "bg-emerald-500/15", border: "border-emerald-500/30", text: "text-emerald-400", bgHover: "hover:border-emerald-500/50", dot: "bg-emerald-500", lightBg: "bg-emerald-500/10" },
-  { id: "blue", label: "Azul Oceano", badgeBg: "bg-blue-500/15", border: "border-blue-500/30", text: "text-blue-400", bgHover: "hover:border-blue-500/50", dot: "bg-blue-500", lightBg: "bg-blue-500/10" },
-  { id: "purple", label: "Roxo Real", badgeBg: "bg-purple-500/15", border: "border-purple-500/30", text: "text-purple-400", bgHover: "hover:border-purple-500/50", dot: "bg-purple-500", lightBg: "bg-purple-500/10" },
-  { id: "amber", label: "Âmbar Dourado", badgeBg: "bg-amber-500/15", border: "border-amber-500/30", text: "text-amber-400", bgHover: "hover:border-amber-500/50", dot: "bg-amber-500", lightBg: "bg-amber-500/10" },
-  { id: "rose", label: "Rosa Coral", badgeBg: "bg-rose-500/15", border: "border-rose-500/30", text: "text-rose-400", bgHover: "hover:border-rose-500/50", dot: "bg-rose-500", lightBg: "bg-rose-500/10" },
-  { id: "cyan", label: "Ciano Tech", badgeBg: "bg-cyan-500/15", border: "border-cyan-500/30", text: "text-cyan-400", bgHover: "hover:border-cyan-500/50", dot: "bg-cyan-500", lightBg: "bg-cyan-500/10" },
-  { id: "orange", label: "Laranja Solar", badgeBg: "bg-orange-500/15", border: "border-orange-500/30", text: "text-orange-400", bgHover: "hover:border-orange-500/50", dot: "bg-orange-500", lightBg: "bg-orange-500/10" },
-  { id: "indigo", label: "Índigo Neon", badgeBg: "bg-indigo-500/15", border: "border-indigo-500/30", text: "text-indigo-400", bgHover: "hover:border-indigo-500/50", dot: "bg-indigo-500", lightBg: "bg-indigo-500/10" },
-  { id: "pink", label: "Fúcsia Pink", badgeBg: "bg-pink-500/15", border: "border-pink-500/30", text: "text-pink-400", bgHover: "hover:border-pink-500/50", dot: "bg-pink-500", lightBg: "bg-pink-500/10" },
-  { id: "teal", label: "Menta Teal", badgeBg: "bg-teal-500/15", border: "border-teal-500/30", text: "text-teal-400", bgHover: "hover:border-teal-500/50", dot: "bg-teal-500", lightBg: "bg-teal-500/10" },
-  { id: "lime", label: "Lima Elétrico", badgeBg: "bg-lime-500/15", border: "border-lime-500/30", text: "text-lime-400", bgHover: "hover:border-lime-500/50", dot: "bg-lime-500", lightBg: "bg-lime-500/10" },
-  { id: "violet", label: "Violeta Intenso", badgeBg: "bg-violet-500/15", border: "border-violet-500/30", text: "text-violet-400", bgHover: "hover:border-violet-500/50", dot: "bg-violet-500", lightBg: "bg-violet-500/10" },
+  {
+    id: "emerald",
+    label: "Verde Esmeralda",
+    badgeBg: "bg-emerald-500/15",
+    border: "border-emerald-500/30",
+    text: "text-emerald-400",
+    bgHover: "hover:border-emerald-500/50",
+    dot: "bg-emerald-500",
+    lightBg: "bg-emerald-500/10",
+  },
+  {
+    id: "blue",
+    label: "Azul Oceano",
+    badgeBg: "bg-blue-500/15",
+    border: "border-blue-500/30",
+    text: "text-blue-400",
+    bgHover: "hover:border-blue-500/50",
+    dot: "bg-blue-500",
+    lightBg: "bg-blue-500/10",
+  },
+  {
+    id: "purple",
+    label: "Roxo Real",
+    badgeBg: "bg-purple-500/15",
+    border: "border-purple-500/30",
+    text: "text-purple-400",
+    bgHover: "hover:border-purple-500/50",
+    dot: "bg-purple-500",
+    lightBg: "bg-purple-500/10",
+  },
+  {
+    id: "amber",
+    label: "Âmbar Dourado",
+    badgeBg: "bg-amber-500/15",
+    border: "border-amber-500/30",
+    text: "text-amber-400",
+    bgHover: "hover:border-amber-500/50",
+    dot: "bg-amber-500",
+    lightBg: "bg-amber-500/10",
+  },
+  {
+    id: "rose",
+    label: "Rosa Coral",
+    badgeBg: "bg-rose-500/15",
+    border: "border-rose-500/30",
+    text: "text-rose-400",
+    bgHover: "hover:border-rose-500/50",
+    dot: "bg-rose-500",
+    lightBg: "bg-rose-500/10",
+  },
+  {
+    id: "cyan",
+    label: "Ciano Tech",
+    badgeBg: "bg-cyan-500/15",
+    border: "border-cyan-500/30",
+    text: "text-cyan-400",
+    bgHover: "hover:border-cyan-500/50",
+    dot: "bg-cyan-500",
+    lightBg: "bg-cyan-500/10",
+  },
+  {
+    id: "orange",
+    label: "Laranja Solar",
+    badgeBg: "bg-orange-500/15",
+    border: "border-orange-500/30",
+    text: "text-orange-400",
+    bgHover: "hover:border-orange-500/50",
+    dot: "bg-orange-500",
+    lightBg: "bg-orange-500/10",
+  },
+  {
+    id: "indigo",
+    label: "Índigo Neon",
+    badgeBg: "bg-indigo-500/15",
+    border: "border-indigo-500/30",
+    text: "text-indigo-400",
+    bgHover: "hover:border-indigo-500/50",
+    dot: "bg-indigo-500",
+    lightBg: "bg-indigo-500/10",
+  },
+  {
+    id: "pink",
+    label: "Fúcsia Pink",
+    badgeBg: "bg-pink-500/15",
+    border: "border-pink-500/30",
+    text: "text-pink-400",
+    bgHover: "hover:border-pink-500/50",
+    dot: "bg-pink-500",
+    lightBg: "bg-pink-500/10",
+  },
+  {
+    id: "teal",
+    label: "Menta Teal",
+    badgeBg: "bg-teal-500/15",
+    border: "border-teal-500/30",
+    text: "text-teal-400",
+    bgHover: "hover:border-teal-500/50",
+    dot: "bg-teal-500",
+    lightBg: "bg-teal-500/10",
+  },
+  {
+    id: "lime",
+    label: "Lima Elétrico",
+    badgeBg: "bg-lime-500/15",
+    border: "border-lime-500/30",
+    text: "text-lime-400",
+    bgHover: "hover:border-lime-500/50",
+    dot: "bg-lime-500",
+    lightBg: "bg-lime-500/10",
+  },
+  {
+    id: "violet",
+    label: "Violeta Intenso",
+    badgeBg: "bg-violet-500/15",
+    border: "border-violet-500/30",
+    text: "text-violet-400",
+    bgHover: "hover:border-violet-500/50",
+    dot: "bg-violet-500",
+    lightBg: "bg-violet-500/10",
+  },
 ];
 
 export const classes = [
-  { nome: "Kids Playgroup", nivel: "A1", professor: "Marcos Vidal", alunos: 9, vagas: 12, horario: "Seg/Qua 19:00-20:30", salaId: "sala-5", salaNome: "Espaço Kids - Disney", corTheme: "emerald" },
-  { nome: "Regular Noite", nivel: "A2", professor: "Julia Kern", alunos: 14, vagas: 14, horario: "Ter/Qui 18:30-20:00", salaId: "sala-2", salaNome: "Sala 02 - New York", corTheme: "blue" },
-  { nome: "Business English", nivel: "B1", professor: "Ana Beatriz", alunos: 8, vagas: 12, horario: "Seg/Qua 07:30-09:00", salaId: "sala-1", salaNome: "Sala 01 - London", corTheme: "purple" },
-  { nome: "Conversation", nivel: "B2", professor: "Lucas Silveira", alunos: 11, vagas: 12, horario: "Ter/Qui 20:00-21:30", salaId: "sala-3", salaNome: "Sala 03 - Dublin", corTheme: "amber" },
-  { nome: "Advanced Manhã", nivel: "C1", professor: "Ana Beatriz", alunos: 6, vagas: 10, horario: "Sex 09:00-10:30", salaId: "sala-4", salaNome: "Lab Tech - Silicon Valley", corTheme: "rose" },
-  { nome: "Proficiency Lab", nivel: "C2", professor: "Peter Hall", alunos: 4, vagas: 8, horario: "Sáb 10:00-11:30", salaId: "sala-6", salaNome: "Auditório Oxford", corTheme: "cyan" },
+  {
+    nome: "Kids Playgroup",
+    nivel: "A1",
+    professor: "Marcos Vidal",
+    alunos: 9,
+    vagas: 12,
+    horario: "Seg/Qua 19:00-20:30",
+    salaId: "sala-5",
+    salaNome: "Espaço Kids - Disney",
+    corTheme: "emerald",
+  },
+  {
+    nome: "Regular Noite",
+    nivel: "A2",
+    professor: "Julia Kern",
+    alunos: 14,
+    vagas: 14,
+    horario: "Ter/Qui 18:30-20:00",
+    salaId: "sala-2",
+    salaNome: "Sala 02 - New York",
+    corTheme: "blue",
+  },
+  {
+    nome: "Business English",
+    nivel: "B1",
+    professor: "Ana Beatriz",
+    alunos: 8,
+    vagas: 12,
+    horario: "Seg/Qua 07:30-09:00",
+    salaId: "sala-1",
+    salaNome: "Sala 01 - London",
+    corTheme: "purple",
+  },
+  {
+    nome: "Conversation",
+    nivel: "B2",
+    professor: "Lucas Silveira",
+    alunos: 11,
+    vagas: 12,
+    horario: "Ter/Qui 20:00-21:30",
+    salaId: "sala-3",
+    salaNome: "Sala 03 - Dublin",
+    corTheme: "amber",
+  },
+  {
+    nome: "Advanced Manhã",
+    nivel: "C1",
+    professor: "Ana Beatriz",
+    alunos: 6,
+    vagas: 10,
+    horario: "Sex 09:00-10:30",
+    salaId: "sala-4",
+    salaNome: "Lab Tech - Silicon Valley",
+    corTheme: "rose",
+  },
+  {
+    nome: "Proficiency Lab",
+    nivel: "C2",
+    professor: "Peter Hall",
+    alunos: 4,
+    vagas: 8,
+    horario: "Sáb 10:00-11:30",
+    salaId: "sala-6",
+    salaNome: "Auditório Oxford",
+    corTheme: "cyan",
+  },
 ];
 
 export type Classroom = {
@@ -333,7 +562,13 @@ export const classrooms: Classroom[] = [
     nome: "Sala 01 - London",
     capacidade: 14,
     blocoOuAndar: "Térreo - Bloco A",
-    recursos: ["Smart TV 65\" 4K", "Ar Condicionado 18k BTUs", "Quadro Magnético", "Wi-Fi Fluency-5G", "Caixa de Som Bluetooth"],
+    recursos: [
+      'Smart TV 65" 4K',
+      "Ar Condicionado 18k BTUs",
+      "Quadro Magnético",
+      "Wi-Fi Fluency-5G",
+      "Caixa de Som Bluetooth",
+    ],
     status: "Disponível",
     corIdentificadora: "from-blue-500/20 to-indigo-500/20",
     responsavel: "Marcos Vidal",
@@ -343,7 +578,13 @@ export const classrooms: Classroom[] = [
     nome: "Sala 02 - New York",
     capacidade: 16,
     blocoOuAndar: "1º Andar - Bloco A",
-    recursos: ["Smart TV 75\" 4K", "Ar Condicionado 24k BTUs", "Quadro Branco Vitrificado", "Wi-Fi Fluency-5G", "Som Embutido no Teto"],
+    recursos: [
+      'Smart TV 75" 4K',
+      "Ar Condicionado 24k BTUs",
+      "Quadro Branco Vitrificado",
+      "Wi-Fi Fluency-5G",
+      "Som Embutido no Teto",
+    ],
     status: "Disponível",
     corIdentificadora: "from-amber-500/20 to-orange-500/20",
     responsavel: "Julia Kern",
@@ -353,7 +594,13 @@ export const classrooms: Classroom[] = [
     nome: "Sala 03 - Dublin",
     capacidade: 12,
     blocoOuAndar: "1º Andar - Bloco B",
-    recursos: ["Smart TV 55\" 4K", "Ar Condicionado 12k BTUs", "Cavalete Flip-Chart", "Wi-Fi Fluency-5G", "Mesa Redonda Conversação"],
+    recursos: [
+      'Smart TV 55" 4K',
+      "Ar Condicionado 12k BTUs",
+      "Cavalete Flip-Chart",
+      "Wi-Fi Fluency-5G",
+      "Mesa Redonda Conversação",
+    ],
     status: "Disponível",
     corIdentificadora: "from-emerald-500/20 to-teal-500/20",
     responsavel: "Ana Beatriz",
@@ -363,7 +610,13 @@ export const classrooms: Classroom[] = [
     nome: "Lab Tech - Silicon Valley",
     capacidade: 10,
     blocoOuAndar: "2º Andar - Bloco Tech",
-    recursos: ["10 Computadores All-in-One", "Headsets com Cancelamento de Ruído", "Projetor Laser HD", "Ar Condicionado 18k BTUs", "Switch Gigabit"],
+    recursos: [
+      "10 Computadores All-in-One",
+      "Headsets com Cancelamento de Ruído",
+      "Projetor Laser HD",
+      "Ar Condicionado 18k BTUs",
+      "Switch Gigabit",
+    ],
     status: "Disponível",
     corIdentificadora: "from-purple-500/20 to-pink-500/20",
     responsavel: "Peter Hall",
@@ -373,7 +626,13 @@ export const classrooms: Classroom[] = [
     nome: "Espaço Kids - Disney",
     capacidade: 12,
     blocoOuAndar: "Térreo - Bloco Kids",
-    recursos: ["Smart TV 55\" com Suporte Articulado", "Ar Condicionado 18k BTUs", "Tapete Pedagógico Emborrachado", "Tablets Infantis", "Jogos de Tabuleiro"],
+    recursos: [
+      'Smart TV 55" com Suporte Articulado',
+      "Ar Condicionado 18k BTUs",
+      "Tapete Pedagógico Emborrachado",
+      "Tablets Infantis",
+      "Jogos de Tabuleiro",
+    ],
     status: "Disponível",
     corIdentificadora: "from-rose-500/20 to-orange-500/20",
     responsavel: "Marcos Vidal",
@@ -383,7 +642,13 @@ export const classrooms: Classroom[] = [
     nome: "Auditório Oxford",
     capacidade: 30,
     blocoOuAndar: "2º Andar - Bloco Central",
-    recursos: ["Projetor 4K Epson 5000 Lumens", "Sistema de Microfone Sem Fio Duplo", "Mesa de Som 8 Canais", "2x Ar Condicionado 30k BTUs", "Palco para Apresentações"],
+    recursos: [
+      "Projetor 4K Epson 5000 Lumens",
+      "Sistema de Microfone Sem Fio Duplo",
+      "Mesa de Som 8 Canais",
+      "2x Ar Condicionado 30k BTUs",
+      "Palco para Apresentações",
+    ],
     status: "Disponível",
     corIdentificadora: "from-cyan-500/20 to-blue-500/20",
     responsavel: "Peter Hall",
@@ -407,7 +672,8 @@ export type InventoryItem = {
   numeroSerie: string;
   salaId: string;
   salaNome: string;
-  estadoConservacao: "Novo" | "Excelente" | "Bom" | "Necessita Reparo" | "Em Manutenção" | "Inativo";
+  estadoConservacao:
+    "Novo" | "Excelente" | "Bom" | "Necessita Reparo" | "Em Manutenção" | "Inativo";
   dataAquisicao: string;
   valorCompra: number;
   garantiaAte: string;
@@ -421,7 +687,7 @@ export const inventoryItems: InventoryItem[] = [
   {
     id: "inv-1",
     patrimonioCodigo: "PAT-2026-001",
-    nome: "Smart TV 65\" Crystal UHD 4K",
+    nome: 'Smart TV 65" Crystal UHD 4K',
     segmento: "Tecnologia & Audiovisual",
     marcaModelo: "Samsung UN65CU7700",
     numeroSerie: "SAM-65CU-99881",
@@ -456,7 +722,7 @@ export const inventoryItems: InventoryItem[] = [
   {
     id: "inv-3",
     patrimonioCodigo: "PAT-2026-003",
-    nome: "Smart TV 75\" QLED 4K",
+    nome: 'Smart TV 75" QLED 4K',
     segmento: "Tecnologia & Audiovisual",
     marcaModelo: "LG 75QNED80",
     numeroSerie: "LG-75QN-11029",
@@ -686,20 +952,36 @@ export const crmStages = [
 
 export const dunningSteps = [
   { dia: "D-3", canal: "WhatsApp", acao: "Lembrete amigável de vencimento", status: "Automático" },
-  { dia: "D+1", canal: "E-mail", acao: "Aviso de fatura em aberto + link Pix", status: "Automático" },
+  {
+    dia: "D+1",
+    canal: "E-mail",
+    acao: "Aviso de fatura em aberto + link Pix",
+    status: "Automático",
+  },
   { dia: "D+7", canal: "WhatsApp", acao: "Oferta de renegociação em 2x", status: "Automático" },
   { dia: "D+15", canal: "Telefone", acao: "Contato do time financeiro", status: "Manual" },
   { dia: "D+30", canal: "E-mail", acao: "Suspensão de acesso ao portal", status: "Automático" },
 ];
 
 export const classDiary = [
-  { turma: "B2 · Conversation", data: "18/08", conteudo: "Unit 7 — Debate: future of work", presenca: "10/11" },
-  { turma: "A2 · Regular Noite", data: "18/08", conteudo: "Unit 4 — Past continuous drills", presenca: "12/14" },
+  {
+    turma: "B2 · Conversation",
+    data: "18/08",
+    conteudo: "Unit 7 — Debate: future of work",
+    presenca: "10/11",
+  },
+  {
+    turma: "A2 · Regular Noite",
+    data: "18/08",
+    conteudo: "Unit 4 — Past continuous drills",
+    presenca: "12/14",
+  },
   { turma: "C1 · Advanced", data: "17/08", conteudo: "Essay workshop — cohesion", presenca: "5/6" },
 ];
 
 // --- PRICING POLICY & FORMULA TYPES ---
-export type PricingModelType = "mensalidade_fixa" | "hora_aula" | "frequencia_semanal" | "pacote_fechado";
+export type PricingModelType =
+  "mensalidade_fixa" | "hora_aula" | "frequencia_semanal" | "pacote_fechado";
 
 export type PricingHistoryEntry = {
   id: string;
@@ -738,9 +1020,21 @@ export const defaultPricingPolicy: PricingPolicy = {
   valorHoraAula: 65.0,
   valorHoraProfessorMedio: 45.0,
   tabelaFrequencia: [
-    { vezesPorSemana: 1, valorMensal: 280, descricao: "1x na semana (ex: Sábados Intensivos ou Sextas)" },
-    { vezesPorSemana: 2, valorMensal: 450, descricao: "2x na semana (ex: Seg/Qua ou Ter/Qui - Padrão)" },
-    { vezesPorSemana: 3, valorMensal: 590, descricao: "3x na semana (ex: Seg/Qua/Sex - Semi-Intensivo)" },
+    {
+      vezesPorSemana: 1,
+      valorMensal: 280,
+      descricao: "1x na semana (ex: Sábados Intensivos ou Sextas)",
+    },
+    {
+      vezesPorSemana: 2,
+      valorMensal: 450,
+      descricao: "2x na semana (ex: Seg/Qua ou Ter/Qui - Padrão)",
+    },
+    {
+      vezesPorSemana: 3,
+      valorMensal: 590,
+      descricao: "3x na semana (ex: Seg/Qua/Sex - Semi-Intensivo)",
+    },
     { vezesPorSemana: 5, valorMensal: 890, descricao: "5x na semana (Imersão Diária)" },
   ],
   pacoteSemestral: {
@@ -947,11 +1241,36 @@ export const livrosTrilhas: BookTrail[] = [
     titulo: "Kids Explorer - Stage 1",
     nivel: "A1",
     aulas: [
-      { id: "l1-1", aula: 1, tema: "Welcome & Color Songs", descricao: "Apresentação e introdução de cores primárias com música." },
-      { id: "l1-2", aula: 2, tema: "Vocabulary: Farm Animals", descricao: "Aprendizado dos nomes de animais de fazenda em inglês." },
-      { id: "l1-3", aula: 3, tema: "Singing & Action Verbs", descricao: "Música interativa e ações (jump, run, clap)." },
-      { id: "l1-4", aula: 4, tema: "Vocabulary: Fruit & Foods", descricao: "Introdução de nomes de frutas comuns e vocabulário de comida." },
-      { id: "l1-5", aula: 5, tema: "Review & Games", descricao: "Atividades lúdicas de revisão de cores e animais." },
+      {
+        id: "l1-1",
+        aula: 1,
+        tema: "Welcome & Color Songs",
+        descricao: "Apresentação e introdução de cores primárias com música.",
+      },
+      {
+        id: "l1-2",
+        aula: 2,
+        tema: "Vocabulary: Farm Animals",
+        descricao: "Aprendizado dos nomes de animais de fazenda em inglês.",
+      },
+      {
+        id: "l1-3",
+        aula: 3,
+        tema: "Singing & Action Verbs",
+        descricao: "Música interativa e ações (jump, run, clap).",
+      },
+      {
+        id: "l1-4",
+        aula: 4,
+        tema: "Vocabulary: Fruit & Foods",
+        descricao: "Introdução de nomes de frutas comuns e vocabulário de comida.",
+      },
+      {
+        id: "l1-5",
+        aula: 5,
+        tema: "Review & Games",
+        descricao: "Atividades lúdicas de revisão de cores e animais.",
+      },
     ],
   },
   {
@@ -959,10 +1278,30 @@ export const livrosTrilhas: BookTrail[] = [
     titulo: "English File - Elementary & Pre-Int",
     nivel: "A2",
     aulas: [
-      { id: "l2-1", aula: 1, tema: "Simple Past vs Past Continuous", descricao: "Revisão e exercícios de gramática com tempos verbais passados." },
-      { id: "l2-2", aula: 2, tema: "Travel Vocabulary & Bookings", descricao: "Como fazer reservas e vocabulário útil para viagens." },
-      { id: "l2-3", aula: 3, tema: "Conversational Drills", descricao: "Simulações práticas de diálogo em aeroportos e hotéis." },
-      { id: "l2-4", aula: 4, tema: "Reading & Pronunciation", descricao: "Leitura de textos e foco em pronúncia e entonação." },
+      {
+        id: "l2-1",
+        aula: 1,
+        tema: "Simple Past vs Past Continuous",
+        descricao: "Revisão e exercícios de gramática com tempos verbais passados.",
+      },
+      {
+        id: "l2-2",
+        aula: 2,
+        tema: "Travel Vocabulary & Bookings",
+        descricao: "Como fazer reservas e vocabulário útil para viagens.",
+      },
+      {
+        id: "l2-3",
+        aula: 3,
+        tema: "Conversational Drills",
+        descricao: "Simulações práticas de diálogo em aeroportos e hotéis.",
+      },
+      {
+        id: "l2-4",
+        aula: 4,
+        tema: "Reading & Pronunciation",
+        descricao: "Leitura de textos e foco em pronúncia e entonação.",
+      },
     ],
   },
   {
@@ -970,10 +1309,30 @@ export const livrosTrilhas: BookTrail[] = [
     titulo: "Oxford Grammar & Business English",
     nivel: "B1",
     aulas: [
-      { id: "l3-1", aula: 1, tema: "Greetings & Self Introduction", descricao: "Como se apresentar profissionalmente em inglês." },
-      { id: "l3-2", aula: 2, tema: "Writing Professional Emails", descricao: "Estruturas, formalidades e expressões de e-mail comercial." },
-      { id: "l3-3", aula: 3, tema: "Meeting Phrasal Verbs", descricao: "Principais phrasal verbs usados em reuniões." },
-      { id: "l3-4", aula: 4, tema: "Negotiation Tactics", descricao: "Vocabulário de negociação e expressão de opiniões." },
+      {
+        id: "l3-1",
+        aula: 1,
+        tema: "Greetings & Self Introduction",
+        descricao: "Como se apresentar profissionalmente em inglês.",
+      },
+      {
+        id: "l3-2",
+        aula: 2,
+        tema: "Writing Professional Emails",
+        descricao: "Estruturas, formalidades e expressões de e-mail comercial.",
+      },
+      {
+        id: "l3-3",
+        aula: 3,
+        tema: "Meeting Phrasal Verbs",
+        descricao: "Principais phrasal verbs usados em reuniões.",
+      },
+      {
+        id: "l3-4",
+        aula: 4,
+        tema: "Negotiation Tactics",
+        descricao: "Vocabulário de negociação e expressão de opiniões.",
+      },
     ],
   },
   {
@@ -981,11 +1340,36 @@ export const livrosTrilhas: BookTrail[] = [
     titulo: "Cambridge - Conversation Mastery & C1",
     nivel: "B2",
     aulas: [
-      { id: "l4-1", aula: 1, tema: "Welcome & Diagnostic Speaking", descricao: "Apresentação e avaliação inicial de fluência oral." },
-      { id: "l4-2", aula: 2, tema: "Debating the Future of Work - AI Impact", descricao: "Debate estruturado sobre o impacto da Inteligência Artificial no mercado." },
-      { id: "l4-3", aula: 3, tema: "Expressing Agreement & Disagreement", descricao: "Expressões e conectores para concordar e discordar educadamente." },
-      { id: "l4-4", aula: 4, tema: "Idiomatic Expressions for Negotiation", descricao: "Expressões idiomáticas nativas usadas em acordos." },
-      { id: "l4-5", aula: 5, tema: "Final Presentation - Persuasive Pitch", descricao: "Apresentações finais e feedbacks individuais detalhados." },
+      {
+        id: "l4-1",
+        aula: 1,
+        tema: "Welcome & Diagnostic Speaking",
+        descricao: "Apresentação e avaliação inicial de fluência oral.",
+      },
+      {
+        id: "l4-2",
+        aula: 2,
+        tema: "Debating the Future of Work - AI Impact",
+        descricao: "Debate estruturado sobre o impacto da Inteligência Artificial no mercado.",
+      },
+      {
+        id: "l4-3",
+        aula: 3,
+        tema: "Expressing Agreement & Disagreement",
+        descricao: "Expressões e conectores para concordar e discordar educadamente.",
+      },
+      {
+        id: "l4-4",
+        aula: 4,
+        tema: "Idiomatic Expressions for Negotiation",
+        descricao: "Expressões idiomáticas nativas usadas em acordos.",
+      },
+      {
+        id: "l4-5",
+        aula: 5,
+        tema: "Final Presentation - Persuasive Pitch",
+        descricao: "Apresentações finais e feedbacks individuais detalhados.",
+      },
     ],
   },
 ];

@@ -10,7 +10,13 @@ const tones: Record<Tone, string> = {
   neutral: "text-muted-foreground border-border bg-muted/40",
 };
 
-export function StatusPill({ tone = "neutral", children }: { tone?: Tone; children: React.ReactNode }) {
+export function StatusPill({
+  tone = "neutral",
+  children,
+}: {
+  tone?: Tone;
+  children: React.ReactNode;
+}) {
   return (
     <span
       className={cn(

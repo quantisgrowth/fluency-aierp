@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
@@ -41,8 +35,21 @@ type UserContextValue = {
   adminProfile: AdminProfile;
   activeRole: UserRole;
   activeCompany: string;
-  addUser: (name: string, email: string, role: UserRole, permissions: UserPermissions, companies: string[]) => void;
-  updateUser: (id: string, name: string, email: string, role: UserRole, permissions: UserPermissions, companies: string[]) => void;
+  addUser: (
+    name: string,
+    email: string,
+    role: UserRole,
+    permissions: UserPermissions,
+    companies: string[],
+  ) => void;
+  updateUser: (
+    id: string,
+    name: string,
+    email: string,
+    role: UserRole,
+    permissions: UserPermissions,
+    companies: string[],
+  ) => void;
   deleteUser: (id: string) => void;
   updateProfile: (profile: Partial<AdminProfile>) => void;
   setActiveRole: (role: UserRole) => void;
@@ -98,29 +105,43 @@ export function UserProvider({ children }: { children: ReactNode }) {
           .eq("auth_user_id", authUser.id)
           .maybeSingle(),
         membership
-          ? supabase.from("unidades").select("nome").eq("escola_id", membership.escola_id).eq("status", "ativa")
+          ? supabase
+              .from("unidades")
+              .select("nome")
+              .eq("escola_id", membership.escola_id)
+              .eq("status", "ativa")
           : Promise.resolve({ data: [], error: null }),
       ]);
       if (!mounted) return;
 
-      const name = profileResult.data?.nome?.trim()
-        || String(authUser.user_metadata?.name || authUser.user_metadata?.full_name || "").trim()
-        || authUser.email?.split("@")[0]
-        || "Usuário";
+      const name =
+        profileResult.data?.nome?.trim() ||
+        String(authUser.user_metadata?.name || authUser.user_metadata?.full_name || "").trim() ||
+        authUser.email?.split("@")[0] ||
+        "Usuário";
       const email = profileResult.data?.email || authUser.email || "";
-      const avatar = name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+      const avatar = name
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join("")
+        .toUpperCase();
       const scopedProfileKey = `${STORAGE_PROFILE_KEY}:${authUser.id}`;
       let local: Partial<AdminProfile> = {};
       try {
         local = JSON.parse(window.localStorage.getItem(scopedProfileKey) || "{}");
         window.localStorage.removeItem(STORAGE_PROFILE_KEY);
         window.localStorage.removeItem(STORAGE_USERS_KEY);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       setAdminProfile({ name, email, phone: "", avatar: avatar || "U", ...local, email });
 
       const unitNames = (unitsResult.data ?? []).map((unit) => unit.nome);
       setCompanies(unitNames);
-      setActiveCompanyState((current) => unitNames.includes(current) ? current : (unitNames[0] || ""));
+      setActiveCompanyState((current) =>
+        unitNames.includes(current) ? current : unitNames[0] || "",
+      );
       const roleMap: Partial<Record<string, UserRole>> = {
         gestor: "admin",
         secretaria: "operador",
@@ -133,10 +154,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
       try {
         window.localStorage.removeItem(STORAGE_ROLE_KEY);
         window.localStorage.removeItem(STORAGE_COMPANY_KEY);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     void loadIdentity();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const saveUsers = (nextUsers: SchoolUser[]) => {
@@ -153,7 +178,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     email: string,
     role: UserRole,
     permissions: UserPermissions,
-    companies: string[]
+    companies: string[],
   ) => {
     const newUser: SchoolUser = {
       id: Date.now().toString(),
@@ -172,12 +197,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
     email: string,
     role: UserRole,
     permissions: UserPermissions,
-    companies: string[]
+    companies: string[],
   ) => {
     saveUsers(
-      users.map((u) =>
-        u.id === id ? { ...u, name, email, role, permissions, companies } : u
-      )
+      users.map((u) => (u.id === id ? { ...u, name, email, role, permissions, companies } : u)),
     );
   };
 
@@ -190,7 +213,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
       const next = { ...prev, ...profile };
       try {
         if (authenticatedUserId) {
-          window.localStorage.setItem(`${STORAGE_PROFILE_KEY}:${authenticatedUserId}`, JSON.stringify(next));
+          window.localStorage.setItem(
+            `${STORAGE_PROFILE_KEY}:${authenticatedUserId}`,
+            JSON.stringify(next),
+          );
         }
       } catch {
         /* ignore */
@@ -229,7 +255,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const user = users.find((u) => u.id === id);
     if (!user) return;
     toast.success(`Convite reenviado para ${user.email}!`, {
-      description: "O colaborador receberá um e-mail com o link para criar sua conta na plataforma.",
+      description:
+        "O colaborador receberá um e-mail com o link para criar sua conta na plataforma.",
     });
   };
 

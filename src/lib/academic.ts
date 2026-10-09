@@ -63,7 +63,13 @@ export type Student = {
   responsavel_contato?: string | null;
 };
 
-export type StudentHistory = { id: string; tipo: string; titulo: string; descricao: string | null; created_at: string };
+export type StudentHistory = {
+  id: string;
+  tipo: string;
+  titulo: string;
+  descricao: string | null;
+  created_at: string;
+};
 
 export type Enrollment = {
   id: string;

@@ -56,18 +56,24 @@ export const Route = createFileRoute("/admin/modulos")({
   head: () => ({
     meta: [
       { title: "Cursos, Módulos & Planos — Fluency AI" },
-      { name: "description", content: "Catálogo de produtos educacionais, administração de módulos e White-Label." },
+      {
+        name: "description",
+        content: "Catálogo de produtos educacionais, administração de módulos e White-Label.",
+      },
     ],
   }),
   component: AdminModulosPage,
 });
 
-type ModuleDef = typeof MODULES[0];
+type ModuleDef = (typeof MODULES)[0];
 const PRODUCTS_KEY = "fluency-ai:products:catalog:v2";
 const LEVELS_KEY = "fluency-ai:academic:levels:v2";
 const COSTS_KEY = "fluency-ai:finance:costs:v2";
 
-const MODALITY_LABELS: Record<PricingModelType, { label: string; badgeClass: string; desc: string }> = {
+const MODALITY_LABELS: Record<
+  PricingModelType,
+  { label: string; badgeClass: string; desc: string }
+> = {
   mensalidade_fixa: {
     label: "Turma Regular (Mensalidade Fixa)",
     badgeClass: "bg-blue-500/10 text-blue-400 border-blue-500/20",
@@ -101,7 +107,10 @@ function AdminModulosPage() {
   // View Display Modes (Cards vs List)
   const [catalogDisplayMode, setCatalogDisplayMode] = useState<"cards" | "list">(() => {
     try {
-      return (window.localStorage.getItem("fluency-ai:products:display-mode") as "cards" | "list") || "cards";
+      return (
+        (window.localStorage.getItem("fluency-ai:products:display-mode") as "cards" | "list") ||
+        "cards"
+      );
     } catch {
       return "cards";
     }
@@ -109,7 +118,10 @@ function AdminModulosPage() {
 
   const [modulesDisplayMode, setModulesDisplayMode] = useState<"cards" | "list">(() => {
     try {
-      return (window.localStorage.getItem("fluency-ai:erp-modules:display-mode") as "cards" | "list") || "cards";
+      return (
+        (window.localStorage.getItem("fluency-ai:erp-modules:display-mode") as "cards" | "list") ||
+        "cards"
+      );
     } catch {
       return "cards";
     }
@@ -134,7 +146,8 @@ function AdminModulosPage() {
   const [products, setProducts] = useState<EducationalProduct[]>([]);
   const activeProducts = products.filter((product) => product.ativo);
   const averageCatalogPrice = activeProducts.length
-    ? activeProducts.reduce((total, product) => total + Number(product.valorBase || 0), 0) / activeProducts.length
+    ? activeProducts.reduce((total, product) => total + Number(product.valorBase || 0), 0) /
+      activeProducts.length
     : null;
 
   // School Costs State (for pricing calculation)
@@ -160,12 +173,16 @@ function AdminModulosPage() {
   const [margemLucroAlvoPct, setMargemLucroAlvoPct] = useState(45); // 45% de margem padrão
 
   // Cálculos Automáticos de Carga Horária
-  const cargaHorariaSemanalCalculada = Number(((prodDuracaoMinutos / 60) * prodVezesSemana).toFixed(1));
+  const cargaHorariaSemanalCalculada = Number(
+    ((prodDuracaoMinutos / 60) * prodVezesSemana).toFixed(1),
+  );
   const cargaHorariaMensalCalculada = Number((cargaHorariaSemanalCalculada * 4.33).toFixed(1));
 
   // Cálculos da Calculadora de Custos & Unit Economics
   const custoHoraDocente = 45.0; // R$ 45/h base professor
-  const custoFixoTotalMensal = costs.filter((c) => c.tipo === "fixo").reduce((acc, c) => acc + c.valor, 0);
+  const custoFixoTotalMensal = costs
+    .filter((c) => c.tipo === "fixo")
+    .reduce((acc, c) => acc + c.valor, 0);
   const baseAlunosEscolaEstimada = 80; // Base média da unidade escolar
   const rateioFixoPorAluno = custoFixoTotalMensal / baseAlunosEscolaEstimada; // ~R$ 380/aluno/mês rateio global
   const custoMaterialMensalRateado = 20.0; // Custo do livro rateado no semestre
@@ -179,17 +196,19 @@ function AdminModulosPage() {
   const custoTotalRealPorAluno =
     prodModalidade === "hora_aula"
       ? custoHoraDocente + 15 // Custo por hora lecionada VIP + rateio operacional
-      : custoDocentePorAlunoMes + (rateioFixoPorAluno * 0.35) + custoMaterialMensalRateado;
+      : custoDocentePorAlunoMes + rateioFixoPorAluno * 0.35 + custoMaterialMensalRateado;
 
   // Preço de Equilíbrio (Break-Even) e Preço Sugerido com Margem
   const precoMinimoBreakEven = custoTotalRealPorAluno;
   const precoSugeridoCalculado = Number(
-    (custoTotalRealPorAluno / (1 - margemLucroAlvoPct / 100)).toFixed(2)
+    (custoTotalRealPorAluno / (1 - margemLucroAlvoPct / 100)).toFixed(2),
   );
 
   // Projeção de Faturamento e Lucro por Turma
   const faturamentoEstimadoTurma = precoSugeridoCalculado * qtdAlunosCalc;
-  const lucroEstimadoTurmaMes = faturamentoEstimadoTurma - (custoDocenteTotalTurmaMes + ((rateioFixoPorAluno * 0.35) * qtdAlunosCalc));
+  const lucroEstimadoTurmaMes =
+    faturamentoEstimadoTurma -
+    (custoDocenteTotalTurmaMes + rateioFixoPorAluno * 0.35 * qtdAlunosCalc);
 
   // Self-Service Checkout states for ERP Modules
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -214,21 +233,27 @@ function AdminModulosPage() {
         setLevels(JSON.parse(window.localStorage.getItem(storageKeys.current.levels) || "[]"));
         setCosts(JSON.parse(window.localStorage.getItem(storageKeys.current.costs) || "[]"));
       } catch {
-        setProducts([]); setLevels([]); setCosts([]);
+        setProducts([]);
+        setLevels([]);
+        setCosts([]);
       }
     });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
     try {
-      if (storageKeys.current) window.localStorage.setItem(storageKeys.current.products, JSON.stringify(products));
+      if (storageKeys.current)
+        window.localStorage.setItem(storageKeys.current.products, JSON.stringify(products));
     } catch {}
   }, [products]);
 
   useEffect(() => {
     try {
-      if (storageKeys.current) window.localStorage.setItem(storageKeys.current.levels, JSON.stringify(levels));
+      if (storageKeys.current)
+        window.localStorage.setItem(storageKeys.current.levels, JSON.stringify(levels));
     } catch {}
   }, [levels]);
 
@@ -257,7 +282,7 @@ function AdminModulosPage() {
   const handlePresetSelect = (preset: TenantPreset) => {
     applyPreset(preset);
     toast.success(
-      `Marca alternada para ${preset === "lumen" ? "Fluency AI" : preset === "apex" ? "Apex English" : "British Academy"}!`
+      `Marca alternada para ${preset === "lumen" ? "Fluency AI" : preset === "apex" ? "Apex English" : "British Academy"}!`,
     );
   };
 
@@ -327,7 +352,9 @@ function AdminModulosPage() {
 
   const handleApplySuggestedPrice = () => {
     setProdValor(precoSugeridoCalculado);
-    toast.success(`Preço sugerido de ${brl(precoSugeridoCalculado)} aplicado com sucesso ao produto!`);
+    toast.success(
+      `Preço sugerido de ${brl(precoSugeridoCalculado)} aplicado com sucesso ao produto!`,
+    );
   };
 
   const handleSaveCourse = (e: React.FormEvent) => {
@@ -361,8 +388,8 @@ function AdminModulosPage() {
                 permiteTurma: prodPermiteTurma,
                 maxAlunosTurma: prodPermiteTurma ? Number(prodMaxAlunos) : 1,
               }
-            : p
-        )
+            : p,
+        ),
       );
       toast.success(`Curso "${prodNome}" atualizado com sucesso!`);
     } else {
@@ -438,8 +465,8 @@ function AdminModulosPage() {
                 descricao: levelFormDesc.trim(),
                 horasSugeridas: Number(levelFormHoras),
               }
-            : l
-        )
+            : l,
+        ),
       );
       toast.success(`Nível "${levelFormNome}" atualizado!`);
     } else {
@@ -521,10 +548,12 @@ function AdminModulosPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="space-y-1">
               <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                <BookOpen className="size-4 text-primary" /> Grade de Cursos e Modalidades Contratáveis
+                <BookOpen className="size-4 text-primary" /> Grade de Cursos e Modalidades
+                Contratáveis
               </h3>
               <p className="text-xs text-muted-foreground">
-                Cada curso possui sua carga horária analítica, livro didático vinculado e sugestão de precificação por custos.
+                Cada curso possui sua carga horária analítica, livro didático vinculado e sugestão
+                de precificação por custos.
               </p>
             </div>
 
@@ -582,7 +611,9 @@ function AdminModulosPage() {
                 <GraduationCap className="size-4 text-primary" />
               </div>
               <p className="text-2xl font-bold text-foreground">{activeProducts.length} Cursos</p>
-              <p className="text-[11px] text-muted-foreground">{products.length} produtos cadastrados no total</p>
+              <p className="text-[11px] text-muted-foreground">
+                {products.length} produtos cadastrados no total
+              </p>
             </GlassCard>
 
             <GlassCard className="p-4 space-y-1">
@@ -596,7 +627,9 @@ function AdminModulosPage() {
 
             <GlassCard className="p-4 space-y-1">
               <div className="flex justify-between items-center text-xs text-muted-foreground">
-                <span className="font-semibold uppercase tracking-wider">Preço Médio do Catálogo</span>
+                <span className="font-semibold uppercase tracking-wider">
+                  Preço Médio do Catálogo
+                </span>
                 <DollarSign className="size-4 text-emerald-400" />
               </div>
               <p className="text-2xl font-bold text-emerald-400">
@@ -614,7 +647,8 @@ function AdminModulosPage() {
           {catalogDisplayMode === "cards" && (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {products.map((prod) => {
-                const modInfo = MODALITY_LABELS[prod.modalidade] || MODALITY_LABELS.mensalidade_fixa;
+                const modInfo =
+                  MODALITY_LABELS[prod.modalidade] || MODALITY_LABELS.mensalidade_fixa;
 
                 return (
                   <GlassCard
@@ -635,8 +669,12 @@ function AdminModulosPage() {
                         </span>
                       </div>
 
-                      <h4 className="text-base font-bold text-foreground leading-snug">{prod.nome}</h4>
-                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{prod.descricao}</p>
+                      <h4 className="text-base font-bold text-foreground leading-snug">
+                        {prod.nome}
+                      </h4>
+                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                        {prod.descricao}
+                      </p>
 
                       <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
                         <div className="rounded-lg bg-surface/40 border border-hairline p-2 space-y-0.5">
@@ -644,7 +682,8 @@ function AdminModulosPage() {
                             Carga Semanal
                           </span>
                           <p className="font-bold text-foreground flex items-center gap-1">
-                            <Clock className="size-3 text-primary" /> {prod.cargaHorariaSemanal || 3}h / sem
+                            <Clock className="size-3 text-primary" />{" "}
+                            {prod.cargaHorariaSemanal || 3}h / sem
                           </p>
                           <p className="text-[10px] text-muted-foreground">
                             {prod.vezesPorSemana || 2}x de {prod.duracaoAulaMinutos || 90}min
@@ -656,9 +695,12 @@ function AdminModulosPage() {
                             Total do Módulo
                           </span>
                           <p className="font-bold text-foreground flex items-center gap-1">
-                            <Calendar className="size-3 text-primary" /> {prod.cargaHorariaTotal || 60}h Totais
+                            <Calendar className="size-3 text-primary" />{" "}
+                            {prod.cargaHorariaTotal || 60}h Totais
                           </p>
-                          <p className="text-[10px] text-muted-foreground">~{prod.cargaHorariaMensal || 13}h / mês</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            ~{prod.cargaHorariaMensal || 13}h / mês
+                          </p>
                         </div>
                       </div>
 
@@ -668,7 +710,8 @@ function AdminModulosPage() {
                         </span>
                         {prod.livroPadraoNome && (
                           <span className="rounded bg-surface-elevated border border-hairline px-2 py-0.5 text-[10px] text-muted-foreground flex items-center gap-1 truncate max-w-full">
-                            <BookOpen className="size-3 text-muted-foreground shrink-0" /> {prod.livroPadraoNome}
+                            <BookOpen className="size-3 text-muted-foreground shrink-0" />{" "}
+                            {prod.livroPadraoNome}
                           </span>
                         )}
                       </div>
@@ -683,8 +726,8 @@ function AdminModulosPage() {
                             {prod.modalidade === "hora_aula"
                               ? " / hora"
                               : prod.modalidade === "pacote_fechado"
-                              ? " / semestre"
-                              : " / mês"}
+                                ? " / semestre"
+                                : " / mês"}
                           </span>
                         </span>
                       </div>
@@ -740,7 +783,8 @@ function AdminModulosPage() {
                   </thead>
                   <tbody className="divide-y divide-hairline">
                     {products.map((prod) => {
-                      const modInfo = MODALITY_LABELS[prod.modalidade] || MODALITY_LABELS.mensalidade_fixa;
+                      const modInfo =
+                        MODALITY_LABELS[prod.modalidade] || MODALITY_LABELS.mensalidade_fixa;
 
                       return (
                         <tr key={prod.id} className="hover:bg-surface/40 transition-colors">
@@ -749,19 +793,26 @@ function AdminModulosPage() {
                           </td>
                           <td className="px-6 py-4 font-bold text-foreground">
                             <p>{prod.nome}</p>
-                            <p className="text-[10px] text-muted-foreground line-clamp-1 font-normal">{prod.descricao}</p>
+                            <p className="text-[10px] text-muted-foreground line-clamp-1 font-normal">
+                              {prod.descricao}
+                            </p>
                           </td>
                           <td className="px-6 py-4">
-                            <span className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase border ${modInfo.badgeClass}`}>
+                            <span
+                              className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase border ${modInfo.badgeClass}`}
+                            >
                               {modInfo.label}
                             </span>
                           </td>
-                          <td className="px-6 py-4 font-semibold text-foreground">
-                            {prod.nivel}
-                          </td>
+                          <td className="px-6 py-4 font-semibold text-foreground">{prod.nivel}</td>
                           <td className="px-6 py-4 text-muted-foreground">
-                            <span className="font-bold text-foreground">{prod.cargaHorariaSemanal}h/sem</span>
-                            <span className="block text-[10px]">{prod.cargaHorariaTotal}h totais ({prod.vezesPorSemana}x {prod.duracaoAulaMinutos}min)</span>
+                            <span className="font-bold text-foreground">
+                              {prod.cargaHorariaSemanal}h/sem
+                            </span>
+                            <span className="block text-[10px]">
+                              {prod.cargaHorariaTotal}h totais ({prod.vezesPorSemana}x{" "}
+                              {prod.duracaoAulaMinutos}min)
+                            </span>
                           </td>
                           <td className="px-6 py-4 text-muted-foreground">
                             {prod.livroPadraoNome || "Material Padrão"}
@@ -769,7 +820,11 @@ function AdminModulosPage() {
                           <td className="px-6 py-4 font-extrabold text-foreground">
                             {brl(prod.valorBase)}
                             <span className="text-[9px] font-normal text-muted-foreground block">
-                              {prod.modalidade === "hora_aula" ? "/ hora" : prod.modalidade === "pacote_fechado" ? "/ pacote" : "/ mês"}
+                              {prod.modalidade === "hora_aula"
+                                ? "/ hora"
+                                : prod.modalidade === "pacote_fechado"
+                                  ? "/ pacote"
+                                  : "/ mês"}
                             </span>
                           </td>
                           <td className="px-6 py-4">
@@ -787,7 +842,9 @@ function AdminModulosPage() {
                                 <Pencil className="size-3.5" />
                               </button>
                               <button
-                                onClick={() => handleToggleProductStatus(prod.id, prod.ativo, prod.nome)}
+                                onClick={() =>
+                                  handleToggleProductStatus(prod.id, prod.ativo, prod.nome)
+                                }
                                 className="px-2 py-1 rounded-lg border border-hairline text-[10px] font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
                               >
                                 {prod.ativo ? "Pausar" : "Ativar"}
@@ -863,7 +920,6 @@ function AdminModulosPage() {
 
           {/* Editor Form Layout (2 Wide Columns) */}
           <form onSubmit={handleSaveCourse} className="grid gap-6 lg:grid-cols-2">
-            
             {/* COLUMN 1: DADOS GERAIS, NÍVEL E CARGA HORÁRIA ANALÍTICA */}
             <div className="space-y-6">
               <GlassCard className="p-6 space-y-5">
@@ -972,7 +1028,8 @@ function AdminModulosPage() {
               <GlassCard className="p-6 space-y-5 border-primary/20">
                 <div className="flex justify-between items-center border-b border-hairline pb-2">
                   <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                    <Clock className="size-4 text-primary" /> Matriz Analítica de Carga Horária & Aulas
+                    <Clock className="size-4 text-primary" /> Matriz Analítica de Carga Horária &
+                    Aulas
                   </h3>
                   <span className="text-[10px] text-primary font-bold uppercase tracking-wider bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
                     Cálculo Automático
@@ -1060,12 +1117,12 @@ function AdminModulosPage() {
 
             {/* COLUMN 2: CALCULADORA INTELIGENTE DE PRECIFICAÇÃO & DETALHES */}
             <div className="space-y-6">
-              
               {/* CALCULADORA DE SUGESTÃO DE PRECIFICAÇÃO BASEADA EM CUSTOS */}
               <GlassCard className="p-6 space-y-5 border-emerald-500/30 bg-emerald-500/[0.02]">
                 <div className="flex justify-between items-center border-b border-hairline pb-2">
                   <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                    <Calculator className="size-4 text-emerald-400" /> Calculadora de Sugestão de Preço (Base DRE)
+                    <Calculator className="size-4 text-emerald-400" /> Calculadora de Sugestão de
+                    Preço (Base DRE)
                   </h3>
                   <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1">
                     <ShieldCheck className="size-3" /> Unit Economics
@@ -1097,7 +1154,9 @@ function AdminModulosPage() {
                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                         Margem Alvo
                       </label>
-                      <span className="text-xs font-extrabold text-emerald-400">{margemLucroAlvoPct}%</span>
+                      <span className="text-xs font-extrabold text-emerald-400">
+                        {margemLucroAlvoPct}%
+                      </span>
                     </div>
                     <input
                       type="range"
@@ -1220,7 +1279,8 @@ function AdminModulosPage() {
                     >
                       {livrosTrilhas.map((book) => (
                         <option key={book.id} value={book.id}>
-                          {book.titulo} (Nível {book.nivel} · {book.aulas.length} Aulas estruturadas)
+                          {book.titulo} (Nível {book.nivel} · {book.aulas.length} Aulas
+                          estruturadas)
                         </option>
                       ))}
                     </select>
@@ -1318,15 +1378,24 @@ function AdminModulosPage() {
             </div>
 
             {/* Form de Criar / Editar Nível */}
-            <form onSubmit={handleSaveLevel} className="rounded-xl border border-hairline bg-surface/40 p-4 space-y-3">
+            <form
+              onSubmit={handleSaveLevel}
+              className="rounded-xl border border-hairline bg-surface/40 p-4 space-y-3"
+            >
               <h4 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1">
-                {editingLevelId ? <Pencil className="size-3 text-primary" /> : <Plus className="size-3 text-primary" />}
+                {editingLevelId ? (
+                  <Pencil className="size-3 text-primary" />
+                ) : (
+                  <Plus className="size-3 text-primary" />
+                )}
                 {editingLevelId ? "Editar Nível Selecionado" : "Adicionar Novo Nível / Estágio"}
               </h4>
 
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Código (ex: A1, KIDS-1)</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">
+                    Código (ex: A1, KIDS-1)
+                  </label>
                   <input
                     value={levelFormCodigo}
                     onChange={(e) => setLevelFormCodigo(e.target.value)}
@@ -1337,7 +1406,9 @@ function AdminModulosPage() {
                 </div>
 
                 <div className="col-span-2 space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Nome do Estágio *</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">
+                    Nome do Estágio *
+                  </label>
                   <input
                     value={levelFormNome}
                     onChange={(e) => setLevelFormNome(e.target.value)}
@@ -1350,7 +1421,9 @@ function AdminModulosPage() {
 
               <div className="grid grid-cols-3 gap-3">
                 <div className="col-span-2 space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Descrição das Competências</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">
+                    Descrição das Competências
+                  </label>
                   <input
                     value={levelFormDesc}
                     onChange={(e) => setLevelFormDesc(e.target.value)}
@@ -1360,7 +1433,9 @@ function AdminModulosPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase">Horas Sugeridas</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase">
+                    Horas Sugeridas
+                  </label>
                   <input
                     type="number"
                     min={10}
@@ -1398,14 +1473,19 @@ function AdminModulosPage() {
               </h4>
               <div className="divide-y divide-hairline rounded-xl border border-hairline bg-surface/30 max-h-56 overflow-y-auto">
                 {levels.map((lvl) => (
-                  <div key={lvl.id} className="p-3 flex items-center justify-between gap-3 text-xs hover:bg-surface/50 transition-colors">
+                  <div
+                    key={lvl.id}
+                    className="p-3 flex items-center justify-between gap-3 text-xs hover:bg-surface/50 transition-colors"
+                  >
                     <div className="flex items-center gap-3">
                       <span className="grid size-8 place-items-center rounded bg-primary/10 border border-primary/20 text-primary font-mono font-bold text-xs">
                         {lvl.codigo}
                       </span>
                       <div>
                         <p className="font-bold text-foreground">{lvl.nome}</p>
-                        <p className="text-[10px] text-muted-foreground">{lvl.descricao || "Sem descrição"} · {lvl.horasSugeridas}h sugeridas</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {lvl.descricao || "Sem descrição"} · {lvl.horasSugeridas}h sugeridas
+                        </p>
                       </div>
                     </div>
 
@@ -1451,7 +1531,9 @@ function AdminModulosPage() {
           <div className="flex justify-between items-center">
             <div className="space-y-1">
               <h3 className="text-base font-bold text-foreground">Módulos & Recursos Adicionais</h3>
-              <p className="text-xs text-muted-foreground">Contrate recursos do ecossistema Fluency AI para a sua franquia.</p>
+              <p className="text-xs text-muted-foreground">
+                Contrate recursos do ecossistema Fluency AI para a sua franquia.
+              </p>
             </div>
 
             {/* Toggle Cards vs List */}
@@ -1491,7 +1573,9 @@ function AdminModulosPage() {
                     <GlassCard
                       key={m.id}
                       className={`p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all duration-300 ${
-                        isEnabled ? "border-primary/20 bg-primary/[0.01]" : "border-hairline opacity-80"
+                        isEnabled
+                          ? "border-primary/20 bg-primary/[0.01]"
+                          : "border-hairline opacity-80"
                       }`}
                     >
                       <div className="flex items-start gap-4">
@@ -1517,12 +1601,16 @@ function AdminModulosPage() {
                               {isEnabled ? "Ativo" : "Bloqueado"}
                             </span>
                           </div>
-                          <p className="text-xs text-muted-foreground leading-relaxed">{m.description}</p>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            {m.description}
+                          </p>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-hairline">
-                        <span className="text-xs font-semibold text-foreground">{brl(m.price)}/mês</span>
+                        <span className="text-xs font-semibold text-foreground">
+                          {brl(m.price)}/mês
+                        </span>
                         {isEnabled ? (
                           <button
                             onClick={() => toggleModule(m.id)}
@@ -1550,11 +1638,15 @@ function AdminModulosPage() {
                   <div className="space-y-2 text-xs divide-y divide-hairline">
                     <div className="flex justify-between pt-2">
                       <span className="text-muted-foreground">Módulos Ativos</span>
-                      <span className="font-semibold text-foreground">{active.length} de {MODULES.length}</span>
+                      <span className="font-semibold text-foreground">
+                        {active.length} de {MODULES.length}
+                      </span>
                     </div>
                     <div className="flex justify-between pt-2">
                       <span className="text-muted-foreground">Total Mensal</span>
-                      <span className="font-bold text-foreground text-sm">{brl(monthlyTotal)}/mês</span>
+                      <span className="font-bold text-foreground text-sm">
+                        {brl(monthlyTotal)}/mês
+                      </span>
                     </div>
                     <div className="flex justify-between pt-2">
                       <span className="text-muted-foreground">Próxima Fatura</span>
@@ -1583,7 +1675,9 @@ function AdminModulosPage() {
                     return (
                       <tr key={m.id} className="hover:bg-surface/40 transition-colors">
                         <td className="px-6 py-4 font-bold text-foreground flex items-center gap-2.5">
-                          <span className={`grid size-7 place-items-center rounded-md border ${isEnabled ? "bg-primary/10 border-primary/20 text-primary" : "bg-surface text-muted-foreground"}`}>
+                          <span
+                            className={`grid size-7 place-items-center rounded-md border ${isEnabled ? "bg-primary/10 border-primary/20 text-primary" : "bg-surface text-muted-foreground"}`}
+                          >
                             <Icon className="size-3.5" />
                           </span>
                           {m.name}
@@ -1591,9 +1685,7 @@ function AdminModulosPage() {
                         <td className="px-6 py-4 text-muted-foreground max-w-md">
                           {m.description}
                         </td>
-                        <td className="px-6 py-4 font-bold text-foreground">
-                          {brl(m.price)}/mês
-                        </td>
+                        <td className="px-6 py-4 font-bold text-foreground">{brl(m.price)}/mês</td>
                         <td className="px-6 py-4">
                           <StatusPill tone={isEnabled ? "paid" : "due"}>
                             {isEnabled ? "Ativo" : "Bloqueado"}
@@ -1634,12 +1726,16 @@ function AdminModulosPage() {
           <GlassCard className="lg:col-span-2 p-6 space-y-6">
             <div>
               <h3 className="text-base font-semibold text-foreground">Identidade da Unidade</h3>
-              <p className="text-xs text-muted-foreground">Personalize a cor principal e o nome da sua escola no ERP.</p>
+              <p className="text-xs text-muted-foreground">
+                Personalize a cor principal e o nome da sua escola no ERP.
+              </p>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Nome da Escola</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">
+                  Nome da Escola
+                </label>
                 <input
                   value={schoolName}
                   onChange={(e) => {
@@ -1651,7 +1747,9 @@ function AdminModulosPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Cor Primária (Hexadecimal)</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase">
+                  Cor Primária (Hexadecimal)
+                </label>
                 <div className="flex gap-3 items-center">
                   <input
                     type="color"
@@ -1717,7 +1815,9 @@ function AdminModulosPage() {
                 <Sparkles className="size-5" />
               </span>
               <div>
-                <h3 className="text-sm font-bold text-foreground">Contratar {checkoutModule.name}</h3>
+                <h3 className="text-sm font-bold text-foreground">
+                  Contratar {checkoutModule.name}
+                </h3>
                 <p className="text-xs text-muted-foreground">{brl(checkoutModule.price)} / mês</p>
               </div>
             </div>
@@ -1750,7 +1850,9 @@ function AdminModulosPage() {
 
               {paymentMethod === "pix" ? (
                 <div className="text-center p-4 rounded-xl border border-hairline bg-surface/30 space-y-2">
-                  <p className="text-xs text-muted-foreground">Chave Pix Copia e Cola gerada para pagamento:</p>
+                  <p className="text-xs text-muted-foreground">
+                    Chave Pix Copia e Cola gerada para pagamento:
+                  </p>
                   <p className="text-[11px] font-mono bg-surface p-2 rounded border border-hairline truncate select-all">
                     00020101021226870014br.gov.bcb.pix2565fluency.ai/pay/mod-99
                   </p>

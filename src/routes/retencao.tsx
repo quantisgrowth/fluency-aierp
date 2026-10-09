@@ -13,7 +13,7 @@ import {
   XCircle,
   Sliders,
   Send,
-  Coins
+  Coins,
 } from "lucide-react";
 import { GlassCard } from "@/components/kit/glass-card";
 import { SectionHeader } from "@/components/kit/section-header";
@@ -25,7 +25,10 @@ export const Route = createFileRoute("/retencao")({
   head: () => ({
     meta: [
       { title: "Success & Retenção — Fluency AI" },
-      { name: "description", content: "Alertas de churn, diários de classe e controle de gamificação." },
+      {
+        name: "description",
+        content: "Alertas de churn, diários de classe e controle de gamificação.",
+      },
     ],
   }),
   component: RetencaoPage,
@@ -67,9 +70,11 @@ const REWARDS_KEY = "fluency-ai:gamification:rewards";
 const REDEMPTIONS_KEY = "fluency-ai:gamification:redemptions";
 
 function RetencaoPage() {
-  const storageKeys = useRef<{ challenges: string; rewards: string; redemptions: string } | null>(null);
+  const storageKeys = useRef<{ challenges: string; rewards: string; redemptions: string } | null>(
+    null,
+  );
   const [activeTab, setActiveTab] = useState<"churn" | "gamification" | "redemptions">("churn");
-  
+
   // Shared States
   const [challenges, setChallenges] = useState<Challenge[]>(DEFAULT_CHALLENGES);
   const [rewards, setRewards] = useState<Reward[]>(DEFAULT_REWARDS);
@@ -102,7 +107,7 @@ function RetencaoPage() {
       try {
         const rawC = window.localStorage.getItem(storageKeys.current.challenges);
         if (rawC) setChallenges(JSON.parse(rawC));
-        
+
         const rawR = window.localStorage.getItem(storageKeys.current.rewards);
         if (rawR) setRewards(JSON.parse(rawR));
 
@@ -133,17 +138,20 @@ function RetencaoPage() {
 
   const saveChallenges = (next: Challenge[]) => {
     setChallenges(next);
-    if (storageKeys.current) window.localStorage.setItem(storageKeys.current.challenges, JSON.stringify(next));
+    if (storageKeys.current)
+      window.localStorage.setItem(storageKeys.current.challenges, JSON.stringify(next));
   };
 
   const saveRewards = (next: Reward[]) => {
     setRewards(next);
-    if (storageKeys.current) window.localStorage.setItem(storageKeys.current.rewards, JSON.stringify(next));
+    if (storageKeys.current)
+      window.localStorage.setItem(storageKeys.current.rewards, JSON.stringify(next));
   };
 
   const saveRedemptions = (next: Redemption[]) => {
     setRedemptions(next);
-    if (storageKeys.current) window.localStorage.setItem(storageKeys.current.redemptions, JSON.stringify(next));
+    if (storageKeys.current)
+      window.localStorage.setItem(storageKeys.current.redemptions, JSON.stringify(next));
   };
 
   const handleContactStudent = (aluno: string) => {
@@ -208,9 +216,7 @@ function RetencaoPage() {
 
   // Approve Redemption (Deliver Prize)
   const handleDeliverPrize = (id: string) => {
-    const next = redemptions.map((r) =>
-      r.id === id ? { ...r, status: "Entregue" as const } : r
-    );
+    const next = redemptions.map((r) => (r.id === id ? { ...r, status: "Entregue" as const } : r));
     saveRedemptions(next);
     toast.success("Resgate marcado como entregue!", {
       description: "As moedas já foram debitadas do saldo do aluno.",
@@ -219,9 +225,7 @@ function RetencaoPage() {
 
   // Cancel Redemption
   const handleCancelPrize = (id: string) => {
-    const next = redemptions.map((r) =>
-      r.id === id ? { ...r, status: "Cancelado" as const } : r
-    );
+    const next = redemptions.map((r) => (r.id === id ? { ...r, status: "Cancelado" as const } : r));
     saveRedemptions(next);
     toast.info("Resgate cancelado.");
   };
@@ -265,7 +269,8 @@ function RetencaoPage() {
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Gift className="size-4" /> Prêmios Solicitados ({redemptions.filter(r => r.status === "Pendente").length})
+            <Gift className="size-4" /> Prêmios Solicitados (
+            {redemptions.filter((r) => r.status === "Pendente").length})
           </button>
         </div>
 
@@ -276,8 +281,12 @@ function RetencaoPage() {
             <GlassCard className="p-6">
               <div className="flex items-center justify-between pb-4 border-b border-hairline mb-5">
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground">Alerta Preditivo de Evasão (Churn)</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Cruzamento automático de presença, pagamentos e notas</p>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Alerta Preditivo de Evasão (Churn)
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Cruzamento automático de presença, pagamentos e notas
+                  </p>
                 </div>
                 <span className="grid size-9 place-items-center rounded-xl bg-rose-500/10 border border-rose-500/20">
                   <HeartPulse className="size-4.5 text-rose-400" />
@@ -291,7 +300,10 @@ function RetencaoPage() {
                   </li>
                 )}
                 {churnRisk.map((c) => (
-                  <li key={c.aluno} className="rounded-xl border border-hairline bg-surface/30 p-4 space-y-3">
+                  <li
+                    key={c.aluno}
+                    className="rounded-xl border border-hairline bg-surface/30 p-4 space-y-3"
+                  >
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-semibold text-foreground">{c.aluno}</span>
                       <span className="rounded-full bg-rose-500/10 border border-rose-500/20 px-2.5 py-0.5 text-xs font-bold text-rose-400">
@@ -329,8 +341,12 @@ function RetencaoPage() {
             <GlassCard className="p-6">
               <div className="flex items-center justify-between pb-4 border-b border-hairline mb-5">
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground">Diário de Classe Digital</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Registros pedagógicos recentes enviados pelos professores</p>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Diário de Classe Digital
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Registros pedagógicos recentes enviados pelos professores
+                  </p>
                 </div>
                 <span className="grid size-9 place-items-center rounded-xl bg-primary/10 border border-primary/20">
                   <BookOpen className="size-4.5 text-primary" />
@@ -366,13 +382,16 @@ function RetencaoPage() {
         {/* TAB 2: GAMIFICATION MANAGER */}
         {activeTab === "gamification" && (
           <div className="grid gap-6 md:grid-cols-2 items-start">
-            
             {/* Missions challenges card manager */}
             <GlassCard className="p-6 space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-hairline">
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground">Gerenciador de Missões / Tarefas</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Desafios que premiam o aluno com XP e Moedas</p>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Gerenciador de Missões / Tarefas
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Desafios que premiam o aluno com XP e Moedas
+                  </p>
                 </div>
                 <button
                   onClick={() => setIsChallengeModalOpen(true)}
@@ -384,13 +403,20 @@ function RetencaoPage() {
 
               <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
                 {challenges.map((c) => (
-                  <div key={c.id} className="flex items-center justify-between rounded-xl border border-hairline bg-surface/30 p-4">
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between rounded-xl border border-hairline bg-surface/30 p-4"
+                  >
                     <div>
                       <h4 className="text-xs font-bold text-foreground">{c.title}</h4>
                       <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
-                        <span className="rounded bg-primary/10 border border-primary/20 px-1.5 py-0.5 text-primary font-semibold">{c.frequency}</span>
+                        <span className="rounded bg-primary/10 border border-primary/20 px-1.5 py-0.5 text-primary font-semibold">
+                          {c.frequency}
+                        </span>
                         <span>+{c.xp} XP</span>
-                        <span className="flex items-center gap-0.5 text-yellow-500 font-semibold"><Coins className="size-3" /> +{c.coins} Moedas</span>
+                        <span className="flex items-center gap-0.5 text-yellow-500 font-semibold">
+                          <Coins className="size-3" /> +{c.coins} Moedas
+                        </span>
                       </div>
                     </div>
                     <button
@@ -409,8 +435,12 @@ function RetencaoPage() {
             <GlassCard className="p-6 space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-hairline">
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground">Loja de Recompensas (Prêmios)</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Catálogo de itens para os alunos trocarem suas moedas</p>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Loja de Recompensas (Prêmios)
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Catálogo de itens para os alunos trocarem suas moedas
+                  </p>
                 </div>
                 <button
                   onClick={() => setIsRewardModalOpen(true)}
@@ -422,11 +452,16 @@ function RetencaoPage() {
 
               <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
                 {rewards.map((r) => (
-                  <div key={r.id} className="flex items-center justify-between rounded-xl border border-hairline bg-surface/30 p-4">
+                  <div
+                    key={r.id}
+                    className="flex items-center justify-between rounded-xl border border-hairline bg-surface/30 p-4"
+                  >
                     <div>
                       <h4 className="text-xs font-bold text-foreground">{r.name}</h4>
                       <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
-                        <span className="flex items-center gap-0.5 text-yellow-500 font-bold"><Coins className="size-3" /> {r.cost} Moedas</span>
+                        <span className="flex items-center gap-0.5 text-yellow-500 font-bold">
+                          <Coins className="size-3" /> {r.cost} Moedas
+                        </span>
                         <span>Estoque: {r.stock} unidades</span>
                       </div>
                     </div>
@@ -441,7 +476,6 @@ function RetencaoPage() {
                 ))}
               </div>
             </GlassCard>
-
           </div>
         )}
 
@@ -450,8 +484,12 @@ function RetencaoPage() {
           <GlassCard className="p-6">
             <div className="flex items-center justify-between pb-4 border-b border-hairline mb-5">
               <div>
-                <h3 className="text-sm font-semibold text-foreground">Fila de Prêmios Solicitados</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Acompanhe as solicitações de troca de moedas feitas pelos alunos</p>
+                <h3 className="text-sm font-semibold text-foreground">
+                  Fila de Prêmios Solicitados
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Acompanhe as solicitações de troca de moedas feitas pelos alunos
+                </p>
               </div>
               <span className="grid size-9 place-items-center rounded-xl bg-primary/10 border border-primary/20">
                 <Gift className="size-4.5 text-primary" />
@@ -478,11 +516,15 @@ function RetencaoPage() {
                       <td className="px-4 py-3 font-bold text-yellow-500">{r.cost} moedas</td>
                       <td className="px-4 py-3 text-muted-foreground text-xs">{r.date}</td>
                       <td className="px-4 py-3">
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${
-                          r.status === "Pendente" ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
-                          r.status === "Entregue" ? "bg-paid/10 border-paid/20 text-paid" :
-                          "bg-overdue/10 border-overdue/20 text-overdue"
-                        }`}>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${
+                            r.status === "Pendente"
+                              ? "bg-amber-500/10 border-amber-500/20 text-amber-500"
+                              : r.status === "Entregue"
+                                ? "bg-paid/10 border-paid/20 text-paid"
+                                : "bg-overdue/10 border-overdue/20 text-overdue"
+                          }`}
+                        >
                           {r.status}
                         </span>
                       </td>
@@ -504,14 +546,18 @@ function RetencaoPage() {
                           </>
                         )}
                         {r.status !== "Pendente" && (
-                          <span className="text-[11px] text-muted-foreground italic">Processado</span>
+                          <span className="text-[11px] text-muted-foreground italic">
+                            Processado
+                          </span>
                         )}
                       </td>
                     </tr>
                   ))}
                   {redemptions.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="text-center py-6 text-muted-foreground text-xs">Nenhum prêmio solicitado até o momento.</td>
+                      <td colSpan={6} className="text-center py-6 text-muted-foreground text-xs">
+                        Nenhum prêmio solicitado até o momento.
+                      </td>
                     </tr>
                   )}
                 </tbody>
@@ -526,14 +572,19 @@ function RetencaoPage() {
             <div className="w-full max-w-md rounded-2xl border border-hairline bg-background p-6 shadow-2xl space-y-4">
               <div className="flex items-center justify-between border-b border-hairline pb-3">
                 <h3 className="text-sm font-bold text-foreground">Criar Nova Missão</h3>
-                <button onClick={() => setIsChallengeModalOpen(false)} className="text-muted-foreground hover:text-foreground cursor-pointer">
+                <button
+                  onClick={() => setIsChallengeModalOpen(false)}
+                  className="text-muted-foreground hover:text-foreground cursor-pointer"
+                >
                   <XCircle className="size-5" />
                 </button>
               </div>
 
               <form onSubmit={handleAddChallenge} className="space-y-4 text-xs">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Título da Missão / Atividade</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Título da Missão / Atividade
+                  </label>
                   <input
                     placeholder="Praticar vocabulário da Unit 8"
                     value={challengeTitle}
@@ -545,7 +596,9 @@ function RetencaoPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Premiação XP</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Premiação XP
+                    </label>
                     <input
                       type="number"
                       value={challengeXp}
@@ -555,7 +608,9 @@ function RetencaoPage() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Premiação Moedas</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Premiação Moedas
+                    </label>
                     <input
                       type="number"
                       value={challengeCoins}
@@ -567,7 +622,9 @@ function RetencaoPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Frequência</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Frequência
+                  </label>
                   <select
                     value={challengeFreq}
                     onChange={(e) => setChallengeFreq(e.target.value as any)}
@@ -605,14 +662,19 @@ function RetencaoPage() {
             <div className="w-full max-w-md rounded-2xl border border-hairline bg-background p-6 shadow-2xl space-y-4">
               <div className="flex items-center justify-between border-b border-hairline pb-3">
                 <h3 className="text-sm font-bold text-foreground">Cadastrar Recompensa</h3>
-                <button onClick={() => setIsRewardModalOpen(false)} className="text-muted-foreground hover:text-foreground cursor-pointer">
+                <button
+                  onClick={() => setIsRewardModalOpen(false)}
+                  className="text-muted-foreground hover:text-foreground cursor-pointer"
+                >
                   <XCircle className="size-5" />
                 </button>
               </div>
 
               <form onSubmit={handleAddReward} className="space-y-4 text-xs">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Nome do Prêmio / Item</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Nome do Prêmio / Item
+                  </label>
                   <input
                     placeholder="Moletom Fluency AI"
                     value={rewardName}
@@ -624,7 +686,9 @@ function RetencaoPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Custo em Moedas</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Custo em Moedas
+                    </label>
                     <input
                       type="number"
                       value={rewardCost}
@@ -634,7 +698,9 @@ function RetencaoPage() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Estoque Inicial</label>
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Estoque Inicial
+                    </label>
                     <input
                       type="number"
                       value={rewardStock}
@@ -664,7 +730,6 @@ function RetencaoPage() {
             </div>
           </div>
         )}
-
       </div>
     </ModuleGate>
   );
