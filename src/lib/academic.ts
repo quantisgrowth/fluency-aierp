@@ -16,6 +16,8 @@ export type Course = {
   frequencia_minima: number;
   criterio_entrada: string | null;
   ementa: string | null;
+  carga_horaria_total: number | null;
+  duracao_aula_minutos: number | null;
 };
 
 export type CourseStage = {
@@ -48,6 +50,7 @@ export type SchoolClass = {
   data_inicio: string | null;
   data_fim: string | null;
   sala: string | null;
+  sala_id: string | null;
   plataforma_online: string | null;
   link_online: string | null;
   modalidade: string | null;
@@ -61,6 +64,23 @@ export type SchoolClass = {
   ementa: string | null;
   objetivos: string | null;
   frequencia_minima: number | null;
+};
+
+export type Classroom = {
+  id: string;
+  nome: string;
+  capacidade: number | null;
+  bloco_ou_andar: string | null;
+  status: "disponivel" | "ocupada" | "manutencao" | "inativa";
+};
+
+export type ClassMeeting = {
+  id: string;
+  turma_id: string;
+  dia_semana: string;
+  horario_inicio: string;
+  horario_fim: string;
+  sala_id: string | null;
 };
 
 export type Student = {

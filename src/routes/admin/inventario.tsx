@@ -47,6 +47,7 @@ import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { ModuleGate } from "@/components/module-gate";
 import { currentSchoolId } from "@/lib/academic";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/inventario")({
   head: () => ({
@@ -88,6 +89,7 @@ const SEGMENT_ICONS: Record<InventorySegment, any> = {
 };
 
 function InventarioPage() {
+  const [schoolId, setSchoolId] = useState("");
   const storageKeys = useRef<{
     items: string;
     rooms: string;
@@ -112,15 +114,18 @@ function InventarioPage() {
     let active = true;
     void currentSchoolId().then((schoolId) => {
       if (!active || !schoolId) return;
+      setSchoolId(schoolId);
       storageKeys.current = {
         items: `fluency-ai:inventory:items:v3:${schoolId}`,
         rooms: `fluency-ai:inventory:rooms:v3:${schoolId}`,
         classes: `fluency-ai:classes:list:v3:${schoolId}`,
         students: `fluency-ai:students:list:v3:${schoolId}`,
       };
+      let localRooms: Classroom[] = [];
       try {
         setItems(JSON.parse(window.localStorage.getItem(storageKeys.current.items) || "[]"));
-        setRooms(JSON.parse(window.localStorage.getItem(storageKeys.current.rooms) || "[]"));
+        localRooms = JSON.parse(window.localStorage.getItem(storageKeys.current.rooms) || "[]");
+        setRooms(localRooms);
         setClassesList(
           JSON.parse(window.localStorage.getItem(storageKeys.current.classes) || "[]"),
         );
@@ -133,6 +138,55 @@ function InventarioPage() {
         setClassesList([]);
         setStudentsList([]);
       }
+      void supabase
+        .from("salas")
+        .select("id,nome,capacidade,bloco_ou_andar,status,responsavel,recursos")
+        .eq("escola_id", schoolId)
+        .order("nome")
+        .then(async ({ data, error }) => {
+          if (!active || error) return;
+          let persistedRooms = data ?? [];
+          if (!persistedRooms.length && localRooms.length) {
+            const { data: migrated } = await supabase
+              .from("salas")
+              .insert(
+                localRooms.map((room) => ({
+                  escola_id: schoolId,
+                  nome: room.nome,
+                  capacidade: room.capacidade,
+                  bloco_ou_andar: room.blocoOuAndar || null,
+                  status:
+                    room.status === "Em Manutenção"
+                      ? "manutencao"
+                      : room.status === "Reservada"
+                        ? "ocupada"
+                        : "disponivel",
+                  responsavel: room.responsavel || null,
+                  recursos: room.recursos || [],
+                })),
+              )
+              .select("id,nome,capacidade,bloco_ou_andar,status,responsavel,recursos");
+            persistedRooms = migrated ?? [];
+          }
+          if (!persistedRooms.length) return;
+          setRooms(
+            persistedRooms.map((room) => ({
+              id: room.id,
+              nome: room.nome,
+              capacidade: room.capacidade || 1,
+              blocoOuAndar: room.bloco_ou_andar || "",
+              recursos: room.recursos || [],
+              status:
+                room.status === "manutencao"
+                  ? "Em Manutenção"
+                  : room.status === "ocupada"
+                    ? "Reservada"
+                    : "Disponível",
+              responsavel: room.responsavel || undefined,
+              corIdentificadora: "from-blue-500/20 to-indigo-500/20",
+            })),
+          );
+        });
     });
     return () => {
       active = false;
@@ -404,7 +458,7 @@ function InventarioPage() {
     setRoomFacilities(roomFacilities.filter((f) => f !== fac));
   };
 
-  const handleSaveRoom = (e: React.FormEvent) => {
+  const handleSaveRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!roomNome.trim()) {
       toast.error("Informe o nome da sala.");
@@ -418,7 +472,40 @@ function InventarioPage() {
       Boolean,
     );
 
-    const targetRoomId = editingRoom ? editingRoom.id : `sala-${Date.now()}`;
+    if (!schoolId) {
+      toast.error("Não foi possível identificar a escola.");
+      return;
+    }
+    const statusMap = {
+      Disponível: "disponivel",
+      "Em Manutenção": "manutencao",
+      Reservada: "ocupada",
+    } as const;
+    const roomPayload = {
+      escola_id: schoolId,
+      nome: roomNome.trim(),
+      capacidade: Number(roomCapacidade),
+      bloco_ou_andar: roomBloco.trim() || null,
+      status: statusMap[roomStatus],
+      responsavel: roomResponsavel.trim() || null,
+      recursos: finalRecursos,
+    };
+    const roomResult = editingRoom
+      ? await supabase
+          .from("salas")
+          .update(roomPayload)
+          .eq("id", editingRoom.id)
+          .eq("escola_id", schoolId)
+          .select("id")
+          .single()
+      : await supabase.from("salas").insert(roomPayload).select("id").single();
+    if (roomResult.error || !roomResult.data?.id) {
+      toast.error(
+        `Não foi possível salvar a sala: ${roomResult.error?.message || "sem confirmação"}`,
+      );
+      return;
+    }
+    const targetRoomId = roomResult.data.id;
 
     if (editingRoom) {
       setRooms((prev) =>
@@ -482,8 +569,17 @@ function InventarioPage() {
     setActiveTab("salas");
   };
 
-  const handleDeleteRoom = (id: string, nome: string) => {
+  const handleDeleteRoom = async (id: string, nome: string) => {
     if (confirm(`Deseja realmente remover a sala "${nome}"?`)) {
+      const { error } = await supabase
+        .from("salas")
+        .delete()
+        .eq("id", id)
+        .eq("escola_id", schoolId);
+      if (error) {
+        toast.error(`Não foi possível remover a sala: ${error.message}`);
+        return;
+      }
       setRooms((prev) => prev.filter((r) => r.id !== id));
       toast.success("Sala removida com sucesso.");
     }

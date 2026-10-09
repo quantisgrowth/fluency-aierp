@@ -22,6 +22,15 @@
 - [x] Arquivar etapas removidas sem apagar vínculos históricos das turmas.
 - [x] Reativar uma etapa quando seu código voltar ao planejamento do curso.
 - [x] Criar uma nova versão ao enviar outro documento de ementa.
+- [x] Explicar no curso onde cadastrar as etapas usadas pelas turmas.
+- [x] Persistir professores e coordenadores do diretório de usuários no Supabase.
+- [x] Definir carga horária total e duração padrão da aula no curso.
+- [x] Calcular a previsão de término pela carga horária e agenda semanal.
+- [x] Permitir vários encontros semanais, cada um com dia, início e término próprios.
+- [x] Persistir salas do inventário e selecioná-las na turma.
+- [x] Permitir turma presencial sem sala definida de forma explícita.
+- [x] Herdar o critério de entrada do curso e permitir exceção na turma.
+- [x] Limitar os objetivos específicos da turma a 500 caracteres.
 
 ## Próximas evoluções
 
@@ -48,6 +57,12 @@
 - **Etapa já utilizada em turma:** remover a etapa do formulário apenas a arquiva; o registro não é apagado.
 - **Códigos de etapa duplicados:** o formulário bloqueia o salvamento antes de alterar o curso.
 - **Sobrescrita da ementa anterior:** cada novo arquivo recebe uma versão incremental.
+- **Professor ou coordenador ausente:** o diretório passa a consultar `usuarios.role` na escola atual.
+- **Sala divergente entre módulos:** salas passam a ter uma base persistente comum com isolamento por escola.
+- **Conflito de agenda:** cada encontro é comparado por professor, sala, dia, horário e vigência.
+- **Previsão desatualizada:** a data final é recalculada quando carga horária, início ou encontros mudam.
+- **Agenda antiga:** os campos legados continuam preenchidos com o primeiro encontro para compatibilidade.
+- **Falha entre turma e encontros:** se os encontros não forem gravados, o sistema informa o erro; a evolução seguinte deve transformar a operação em uma RPC transacional.
 - **Ementa alterada silenciosamente:** os documentos possuem versão; a evolução seguinte
   deve fixar a versão escolhida em turmas já iniciadas.
 - **Colaborador removido:** os nomes são preservados como fotografia histórica do vínculo.

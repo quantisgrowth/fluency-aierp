@@ -76,6 +76,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<SchoolUser[]>([]);
   const [companies, setCompanies] = useState<string[]>([]);
   const [authenticatedUserId, setAuthenticatedUserId] = useState("");
+  const [schoolId, setSchoolId] = useState("");
   const [adminProfile, setAdminProfile] = useState<AdminProfile>(DEFAULT_PROFILE);
   const [activeRole, setActiveRoleState] = useState<UserRole>("admin");
   const [activeCompany, setActiveCompanyState] = useState<string>("");
@@ -113,6 +114,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           : Promise.resolve({ data: [], error: null }),
       ]);
       if (!mounted) return;
+      setSchoolId(membership?.escola_id || "");
 
       const name =
         profileResult.data?.nome?.trim() ||
@@ -151,6 +153,41 @@ export function UserProvider({ children }: { children: ReactNode }) {
         professor: "professor",
       };
       setActiveRoleState(roleMap[membership?.papel || profileResult.data?.role || ""] || "admin");
+      if (membership?.escola_id) {
+        const { data: directory } = await supabase
+          .from("usuarios")
+          .select("id,nome,email,role")
+          .eq("escola_id", membership.escola_id)
+          .eq("status", "ativo")
+          .order("nome");
+        if (mounted) {
+          setUsers(
+            (directory ?? []).map((item) => {
+              const mappedRole: UserRole =
+                item.role === "professor"
+                  ? "professor"
+                  : item.role === "pedagogico"
+                    ? "coordenador"
+                    : item.role === "gestor"
+                      ? "admin"
+                      : "operador";
+              return {
+                id: item.id,
+                name: item.nome,
+                email: item.email,
+                role: mappedRole,
+                permissions: {
+                  crm: mappedRole === "admin" || mappedRole === "operador",
+                  financeiro: mappedRole === "admin" || mappedRole === "operador",
+                  pedagogico: true,
+                  success: mappedRole === "admin" || mappedRole === "coordenador",
+                },
+                companies: unitNames,
+              };
+            }),
+          );
+        }
+      }
       try {
         window.localStorage.removeItem(STORAGE_ROLE_KEY);
         window.localStorage.removeItem(STORAGE_COMPANY_KEY);
@@ -180,8 +217,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
     permissions: UserPermissions,
     companies: string[],
   ) => {
+    const temporaryId = crypto.randomUUID();
     const newUser: SchoolUser = {
-      id: Date.now().toString(),
+      id: temporaryId,
       name,
       email,
       role,
@@ -189,6 +227,36 @@ export function UserProvider({ children }: { children: ReactNode }) {
       companies,
     };
     saveUsers([...users, newUser]);
+    if (schoolId) {
+      const roleMap: Record<UserRole, string> = {
+        admin: "gestor",
+        operador: "secretaria",
+        professor: "professor",
+        coordenador: "pedagogico",
+      };
+      void supabase
+        .from("usuarios")
+        .insert({
+          escola_id: schoolId,
+          nome: name.trim(),
+          email: email.trim().toLowerCase(),
+          role: roleMap[role],
+          cargo: role === "coordenador" ? "Coordenador" : role === "professor" ? "Professor" : null,
+          status: "ativo",
+        })
+        .select("id")
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            setUsers((current) => current.filter((item) => item.id !== temporaryId));
+            toast.error(`Não foi possível salvar o usuário: ${error.message}`);
+            return;
+          }
+          setUsers((current) =>
+            current.map((item) => (item.id === temporaryId ? { ...item, id: data.id } : item)),
+          );
+        });
+    }
   };
 
   const updateUser = (
@@ -202,10 +270,41 @@ export function UserProvider({ children }: { children: ReactNode }) {
     saveUsers(
       users.map((u) => (u.id === id ? { ...u, name, email, role, permissions, companies } : u)),
     );
+    if (schoolId) {
+      const roleMap: Record<UserRole, string> = {
+        admin: "gestor",
+        operador: "secretaria",
+        professor: "professor",
+        coordenador: "pedagogico",
+      };
+      void supabase
+        .from("usuarios")
+        .update({
+          nome: name.trim(),
+          email: email.trim().toLowerCase(),
+          role: roleMap[role],
+          cargo: role === "coordenador" ? "Coordenador" : role === "professor" ? "Professor" : null,
+        })
+        .eq("id", id)
+        .eq("escola_id", schoolId)
+        .then(({ error }) => {
+          if (error) toast.error(`Não foi possível atualizar o usuário: ${error.message}`);
+        });
+    }
   };
 
   const deleteUser = (id: string) => {
     saveUsers(users.filter((u) => u.id !== id));
+    if (schoolId) {
+      void supabase
+        .from("usuarios")
+        .delete()
+        .eq("id", id)
+        .eq("escola_id", schoolId)
+        .then(({ error }) => {
+          if (error) toast.error(`Não foi possível remover o usuário: ${error.message}`);
+        });
+    }
   };
 
   const updateProfile = (profile: Partial<AdminProfile>) => {

@@ -11,6 +11,7 @@ import {
   Plus,
   Upload,
   Users,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,8 @@ import {
   currentSchoolId,
   readableError,
   type AcademicStaff,
+  type ClassMeeting,
+  type Classroom,
   type Course,
   type CourseStage,
   type SchoolClass,
@@ -56,7 +59,43 @@ function emptyCourseForm() {
     criterio: "",
     ementa: "",
     etapas: "",
+    cargaHoraria: "60",
+    duracaoAula: "90",
   };
+}
+
+type MeetingDraft = {
+  id?: string;
+  dia: string;
+  inicio: string;
+  fim: string;
+};
+
+function emptyMeeting(): MeetingDraft {
+  return { dia: "segunda", inicio: "", fim: "" };
+}
+
+function minutesBetween(start: string, end: string) {
+  const [startHour, startMinute] = start.split(":").map(Number);
+  const [endHour, endMinute] = end.split(":").map(Number);
+  return endHour * 60 + endMinute - (startHour * 60 + startMinute);
+}
+
+function estimatedEndDate(start: string, totalHours: number, encounters: MeetingDraft[]) {
+  if (!start || totalHours <= 0) return "";
+  const weeklyMinutes = encounters.reduce(
+    (total, meeting) =>
+      total +
+      (meeting.inicio && meeting.fim
+        ? Math.max(0, minutesBetween(meeting.inicio, meeting.fim))
+        : 0),
+    0,
+  );
+  if (!weeklyMinutes) return "";
+  const weeks = Math.ceil((totalHours * 60) / weeklyMinutes);
+  const date = new Date(`${start}T12:00:00`);
+  date.setDate(date.getDate() + weeks * 7);
+  return date.toISOString().slice(0, 10);
 }
 
 function emptyClassForm() {
@@ -74,13 +113,13 @@ function emptyClassForm() {
     objetivos: "",
     frequencia: "",
     sala: "",
+    salaId: "",
+    semSala: false,
     plataforma: "",
     linkOnline: "",
     dataInicio: "",
     dataFim: "",
-    horarioInicio: "",
-    horarioFim: "",
-    diasSemana: [] as string[],
+    encontros: [emptyMeeting()] as MeetingDraft[],
   };
 }
 
@@ -90,6 +129,8 @@ export function AcademicClassesPage() {
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [stages, setStages] = useState<CourseStage[]>([]);
   const [staff, setStaff] = useState<AcademicStaff[]>([]);
+  const [rooms, setRooms] = useState<Classroom[]>([]);
+  const [meetings, setMeetings] = useState<ClassMeeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -102,51 +143,51 @@ export function AcademicClassesPage() {
   const [group, setGroup] = useState(emptyClassForm);
 
   async function refresh(id: string) {
-    const [courseResult, classResult, stageResult, memberResult] = await Promise.all([
-      supabase
-        .from("cursos")
-        .select(
-          "id,nome,codigo,nivel,valor_base,ativo,categoria,exige_nivelamento,exige_avaliacao_pratica,exige_estagio,exige_projeto_final,emite_certificado,frequencia_minima,criterio_entrada,ementa",
-        )
-        .eq("escola_id", id)
-        .order("nome"),
-      supabase
-        .from("turmas")
-        .select(
-          "id,curso_id,nome,nivel,status,capacidade_maxima,professor_id,professor_nome,dias_semana,horario_inicio,horario_fim,data_inicio,data_fim,sala,plataforma_online,link_online,modalidade,coordenador_id,coordenador_nome,curso_etapa_id,idade_minima,idade_maxima,faixa_etaria,criterio_entrada,ementa,objetivos,frequencia_minima",
-        )
-        .eq("escola_id", id)
-        .order("nome"),
-      supabase
-        .from("curso_etapas")
-        .select("id,curso_id,codigo,nome,descricao,ordem")
-        .eq("escola_id", id)
-        .eq("ativo", true)
-        .order("ordem"),
-      supabase
-        .from("escola_membros")
-        .select("user_id,papel")
-        .eq("escola_id", id)
-        .eq("status", "ativo")
-        .in("papel", ["professor", "pedagogico"]),
-    ]);
+    const [courseResult, classResult, stageResult, userResult, roomResult, meetingResult] =
+      await Promise.all([
+        supabase
+          .from("cursos")
+          .select(
+            "id,nome,codigo,nivel,valor_base,ativo,categoria,exige_nivelamento,exige_avaliacao_pratica,exige_estagio,exige_projeto_final,emite_certificado,frequencia_minima,criterio_entrada,ementa,carga_horaria_total,duracao_aula_minutos",
+          )
+          .eq("escola_id", id)
+          .order("nome"),
+        supabase
+          .from("turmas")
+          .select(
+            "id,curso_id,nome,nivel,status,capacidade_maxima,professor_id,professor_nome,dias_semana,horario_inicio,horario_fim,data_inicio,data_fim,sala,sala_id,plataforma_online,link_online,modalidade,coordenador_id,coordenador_nome,curso_etapa_id,idade_minima,idade_maxima,faixa_etaria,criterio_entrada,ementa,objetivos,frequencia_minima",
+          )
+          .eq("escola_id", id)
+          .order("nome"),
+        supabase
+          .from("curso_etapas")
+          .select("id,curso_id,codigo,nome,descricao,ordem")
+          .eq("escola_id", id)
+          .eq("ativo", true)
+          .order("ordem"),
+        supabase
+          .from("usuarios")
+          .select("id,nome,role,cargo,status")
+          .eq("escola_id", id)
+          .eq("status", "ativo")
+          .in("role", ["professor", "pedagogico"]),
+        supabase
+          .from("salas")
+          .select("id,nome,capacidade,bloco_ou_andar,status")
+          .eq("escola_id", id)
+          .neq("status", "inativa")
+          .order("nome"),
+        supabase
+          .from("turma_encontros")
+          .select("id,turma_id,dia_semana,horario_inicio,horario_fim,sala_id")
+          .eq("escola_id", id),
+      ]);
     if (courseResult.error) throw courseResult.error;
     if (classResult.error) throw classResult.error;
     if (stageResult.error) throw stageResult.error;
-    if (memberResult.error) throw memberResult.error;
-    const memberIds = (memberResult.data ?? []).map((item) => item.user_id);
-    const userResult = memberIds.length
-      ? await supabase
-          .from("usuarios")
-          .select("id,auth_user_id,nome,status")
-          .eq("escola_id", id)
-          .eq("status", "ativo")
-          .in("auth_user_id", memberIds)
-      : { data: [], error: null };
     if (userResult.error) throw userResult.error;
-    const membershipByUser = new Map(
-      (memberResult.data ?? []).map((item) => [item.user_id, item.papel]),
-    );
+    if (roomResult.error) throw roomResult.error;
+    if (meetingResult.error) throw meetingResult.error;
     setCourses((courseResult.data ?? []) as Course[]);
     setClasses((classResult.data ?? []) as SchoolClass[]);
     setStages((stageResult.data ?? []) as CourseStage[]);
@@ -154,10 +195,11 @@ export function AcademicClassesPage() {
       (userResult.data ?? []).map((item) => ({
         id: item.id,
         nome: item.nome,
-        papel:
-          membershipByUser.get(item.auth_user_id) === "professor" ? "professor" : "coordenador",
+        papel: item.role === "professor" ? "professor" : "coordenador",
       })),
     );
+    setRooms((roomResult.data ?? []) as Classroom[]);
+    setMeetings((meetingResult.data ?? []) as ClassMeeting[]);
   }
   useEffect(() => {
     let active = true;
@@ -201,6 +243,8 @@ export function AcademicClassesPage() {
       certificado: item.emite_certificado,
       criterio: item.criterio_entrada || "",
       ementa: item.ementa || "",
+      cargaHoraria: String(item.carga_horaria_total || 60),
+      duracaoAula: String(item.duracao_aula_minutos || 90),
       etapas: stages
         .filter((stage) => stage.curso_id === item.id)
         .sort((a, b) => a.ordem - b.ordem)
@@ -251,6 +295,8 @@ export function AcademicClassesPage() {
         emite_certificado: course.certificado,
         criterio_entrada: course.criterio.trim() || null,
         ementa: course.ementa.trim() || null,
+        carga_horaria_total: Number(course.cargaHoraria || 0),
+        duracao_aula_minutos: Number(course.duracaoAula || 0),
       };
       const courseResult = editingCourseId
         ? await supabase
@@ -359,13 +405,29 @@ export function AcademicClassesPage() {
       objetivos: item.objetivos || "",
       frequencia: item.frequencia_minima === null ? "" : String(item.frequencia_minima),
       sala: item.sala || "",
+      salaId: item.sala_id || "",
+      semSala: !item.sala_id && !item.sala,
       plataforma: item.plataforma_online || "",
       linkOnline: item.link_online || "",
       dataInicio: item.data_inicio || "",
       dataFim: item.data_fim || "",
-      horarioInicio: item.horario_inicio?.slice(0, 5) || "",
-      horarioFim: item.horario_fim?.slice(0, 5) || "",
-      diasSemana: item.dias_semana || [],
+      encontros: (() => {
+        const savedMeetings = meetings.filter((meeting) => meeting.turma_id === item.id);
+        if (savedMeetings.length) {
+          return savedMeetings.map((meeting) => ({
+            id: meeting.id,
+            dia: meeting.dia_semana,
+            inicio: meeting.horario_inicio.slice(0, 5),
+            fim: meeting.horario_fim.slice(0, 5),
+          }));
+        }
+        const legacyMeetings = (item.dias_semana || []).map((day) => ({
+          dia: day,
+          inicio: item.horario_inicio?.slice(0, 5) || "",
+          fim: item.horario_fim?.slice(0, 5) || "",
+        }));
+        return legacyMeetings.length ? legacyMeetings : [emptyMeeting()];
+      })(),
     });
     setClassOpen(true);
   }
@@ -378,44 +440,60 @@ export function AcademicClassesPage() {
     const selectedCoordinator = staff.find((item) => item.id === group.coordenadorId);
     const minimumAge = group.idadeMinima ? Number(group.idadeMinima) : null;
     const maximumAge = group.idadeMaxima ? Number(group.idadeMaxima) : null;
+    const validMeetings = group.encontros.filter(
+      (meeting) => meeting.dia && meeting.inicio && meeting.fim,
+    );
+    const selectedRoom = rooms.find((room) => room.id === group.salaId);
     if (minimumAge !== null && maximumAge !== null && minimumAge > maximumAge) {
       toast.error("A idade mínima não pode ser maior que a idade máxima.");
       return;
     }
-    if ((group.modalidade === "presencial" || group.modalidade === "hibrida") && !group.sala) {
-      toast.error("Informe a sala para turmas presenciais ou híbridas.");
+    if (
+      (group.modalidade === "presencial" || group.modalidade === "hibrida") &&
+      !group.salaId &&
+      !group.semSala
+    ) {
+      toast.error("Selecione uma sala ou marque “Sem sala definida”.");
       return;
     }
     if ((group.modalidade === "online" || group.modalidade === "hibrida") && !group.linkOnline) {
       toast.error("Informe o link das aulas online.");
       return;
     }
-    if (group.dataInicio && group.dataFim && group.dataInicio > group.dataFim) {
-      toast.error("A data de término deve ser posterior à data de início.");
+    if (!validMeetings.length) {
+      toast.error("Cadastre ao menos um dia e horário de aula.");
       return;
     }
-    if (group.horarioInicio && group.horarioFim && group.horarioInicio >= group.horarioFim) {
-      toast.error("O horário de término deve ser posterior ao horário de início.");
+    if (validMeetings.some((meeting) => meeting.inicio >= meeting.fim)) {
+      toast.error("O horário final de cada encontro deve ser posterior ao inicial.");
       return;
     }
-    const conflictingClass = classes.find((item) => {
-      if (item.id === editingClassId) return false;
-      if (!group.horarioInicio || !group.horarioFim || !item.horario_inicio || !item.horario_fim) {
-        return false;
-      }
+    if (group.objetivos.length > 500) {
+      toast.error("Os objetivos da turma devem ter no máximo 500 caracteres.");
+      return;
+    }
+    const conflictingMeeting = meetings.find((savedMeeting) => {
+      const relatedClass = classes.find((item) => item.id === savedMeeting.turma_id);
+      if (!relatedClass || relatedClass.id === editingClassId) return false;
       const sameResource =
-        (group.professorId && item.professor_id === group.professorId) ||
-        (group.sala && item.sala?.toLowerCase() === group.sala.trim().toLowerCase());
-      const sameDay = group.diasSemana.some((day) => item.dias_semana?.includes(day));
-      const timeOverlap =
-        group.horarioInicio < item.horario_fim && group.horarioFim > item.horario_inicio;
+        (group.professorId && relatedClass.professor_id === group.professorId) ||
+        (group.salaId && savedMeeting.sala_id === group.salaId);
+      const overlappingDraft = validMeetings.some(
+        (draft) =>
+          draft.dia === savedMeeting.dia_semana &&
+          draft.inicio < savedMeeting.horario_fim &&
+          draft.fim > savedMeeting.horario_inicio,
+      );
       const dateOverlap =
-        (!group.dataFim || !item.data_inicio || group.dataFim >= item.data_inicio) &&
-        (!item.data_fim || !group.dataInicio || item.data_fim >= group.dataInicio);
-      return sameResource && sameDay && timeOverlap && dateOverlap;
+        (!group.dataFim ||
+          !relatedClass.data_inicio ||
+          group.dataFim >= relatedClass.data_inicio) &&
+        (!relatedClass.data_fim || !group.dataInicio || relatedClass.data_fim >= group.dataInicio);
+      return sameResource && overlappingDraft && dateOverlap;
     });
-    if (conflictingClass) {
-      toast.error(`Conflito de agenda com a turma “${conflictingClass.nome}”.`);
+    if (conflictingMeeting) {
+      const conflictClass = classes.find((item) => item.id === conflictingMeeting.turma_id);
+      toast.error(`Conflito de agenda com a turma “${conflictClass?.nome || "existente"}”.`);
       return;
     }
     setBusy(true);
@@ -443,14 +521,20 @@ export function AcademicClassesPage() {
         frequencia_minima: group.frequencia
           ? Number(group.frequencia)
           : selectedCourse?.frequencia_minima || null,
-        sala: group.sala.trim() || null,
+        sala_id: group.semSala ? null : group.salaId || null,
+        sala: group.semSala ? null : selectedRoom?.nome || null,
         plataforma_online: group.plataforma.trim() || null,
         link_online: group.linkOnline.trim() || null,
         data_inicio: group.dataInicio || null,
-        data_fim: group.dataFim || null,
-        horario_inicio: group.horarioInicio || null,
-        horario_fim: group.horarioFim || null,
-        dias_semana: group.diasSemana.length ? group.diasSemana : null,
+        data_fim:
+          estimatedEndDate(
+            group.dataInicio,
+            Number(selectedCourse?.carga_horaria_total || 0),
+            validMeetings,
+          ) || null,
+        horario_inicio: validMeetings[0]?.inicio || null,
+        horario_fim: validMeetings[0]?.fim || null,
+        dias_semana: validMeetings.map((meeting) => meeting.dia),
       };
       const result = editingClassId
         ? await supabase
@@ -461,8 +545,29 @@ export function AcademicClassesPage() {
             .select("id")
             .single()
         : await supabase.from("turmas").insert(payload).select("id").single();
-      const { error: saveError } = result;
+      const { data: savedClass, error: saveError } = result;
       if (saveError) throw saveError;
+      const classId = savedClass?.id;
+      if (!classId) throw new Error("O banco não confirmou a turma salva.");
+      if (editingClassId) {
+        const { error: deleteMeetingsError } = await supabase
+          .from("turma_encontros")
+          .delete()
+          .eq("escola_id", schoolId)
+          .eq("turma_id", classId);
+        if (deleteMeetingsError) throw deleteMeetingsError;
+      }
+      const { error: meetingError } = await supabase.from("turma_encontros").insert(
+        validMeetings.map((meeting) => ({
+          escola_id: schoolId,
+          turma_id: classId,
+          dia_semana: meeting.dia,
+          horario_inicio: meeting.inicio,
+          horario_fim: meeting.fim,
+          sala_id: group.semSala ? null : group.salaId || null,
+        })),
+      );
+      if (meetingError) throw meetingError;
       toast.success(editingClassId ? "Turma atualizada." : "Turma criada.");
       setGroup(emptyClassForm());
       setEditingClassId(null);
@@ -683,6 +788,20 @@ export function AcademicClassesPage() {
               value={course.frequencia}
               set={(v) => setCourse({ ...course, frequencia: v })}
             />
+            <Field
+              label="Carga horária total (horas)"
+              type="number"
+              value={course.cargaHoraria}
+              set={(v) => setCourse({ ...course, cargaHoraria: v })}
+              required
+            />
+            <Field
+              label="Duração padrão da aula (minutos)"
+              type="number"
+              value={course.duracaoAula}
+              set={(v) => setCourse({ ...course, duracaoAula: v })}
+              required
+            />
             <Long
               label="Critério de entrada padrão"
               value={course.criterio}
@@ -703,7 +822,8 @@ export function AcademicClassesPage() {
                 placeholder={"A1.1 | Fundamentos\nA1.2 | Comunicação básica\nA2 | Consolidação"}
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                Informe uma etapa por linha. Use “código | nome” para organizar o percurso.
+                Cadastre aqui as etapas que aparecerão no modal de Turmas. Informe uma por linha e
+                use “código | nome” para organizar o percurso.
               </p>
             </div>
             <div className="rounded-xl border border-dashed border-hairline p-4 md:col-span-2">
@@ -833,6 +953,11 @@ export function AcademicClassesPage() {
                     </option>
                   ))}
               </select>
+              {group.cursoId && !stages.some((item) => item.curso_id === group.cursoId) && (
+                <p className="mt-1 text-xs text-amber-500">
+                  Este curso ainda não possui etapas. Edite o curso no catálogo para cadastrá-las.
+                </p>
+              )}
             </div>
             <Field
               label="Capacidade"
@@ -874,65 +999,135 @@ export function AcademicClassesPage() {
               value={group.dataInicio}
               set={(v) => setGroup({ ...group, dataInicio: v })}
             />
-            <Field
-              label="Data prevista de término"
-              type="date"
-              value={group.dataFim}
-              set={(v) => setGroup({ ...group, dataFim: v })}
-            />
-            <Field
-              label="Horário de início"
-              type="time"
-              value={group.horarioInicio}
-              set={(v) => setGroup({ ...group, horarioInicio: v })}
-            />
-            <Field
-              label="Horário de término"
-              type="time"
-              value={group.horarioFim}
-              set={(v) => setGroup({ ...group, horarioFim: v })}
-            />
-            <div className="md:col-span-2">
-              <Label>Dias da semana</Label>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {[
-                  ["segunda", "Seg"],
-                  ["terca", "Ter"],
-                  ["quarta", "Qua"],
-                  ["quinta", "Qui"],
-                  ["sexta", "Sex"],
-                  ["sabado", "Sáb"],
-                  ["domingo", "Dom"],
-                ].map(([value, label]) => {
-                  const selected = group.diasSemana.includes(value);
-                  return (
-                    <Button
-                      key={value}
-                      type="button"
-                      size="sm"
-                      variant={selected ? "default" : "outline"}
-                      onClick={() =>
-                        setGroup({
-                          ...group,
-                          diasSemana: selected
-                            ? group.diasSemana.filter((day) => day !== value)
-                            : [...group.diasSemana, value],
-                        })
-                      }
-                    >
-                      {label}
-                    </Button>
-                  );
-                })}
+            <div>
+              <Label>Previsão de término</Label>
+              <Input
+                value={
+                  estimatedEndDate(
+                    group.dataInicio,
+                    Number(
+                      courses.find((item) => item.id === group.cursoId)?.carga_horaria_total || 0,
+                    ),
+                    group.encontros,
+                  ) || "Aguardando curso, início e horários"
+                }
+                readOnly
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Calculada pela carga horária do curso e pelos encontros semanais.
+              </p>
+            </div>
+            <div className="space-y-3 md:col-span-2">
+              <div className="flex items-center justify-between">
+                <Label>Encontros semanais</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    setGroup({ ...group, encontros: [...group.encontros, emptyMeeting()] })
+                  }
+                >
+                  <Plus className="mr-2 size-4" /> Incluir horário
+                </Button>
               </div>
+              {group.encontros.map((meeting, index) => (
+                <div
+                  key={meeting.id || index}
+                  className="grid gap-2 rounded-xl border border-hairline p-3 sm:grid-cols-[1fr_1fr_1fr_auto]"
+                >
+                  <select
+                    aria-label={`Dia do encontro ${index + 1}`}
+                    className={selectStyle}
+                    value={meeting.dia}
+                    onChange={(event) => {
+                      const encontros = [...group.encontros];
+                      encontros[index] = { ...meeting, dia: event.target.value };
+                      setGroup({ ...group, encontros });
+                    }}
+                  >
+                    <option value="segunda">Segunda-feira</option>
+                    <option value="terca">Terça-feira</option>
+                    <option value="quarta">Quarta-feira</option>
+                    <option value="quinta">Quinta-feira</option>
+                    <option value="sexta">Sexta-feira</option>
+                    <option value="sabado">Sábado</option>
+                    <option value="domingo">Domingo</option>
+                  </select>
+                  <Input
+                    aria-label={`Início do encontro ${index + 1}`}
+                    type="time"
+                    value={meeting.inicio}
+                    onChange={(event) => {
+                      const encontros = [...group.encontros];
+                      encontros[index] = { ...meeting, inicio: event.target.value };
+                      setGroup({ ...group, encontros });
+                    }}
+                  />
+                  <Input
+                    aria-label={`Fim do encontro ${index + 1}`}
+                    type="time"
+                    value={meeting.fim}
+                    onChange={(event) => {
+                      const encontros = [...group.encontros];
+                      encontros[index] = { ...meeting, fim: event.target.value };
+                      setGroup({ ...group, encontros });
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    aria-label={`Remover encontro ${index + 1}`}
+                    disabled={group.encontros.length === 1}
+                    onClick={() =>
+                      setGroup({
+                        ...group,
+                        encontros: group.encontros.filter(
+                          (_, meetingIndex) => meetingIndex !== index,
+                        ),
+                      })
+                    }
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+              ))}
             </div>
             {(group.modalidade === "presencial" || group.modalidade === "hibrida") && (
-              <Field
-                label="Sala *"
-                value={group.sala}
-                set={(v) => setGroup({ ...group, sala: v })}
-                required
-              />
+              <div className="space-y-2 md:col-span-2">
+                <Label>Sala</Label>
+                <div className="flex gap-3">
+                  <select
+                    className={selectStyle}
+                    value={group.salaId}
+                    disabled={group.semSala}
+                    onChange={(event) => setGroup({ ...group, salaId: event.target.value })}
+                  >
+                    <option value="">Selecione uma sala cadastrada</option>
+                    {rooms.map((room) => (
+                      <option key={room.id} value={room.id}>
+                        {room.nome}
+                        {room.capacidade ? ` · ${room.capacidade} lugares` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <label className="flex shrink-0 items-center gap-2 rounded-lg border border-hairline px-3 text-sm">
+                    <Checkbox
+                      checked={group.semSala}
+                      onCheckedChange={(value) =>
+                        setGroup({ ...group, semSala: Boolean(value), salaId: "" })
+                      }
+                    />
+                    Sem sala definida
+                  </label>
+                </div>
+                {!rooms.length && (
+                  <p className="text-xs text-amber-500">
+                    Nenhuma sala cadastrada em Inventário & Salas.
+                  </p>
+                )}
+              </div>
             )}
             {(group.modalidade === "online" || group.modalidade === "hibrida") && (
               <>
@@ -963,11 +1158,17 @@ export function AcademicClassesPage() {
               value={group.idadeMaxima}
               set={(v) => setGroup({ ...group, idadeMaxima: v })}
             />
-            <Field
-              label="Critério de entrada"
-              value={group.criterio}
-              set={(v) => setGroup({ ...group, criterio: v })}
-            />
+            <div>
+              <Label>Critério de entrada</Label>
+              <Textarea
+                value={group.criterio}
+                onChange={(event) => setGroup({ ...group, criterio: event.target.value })}
+                placeholder="Herdado do curso; ajuste apenas se esta turma possuir uma exceção."
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                O padrão é cadastrado no curso e carregado automaticamente aqui.
+              </p>
+            </div>
             <Field
               label="Frequência mínima (%)"
               type="number"
@@ -981,11 +1182,19 @@ export function AcademicClassesPage() {
                   "Cadastre a ementa no curso para manter todas as turmas consistentes."}
               </p>
             </div>
-            <Long
-              label="Objetivos da turma"
-              value={group.objetivos}
-              set={(v) => setGroup({ ...group, objetivos: v })}
-            />
+            <div className="md:col-span-2">
+              <div className="flex justify-between gap-3">
+                <Label>Objetivos da turma</Label>
+                <span className="text-xs text-muted-foreground">{group.objetivos.length}/500</span>
+              </div>
+              <Textarea
+                className="min-h-28 resize-y"
+                maxLength={500}
+                value={group.objetivos}
+                onChange={(event) => setGroup({ ...group, objetivos: event.target.value })}
+                placeholder="Descreva os resultados específicos esperados para esta turma."
+              />
+            </div>
           </form>
           <Footer
             form="class-form"
