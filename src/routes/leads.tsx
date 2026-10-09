@@ -33,6 +33,7 @@ import { SectionHeader } from "@/components/kit/section-header";
 import { toast } from "sonner";
 import { currentSchoolId } from "@/lib/academic";
 import { ModuleGate } from "@/components/module-gate";
+import * as XLSX from "xlsx";
 
 export const Route = createFileRoute("/leads")({
   head: () => ({
@@ -388,10 +389,10 @@ function LeadsPage() {
         const leadOrigem = row[origemIdx] || "Importação de Planilha";
         const leadTagsRaw = row[tagsIdx] || "Importado";
         const leadTags = leadTagsRaw.split(/[,\/|]/).map((t) => t.trim()).filter(Boolean);
-        const leadResp = row[respIdx] || "Próprio Aluno / Autônomo";
-        const leadCity = row[cityIdx] || "São Paulo";
+        const leadResp = row[respIdx] || "";
+        const leadCity = row[cityIdx] || "";
         const leadDoc = row[docIdx] || "";
-        const leadNotes = row[notesIdx] || "Importado via planilha em lote.";
+        const leadNotes = row[notesIdx] || "";
 
         return {
           id: `lead-imp-${Date.now()}-${idx}`,
@@ -413,7 +414,7 @@ function LeadsPage() {
           complemento: "",
           bairro: "",
           cidade: leadCity,
-          uf: "SP",
+          uf: "",
           anotacoes: leadNotes,
           createdAt: new Date().toISOString(),
         };
@@ -422,24 +423,29 @@ function LeadsPage() {
     setPreviewLeads(leadsGenerated);
   };
 
-  const handleFileUpload = (file: File) => {
+  const handleFileUpload = async (file: File) => {
     setImportFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      setImportRawText(text);
-      parseDelimitedText(text);
-    };
-    reader.readAsText(file);
+    try {
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]!];
+      const rows = XLSX.utils.sheet_to_csv(worksheet, { FS: "\t" });
+      setImportRawText(rows);
+      parseDelimitedText(rows);
+    } catch {
+      toast.error("Não foi possível ler a planilha. Use o modelo CSV ou XLSX disponível.");
+    }
   };
 
-  const handleDownloadTemplate = () => {
-    const csvContent =
-      "Nome,Telefone,Email,Origem,Tags / Nivel,Responsavel (Pai/Mae),Cidade,CPF/Documento,Anotacoes\n" +
-      "Mariana Carvalho,+55 (11) 99123-4567,mariana@gmail.com,Tráfego Pago (Instagram Ad),Adulto/Iniciante,Próprio Aluno,São Paulo,123.456.789-00,Interesse em inglês para viagens\n" +
-      "Enzo Gabriel Santos,+55 (11) 98774-1234,enzo.mae@outlook.com,Indicação de Aluno,Kids/Inglês,Luciana Santos (Mãe),São Paulo,987.654.321-11,Procurando turma após as 18h\n" +
-      "Rodrigo Mendes,+55 (11) 97744-8899,rodrigo@empresa.com.br,Parceria Corporativa (B2B),Business/Avançado,Autônomo,São Paulo,456.789.123-22,Inglês para apresentações corporativas";
-
+  const leadTemplateHeaders = ["Nome", "Telefone", "Email", "Origem", "Tags / Nivel", "Responsavel (Pai/Mae)", "Cidade", "CPF/Documento", "Anotacoes"];
+  const handleDownloadTemplate = (format: "csv" | "xlsx") => {
+    if (format === "xlsx") {
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([leadTemplateHeaders]), "Modelo Leads");
+      XLSX.writeFile(workbook, "modelo_importacao_leads_fluency_ai.xlsx");
+      toast.success("Modelo XLSX baixado.");
+      return;
+    }
+    const csvContent = `\uFEFF${leadTemplateHeaders.join(";")}`;
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -448,7 +454,8 @@ function LeadsPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success("Modelo de planilha baixado com sucesso!");
+    URL.revokeObjectURL(url);
+    toast.success("Modelo CSV baixado.");
   };
 
   const handleConfirmImport = () => {
@@ -1361,14 +1368,11 @@ function LeadsPage() {
                 </button>
               </div>
 
-              <button
-                type="button"
-                onClick={handleDownloadTemplate}
-                className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-medium cursor-pointer"
-              >
-                <Download className="size-3.5" />
-                <span>Baixar Modelo Padrão (.csv)</span>
-              </button>
+              <div className="flex items-center gap-3 text-xs font-medium">
+                <Download className="size-3.5 text-primary" />
+                <button type="button" onClick={() => handleDownloadTemplate("csv")} className="text-primary hover:underline">Modelo CSV</button>
+                <button type="button" onClick={() => handleDownloadTemplate("xlsx")} className="text-primary hover:underline">Modelo XLSX</button>
+              </div>
             </div>
 
             {/* Content Tab 1: File Upload */}
@@ -1418,7 +1422,7 @@ function LeadsPage() {
                       )}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Suporta arquivos .CSV, .TSV, .TXT delimitados por vírgula ou ponto-e-vírgula
+                      Suporta arquivos .CSV, .TSV, .TXT, .XLS e .XLSX
                     </p>
                   </div>
                 </div>

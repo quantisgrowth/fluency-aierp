@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
-import { BookOpen, Camera, GraduationCap, History, Loader2, Plus, Search, UserRound, Users, X } from "lucide-react";
+import { AlertCircle, BookOpen, Camera, CheckCircle2, Download, FileSpreadsheet, GraduationCap, History, Loader2, Plus, Search, Upload, UserRound, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase";
 import { currentSchoolId, readableError, type Enrollment, type SchoolClass, type Student, type StudentHistory } from "@/lib/academic";
+import { downloadStudentTemplateCSV, downloadStudentTemplateXLSX, parseStudentSpreadsheet, saveBatchStudentsToSupabase, type StudentSpreadsheetRow } from "@/lib/spreadsheet-service";
 
 type Form = Record<"nome" | "nomeSocial" | "nascimento" | "cpf" | "email" | "telefone" | "endereco" | "ocupacao" | "idioma" | "nivel" | "objetivo" | "meta" | "acessibilidade" | "emergenciaNome" | "emergenciaTelefone" | "observacoes" | "responsavelNome" | "parentesco" | "responsavelEmail" | "responsavelTelefone", string>;
 type LeadSource = { id: string; nome?: string; email?: string; telefone?: string; documento?: string; empresa?: string; dataNascimento?: string; responsavel?: string; endereco?: string; numero?: string; complemento?: string; bairro?: string; cidade?: string; uf?: string; anotacoes?: string; tags?: string[] };
@@ -33,6 +34,11 @@ export function AcademicStudentsPage() {
   const [leads, setLeads] = useState<LeadSource[]>([]);
   const [sourceLeadId, setSourceLeadId] = useState("");
   const [error, setError] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+  const [importRows, setImportRows] = useState<StudentSpreadsheetRow[]>([]);
+  const [importFileName, setImportFileName] = useState("");
+  const [importBusy, setImportBusy] = useState(false);
+  const importFileRef = useRef<HTMLInputElement>(null);
   const update = (key: keyof Form, value: string) => setForm((old) => ({ ...old, [key]: value }));
   const filtered = useMemo(() => students.filter((s) => `${s.nome} ${s.email ?? ""}`.toLowerCase().includes(search.toLowerCase())), [students, search]);
 
@@ -73,6 +79,24 @@ export function AcademicStudentsPage() {
     const reader = new FileReader(); reader.onload = () => setPhoto(String(reader.result)); reader.readAsDataURL(file);
   }
 
+  async function chooseSpreadsheet(file?: File) {
+    if (!file) return;
+    try {
+      const result = await parseStudentSpreadsheet(file);
+      setImportFileName(result.fileName); setImportRows(result.rows);
+      if (!result.rows.length) toast.error("A planilha não possui registros para importar.");
+    } catch (cause) { toast.error(`Não foi possível ler a planilha: ${readableError(cause)}`); }
+  }
+
+  async function confirmSpreadsheetImport() {
+    if (!schoolId || !importRows.some((row) => row._isValid !== false)) return;
+    setImportBusy(true);
+    const result = await saveBatchStudentsToSupabase(importRows, schoolId);
+    if (result.errorCount) toast.error(result.errorMessage || `${result.errorCount} registro(s) não foram importados.`);
+    if (result.savedCount) { toast.success(`${result.savedCount} aluno(s) importado(s).`); await refresh(schoolId); setImportOpen(false); setImportRows([]); setImportFileName(""); }
+    setImportBusy(false);
+  }
+
   async function openDetail(student: Student) {
     setDetail(student); setHistory([]);
     const { data } = await supabase.from("historico_aluno").select("id,tipo,titulo,descricao,created_at").eq("escola_id", schoolId).eq("aluno_id", student.id).order("created_at", { ascending: false });
@@ -91,7 +115,7 @@ export function AcademicStudentsPage() {
   if (loading) return <div className="grid min-h-72 place-items-center text-muted-foreground"><Loader2 className="size-6 animate-spin" /></div>;
   if (error) return <p role="alert" className="p-8 text-red-400">{error}</p>;
   return <main className="space-y-6 p-6 text-foreground">
-    <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end"><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Jornada acadêmica</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">Alunos</h1><p className="mt-2 text-sm text-muted-foreground">Cadastro completo, matrícula e histórico acadêmico por escola.</p></div><Button onClick={() => setCreateOpen(true)} className="gap-2"><Plus className="size-4" /> Novo aluno</Button></header>
+    <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end"><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Jornada acadêmica</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">Alunos</h1><p className="mt-2 text-sm text-muted-foreground">Cadastro completo, matrícula e histórico acadêmico por escola.</p></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2"><Upload className="size-4" /> Importar planilha</Button><Button onClick={() => setCreateOpen(true)} className="gap-2"><Plus className="size-4" /> Novo aluno</Button></div></header>
     <section className="grid gap-4 md:grid-cols-3"><Metric icon={Users} label="Alunos cadastrados" value={students.length} /><Metric icon={GraduationCap} label="Matrículas ativas" value={enrollments.length} /><Metric icon={BookOpen} label="Turmas disponíveis" value={classes.filter((item) => item.status === "ativa").length} /></section>
     <section className="rounded-2xl border border-hairline bg-surface/50 p-5"><div className="relative max-w-md"><Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" /><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nome ou e-mail" className="pl-9" /></div><div className="mt-5 grid gap-3 xl:grid-cols-2">{filtered.map((student) => <article key={student.id} className="rounded-xl border border-hairline bg-background/35 p-4"><div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-3"><div className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl border border-hairline bg-surface">{student.foto_url ? <img src={student.foto_url} alt="" className="size-full object-cover" /> : <UserRound className="size-5 text-muted-foreground" />}</div><div className="min-w-0"><button onClick={() => void openDetail(student)} className="truncate text-left font-semibold hover:text-primary">{student.nome_social || student.nome}</button><p className="truncate text-sm text-muted-foreground">{student.email || "Sem e-mail"} · {student.nivel_atual || "Nível não definido"}</p></div></div><Badge variant="outline">{student.status}</Badge></div><div className="mt-4 flex gap-2"><select className={selectStyle} value={selectedClasses[student.id] || ""} onChange={(e) => setSelectedClasses((old) => ({ ...old, [student.id]: e.target.value }))}><option value="">Selecionar turma</option>{classes.filter((item) => item.status === "ativa").map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}</select><Button variant="outline" disabled={busy || !selectedClasses[student.id]} onClick={() => void enroll(student)}>Matricular</Button></div></article>)}{!filtered.length && <div className="col-span-full rounded-xl border border-dashed border-hairline py-12 text-center text-sm text-muted-foreground">Nenhum aluno encontrado.</div>}</div></section>
     <Dialog open={createOpen} onOpenChange={(open) => !busy && setCreateOpen(open)}>
@@ -123,6 +147,18 @@ export function AcademicStudentsPage() {
           </div>
         </form>
         <DialogFooter className="border-t border-hairline px-7 py-5"><Button variant="outline" disabled={busy} onClick={() => setCreateOpen(false)}>Cancelar</Button><Button form="student-form" disabled={busy}>{busy ? <><Loader2 className="mr-2 size-4 animate-spin" />Salvando…</> : "Salvar aluno"}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+    <Dialog open={importOpen} onOpenChange={(open) => !importBusy && setImportOpen(open)}>
+      <DialogContent className="border-hairline bg-background sm:max-w-3xl">
+        <DialogHeader><DialogTitle className="flex items-center gap-2"><FileSpreadsheet className="size-5 text-primary" /> Importar alunos</DialogTitle><DialogDescription>Baixe o modelo, mantenha os títulos das colunas e confira os dados antes de confirmar.</DialogDescription></DialogHeader>
+        <div className="space-y-5 py-2">
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-hairline bg-surface/40 p-4"><span className="mr-auto text-sm font-medium">Planilhas padrão</span><Button type="button" size="sm" variant="outline" onClick={downloadStudentTemplateCSV}><Download className="mr-2 size-4" />CSV</Button><Button type="button" size="sm" variant="outline" onClick={downloadStudentTemplateXLSX}><Download className="mr-2 size-4" />XLSX</Button></div>
+          <input ref={importFileRef} type="file" accept=".csv,.xls,.xlsx" className="hidden" onChange={(event) => void chooseSpreadsheet(event.target.files?.[0])} />
+          <button type="button" onClick={() => importFileRef.current?.click()} className="flex w-full flex-col items-center rounded-xl border-2 border-dashed border-hairline p-8 text-center hover:border-primary"><Upload className="mb-3 size-7 text-primary" /><strong>{importFileName || "Selecionar planilha"}</strong><span className="mt-1 text-sm text-muted-foreground">CSV, XLS ou XLSX</span></button>
+          {importRows.length > 0 && <div className="space-y-3"><div className="flex flex-wrap gap-3 text-sm"><span className="flex items-center gap-1 text-emerald-400"><CheckCircle2 className="size-4" />{importRows.filter((row) => row._isValid !== false).length} prontos</span>{importRows.some((row) => row._isValid === false) && <span className="flex items-center gap-1 text-amber-400"><AlertCircle className="size-4" />{importRows.filter((row) => row._isValid === false).length} com erro</span>}</div><div className="max-h-56 overflow-auto rounded-xl border border-hairline"><table className="w-full text-left text-sm"><thead className="sticky top-0 bg-surface"><tr><th className="p-3">Aluno</th><th className="p-3">Contato</th><th className="p-3">Situação</th></tr></thead><tbody>{importRows.slice(0, 20).map((row, index) => <tr key={`${row.nome}-${index}`} className="border-t border-hairline"><td className="p-3 font-medium">{row.nome || "Sem nome"}</td><td className="p-3 text-muted-foreground">{row.email || row.telefone || "—"}</td><td className="p-3">{row._isValid === false ? <span className="text-amber-400">{row._errors?.join(" ")}</span> : <span className="text-emerald-400">Pronto</span>}</td></tr>)}</tbody></table></div>{importRows.length > 20 && <p className="text-xs text-muted-foreground">Exibindo os primeiros 20 de {importRows.length} registros.</p>}</div>}
+        </div>
+        <DialogFooter><Button variant="outline" disabled={importBusy} onClick={() => setImportOpen(false)}>Cancelar</Button><Button disabled={importBusy || !importRows.some((row) => row._isValid !== false)} onClick={() => void confirmSpreadsheetImport()}>{importBusy ? <><Loader2 className="mr-2 size-4 animate-spin" />Importando…</> : "Confirmar importação"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
     <Dialog open={Boolean(detail)} onOpenChange={(open) => !open && setDetail(null)}><DialogContent className="max-h-[90vh] overflow-y-auto border-hairline bg-background sm:max-w-3xl"><DialogHeader><DialogTitle>{detail?.nome_social || detail?.nome}</DialogTitle><DialogDescription>Dossiê acadêmico individual</DialogDescription></DialogHeader>{detail && <div className="grid gap-5 py-2 md:grid-cols-2"><Info title="Dados pessoais" rows={[detail.email, detail.telefone, detail.data_nascimento, detail.cpf]} /><Info title="Objetivos" rows={[detail.objetivo_aprendizagem, detail.meta_academica, detail.necessidades_acessibilidade]} /><section className="md:col-span-2"><h3 className="mb-3 flex items-center gap-2 font-semibold"><History className="size-4 text-primary" /> Linha do tempo</h3>{history.map((item) => <div key={item.id} className="mb-2 rounded-xl border border-hairline p-3"><strong className="text-sm">{item.titulo}</strong><p className="text-sm text-muted-foreground">{item.descricao || item.tipo}</p></div>)}{!history.length && <p className="rounded-xl border border-dashed border-hairline p-6 text-center text-sm text-muted-foreground">O histórico começará com aulas, presenças, avaliações e ocorrências.</p>}</section></div>}</DialogContent></Dialog>

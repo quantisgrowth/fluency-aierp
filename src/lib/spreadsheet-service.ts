@@ -78,44 +78,19 @@ export const OFFICIAL_COLUMNS = [
  */
 export function downloadStudentTemplateXLSX() {
   const headers = OFFICIAL_COLUMNS.map((c) => c.header);
-  const exampleRow1 = OFFICIAL_COLUMNS.map((c) => c.example);
-  const exampleRow2 = [
-    "Lucas Mendes de Oliveira",
-    "02/11/1998",
-    "23.456.789-0",
-    "234.567.890-11",
-    "Masculino (Ele/Dele)",
-    "Rua Augusta, 500",
-    "(11) 97777-1122",
-    "lucas.mendes@empresa.com",
-    "", // Sem responsável (maior de idade)
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "Inglês Executivo VIP",
-    "VIP Particular 1x1",
-    "15/07/2026",
-    "Sim",
-    "B2",
-    "Ativo",
-    "Dia 05",
-    "Cartão de Crédito",
-    "680.00",
-    "0.00",
-    "Google Ads / Instagram",
-  ];
-
-  const worksheetData = [headers, exampleRow1, exampleRow2];
-  const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+  const worksheet = XLSX.utils.aoa_to_sheet([headers]);
 
   // Set column widths
   worksheet["!cols"] = OFFICIAL_COLUMNS.map(() => ({ wch: 26 }));
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Modelo Alunos ERP");
+  const instructions = XLSX.utils.json_to_sheet(OFFICIAL_COLUMNS.map((column) => ({
+    Campo: column.header,
+    Obrigatorio: column.required ? "Sim" : "Não",
+    Exemplo: column.example,
+  })));
+  XLSX.utils.book_append_sheet(workbook, instructions, "Instruções");
 
   XLSX.writeFile(workbook, "modelo_importacao_alunos_fluency.xlsx");
 }
@@ -125,8 +100,7 @@ export function downloadStudentTemplateXLSX() {
  */
 export function downloadStudentTemplateCSV() {
   const headers = OFFICIAL_COLUMNS.map((c) => `"${c.header.replace(/"/g, '""')}"`).join(";");
-  const example1 = OFFICIAL_COLUMNS.map((c) => `"${String(c.example).replace(/"/g, '""')}"`).join(";");
-  const csvContent = "\uFEFF" + [headers, example1].join("\n"); // UTF-8 BOM
+  const csvContent = "\uFEFF" + headers;
 
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a");
@@ -201,12 +175,12 @@ export async function parseStudentSpreadsheet(file: File): Promise<{
     const responsavelTelefone = getValue(["Telefone do Responsável", "Celular Responsável"]);
     const responsavelEmail = getValue(["E-mail do Responsável", "Email Responsável"]);
 
-    const idiomaCurso = getValue(["Idioma / Curso", "Idioma", "Curso"]) || "Inglês";
-    const turma = getValue(["Turma", "Turma Atual"]) || "A Definir";
-    const dataInicio = getValue(["Data de Início", "Data Inicio", "Início", "Matrícula"]) || new Date().toISOString().split("T")[0];
+    const idiomaCurso = getValue(["Idioma / Curso", "Idioma", "Curso"]);
+    const turma = getValue(["Turma", "Turma Atual"]);
+    const dataInicio = getValue(["Data de Início", "Data Inicio", "Início", "Matrícula"]);
     const fezTesteRaw = getValue(["Fez ou não teste de nível? (Sim/Não)", "Fez Teste de Nível", "Teste de Nível"]);
     const fezTesteNivel = /sim|s|yes|y|true|1/i.test(fezTesteRaw);
-    const resultadoTesteNivel = getValue(["Resultado do Teste de Nível", "Resultado Teste", "Nível Teste", "Nivel"]) || "A1";
+    const resultadoTesteNivel = getValue(["Resultado do Teste de Nível", "Resultado Teste", "Nível Teste", "Nivel"]);
     const status = getValue(["Status do Aluno (Ativo, Inativo, Bolsista, etc.)", "Status", "Situação"]) || "Ativo";
 
     const diaVencRaw = getValue(["Data de Pagamento / Vencimento", "Vencimento", "Dia Vencimento", "Dia"]);
@@ -312,7 +286,7 @@ export function exportStudentsToXLSX(students: any[]) {
 /**
  * Saves a batch of parsed students to Supabase (and falls back gracefully).
  */
-export async function saveBatchStudentsToSupabase(students: StudentSpreadsheetRow[]): Promise<{
+export async function saveBatchStudentsToSupabase(students: StudentSpreadsheetRow[], schoolId?: string): Promise<{
   savedCount: number;
   errorCount: number;
   errorMessage?: string;
@@ -323,8 +297,19 @@ export async function saveBatchStudentsToSupabase(students: StudentSpreadsheetRo
   }
 
   try {
+    let resolvedSchoolId = schoolId;
+    if (!resolvedSchoolId) {
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData.user) {
+        const { data: membership } = await supabase.from("escola_membros").select("escola_id").eq("user_id", authData.user.id).eq("status", "ativo").limit(1).maybeSingle();
+        resolvedSchoolId = membership?.escola_id;
+      }
+    }
+    if (!resolvedSchoolId) return { savedCount: 0, errorCount: validStudents.length, errorMessage: "Escola atual não identificada." };
     const payload = validStudents.map((s) => ({
+      escola_id: resolvedSchoolId,
       nome: s.nome,
+      data_nascimento: normalizeDate(s.dataNascimento),
       rg: s.rg || null,
       cpf: s.cpf || null,
       genero: s.genero || null,
@@ -337,12 +322,12 @@ export async function saveBatchStudentsToSupabase(students: StudentSpreadsheetRo
       responsavel_endereco: s.responsavelEndereco || null,
       responsavel_telefone: s.responsavelTelefone || null,
       responsavel_email: s.responsavelEmail || null,
-      idioma_curso: s.idiomaCurso || "Inglês",
+      idioma_curso: s.idiomaCurso || null,
       turma_nome: s.turma || null,
-      nivel_atual: String(s.resultadoTesteNivel || "A1"),
+      nivel_atual: s.resultadoTesteNivel || null,
       fez_teste_nivel: Boolean(s.fezTesteNivel),
       resultado_teste_nivel: s.resultadoTesteNivel || null,
-      status: (s.status || "ativo").toLowerCase(),
+      status: normalizeStatus(s.status),
       dia_vencimento: typeof s.diaVencimento === "number" ? s.diaVencimento : 10,
       forma_pagamento_preferencial: s.formaPagamento || "PIX",
       valor_mensalidade: typeof s.valorMensalidade === "number" ? s.valorMensalidade : 0,
@@ -353,12 +338,7 @@ export async function saveBatchStudentsToSupabase(students: StudentSpreadsheetRo
     const { error } = await supabase.from("alunos").insert(payload);
 
     if (error) {
-      console.warn("Supabase batch insert warning (using local sync fallback):", error.message);
-      return {
-        savedCount: validStudents.length,
-        errorCount: 0,
-        errorMessage: error.message,
-      };
+      return { savedCount: 0, errorCount: validStudents.length, errorMessage: error.message };
     }
 
     return {
@@ -369,9 +349,22 @@ export async function saveBatchStudentsToSupabase(students: StudentSpreadsheetRo
     const errorMsg = err instanceof Error ? err.message : String(err);
     console.error("Error saving batch to Supabase:", errorMsg);
     return {
-      savedCount: validStudents.length,
-      errorCount: 0,
+      savedCount: 0,
+      errorCount: validStudents.length,
       errorMessage: errorMsg,
     };
   }
+}
+
+function normalizeDate(value?: string): string | null {
+  if (!value) return null;
+  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (match) return `${match[3]}-${match[2]}-${match[1]}`;
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
+}
+
+function normalizeStatus(value?: string): string {
+  const normalized = (value || "ativo").trim().toLowerCase();
+  if (["ativo", "inativo", "trancado", "concluido", "concluído", "cancelado"].includes(normalized)) return normalized.replace("concluído", "concluido");
+  return "ativo";
 }
