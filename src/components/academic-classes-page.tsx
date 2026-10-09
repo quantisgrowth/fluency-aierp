@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Loader2,
   MapPin,
+  Pencil,
   Plus,
   Upload,
   Users,
@@ -39,35 +40,8 @@ const selectStyle =
   "h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm text-foreground";
 type Category = Course["categoria"];
 
-export function AcademicClassesPage() {
-  const [schoolId, setSchoolId] = useState("");
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [classes, setClasses] = useState<SchoolClass[]>([]);
-  const [stages, setStages] = useState<CourseStage[]>([]);
-  const [staff, setStaff] = useState<AcademicStaff[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [courseOpen, setCourseOpen] = useState(false);
-  const [classOpen, setClassOpen] = useState(false);
-  const [course, setCourse] = useState({
-    nome: "",
-    codigo: "",
-    nivel: "",
-    preco: "",
-    categoria: "idioma" as Category,
-    frequencia: "75",
-    nivelamento: false,
-    pratica: false,
-    estagio: false,
-    projeto: false,
-    certificado: true,
-    criterio: "",
-    ementa: "",
-    etapas: "",
-  });
-  const [syllabusFile, setSyllabusFile] = useState<File | null>(null);
-  const [group, setGroup] = useState({
+function emptyClassForm() {
+  return {
     nome: "",
     cursoId: "",
     etapaId: "",
@@ -88,7 +62,39 @@ export function AcademicClassesPage() {
     horarioInicio: "",
     horarioFim: "",
     diasSemana: [] as string[],
+  };
+}
+
+export function AcademicClassesPage() {
+  const [schoolId, setSchoolId] = useState("");
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [classes, setClasses] = useState<SchoolClass[]>([]);
+  const [stages, setStages] = useState<CourseStage[]>([]);
+  const [staff, setStaff] = useState<AcademicStaff[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [courseOpen, setCourseOpen] = useState(false);
+  const [classOpen, setClassOpen] = useState(false);
+  const [editingClassId, setEditingClassId] = useState<string | null>(null);
+  const [course, setCourse] = useState({
+    nome: "",
+    codigo: "",
+    nivel: "",
+    preco: "",
+    categoria: "idioma" as Category,
+    frequencia: "75",
+    nivelamento: false,
+    pratica: false,
+    estagio: false,
+    projeto: false,
+    certificado: true,
+    criterio: "",
+    ementa: "",
+    etapas: "",
   });
+  const [syllabusFile, setSyllabusFile] = useState<File | null>(null);
+  const [group, setGroup] = useState(emptyClassForm);
 
   async function refresh(id: string) {
     const [courseResult, classResult, stageResult, memberResult] = await Promise.all([
@@ -102,7 +108,7 @@ export function AcademicClassesPage() {
       supabase
         .from("turmas")
         .select(
-          "id,curso_id,nome,nivel,status,capacidade_maxima,professor_id,professor_nome,dias_semana,horario_inicio,horario_fim,data_inicio,data_fim,sala,modalidade,coordenador_id,coordenador_nome,curso_etapa_id,idade_minima,idade_maxima,faixa_etaria,criterio_entrada,ementa,objetivos,frequencia_minima",
+          "id,curso_id,nome,nivel,status,capacidade_maxima,professor_id,professor_nome,dias_semana,horario_inicio,horario_fim,data_inicio,data_fim,sala,plataforma_online,link_online,modalidade,coordenador_id,coordenador_nome,curso_etapa_id,idade_minima,idade_maxima,faixa_etaria,criterio_entrada,ementa,objetivos,frequencia_minima",
         )
         .eq("escola_id", id)
         .order("nome"),
@@ -253,7 +259,40 @@ export function AcademicClassesPage() {
       setBusy(false);
     }
   }
-  async function createClass(event: FormEvent) {
+  function openNewClass() {
+    setEditingClassId(null);
+    setGroup(emptyClassForm());
+    setClassOpen(true);
+  }
+
+  function openEditClass(item: SchoolClass) {
+    setEditingClassId(item.id);
+    setGroup({
+      nome: item.nome,
+      cursoId: item.curso_id || "",
+      etapaId: item.curso_etapa_id || "",
+      capacidade: String(item.capacidade_maxima || 15),
+      professorId: item.professor_id || "",
+      coordenadorId: item.coordenador_id || "",
+      modalidade: item.modalidade || "presencial",
+      idadeMinima: item.idade_minima === null ? "" : String(item.idade_minima),
+      idadeMaxima: item.idade_maxima === null ? "" : String(item.idade_maxima),
+      criterio: item.criterio_entrada || "",
+      objetivos: item.objetivos || "",
+      frequencia: item.frequencia_minima === null ? "" : String(item.frequencia_minima),
+      sala: item.sala || "",
+      plataforma: item.plataforma_online || "",
+      linkOnline: item.link_online || "",
+      dataInicio: item.data_inicio || "",
+      dataFim: item.data_fim || "",
+      horarioInicio: item.horario_inicio?.slice(0, 5) || "",
+      horarioFim: item.horario_fim?.slice(0, 5) || "",
+      diasSemana: item.dias_semana || [],
+    });
+    setClassOpen(true);
+  }
+
+  async function saveClass(event: FormEvent) {
     event.preventDefault();
     const selectedCourse = courses.find((item) => item.id === group.cursoId);
     const selectedStage = stages.find((item) => item.id === group.etapaId);
@@ -282,6 +321,7 @@ export function AcademicClassesPage() {
       return;
     }
     const conflictingClass = classes.find((item) => {
+      if (item.id === editingClassId) return false;
       if (!group.horarioInicio || !group.horarioFim || !item.horario_inicio || !item.horario_fim) {
         return false;
       }
@@ -302,7 +342,7 @@ export function AcademicClassesPage() {
     }
     setBusy(true);
     try {
-      const { error: saveError } = await supabase.from("turmas").insert({
+      const payload = {
         escola_id: schoolId,
         curso_id: group.cursoId,
         curso_etapa_id: group.etapaId || null,
@@ -333,28 +373,21 @@ export function AcademicClassesPage() {
         horario_inicio: group.horarioInicio || null,
         horario_fim: group.horarioFim || null,
         dias_semana: group.diasSemana.length ? group.diasSemana : null,
-      });
+      };
+      const result = editingClassId
+        ? await supabase
+            .from("turmas")
+            .update(payload)
+            .eq("id", editingClassId)
+            .eq("escola_id", schoolId)
+            .select("id")
+            .single()
+        : await supabase.from("turmas").insert(payload).select("id").single();
+      const { error: saveError } = result;
       if (saveError) throw saveError;
-      toast.success("Turma criada.");
-      setGroup((old) => ({
-        ...old,
-        nome: "",
-        etapaId: "",
-        professorId: "",
-        coordenadorId: "",
-        idadeMinima: "",
-        idadeMaxima: "",
-        criterio: "",
-        objetivos: "",
-        sala: "",
-        plataforma: "",
-        linkOnline: "",
-        dataInicio: "",
-        dataFim: "",
-        horarioInicio: "",
-        horarioFim: "",
-        diasSemana: [],
-      }));
+      toast.success(editingClassId ? "Turma atualizada." : "Turma criada.");
+      setGroup(emptyClassForm());
+      setEditingClassId(null);
       setClassOpen(false);
       await refresh(schoolId);
     } catch (cause) {
@@ -401,7 +434,7 @@ export function AcademicClassesPage() {
           <Button variant="outline" onClick={() => setCourseOpen(true)}>
             <Plus className="mr-2 size-4" /> Novo curso
           </Button>
-          <Button onClick={() => setClassOpen(true)} disabled={!courses.length}>
+          <Button onClick={openNewClass} disabled={!courses.length}>
             <Users className="mr-2 size-4" /> Nova turma
           </Button>
         </div>
@@ -486,9 +519,14 @@ export function AcademicClassesPage() {
                   {item.nivel || "Livre"}
                 </p>
               </div>
-              <Button variant="link" className="mt-3 px-0" onClick={() => void toggleClass(item)}>
-                {item.status === "ativa" ? "Concluir turma" : "Reativar turma"}
-              </Button>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={() => openEditClass(item)}>
+                  <Pencil className="mr-2 size-4" /> Editar turma
+                </Button>
+                <Button variant="link" size="sm" onClick={() => void toggleClass(item)}>
+                  {item.status === "ativa" ? "Concluir turma" : "Reativar turma"}
+                </Button>
+              </div>
             </article>
           ))}
           {!classes.length && <Empty text="Nenhuma turma cadastrada." />}
@@ -618,15 +656,27 @@ export function AcademicClassesPage() {
           />
         </DialogContent>
       </Dialog>
-      <Dialog open={classOpen} onOpenChange={(open) => !busy && setClassOpen(open)}>
+      <Dialog
+        open={classOpen}
+        onOpenChange={(open) => {
+          if (busy) return;
+          setClassOpen(open);
+          if (!open) {
+            setEditingClassId(null);
+            setGroup(emptyClassForm());
+          }
+        }}
+      >
         <DialogContent className="max-h-[90vh] overflow-y-auto border-hairline bg-background sm:max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Nova turma</DialogTitle>
+            <DialogTitle>{editingClassId ? "Editar turma" : "Nova turma"}</DialogTitle>
             <DialogDescription>
-              Vincule equipe, regras pedagógicas e planejamento.
+              {editingClassId
+                ? "Atualize equipe, regras pedagógicas e planejamento."
+                : "Vincule equipe, regras pedagógicas e planejamento."}
             </DialogDescription>
           </DialogHeader>
-          <form id="class-form" onSubmit={createClass} className="grid gap-5 py-2 md:grid-cols-2">
+          <form id="class-form" onSubmit={saveClass} className="grid gap-5 py-2 md:grid-cols-2">
             <SectionTitle icon={BookOpen} title="Identificação" />
             <div>
               <Label>Curso</Label>
@@ -834,8 +884,12 @@ export function AcademicClassesPage() {
           <Footer
             form="class-form"
             busy={busy}
-            close={() => setClassOpen(false)}
-            label="Salvar turma"
+            close={() => {
+              setClassOpen(false);
+              setEditingClassId(null);
+              setGroup(emptyClassForm());
+            }}
+            label={editingClassId ? "Salvar alterações" : "Salvar turma"}
           />
         </DialogContent>
       </Dialog>

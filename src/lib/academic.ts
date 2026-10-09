@@ -48,6 +48,8 @@ export type SchoolClass = {
   data_inicio: string | null;
   data_fim: string | null;
   sala: string | null;
+  plataforma_online: string | null;
+  link_online: string | null;
   modalidade: string | null;
   coordenador_nome: string | null;
   coordenador_id: string | null;
