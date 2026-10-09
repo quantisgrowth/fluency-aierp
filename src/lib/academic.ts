@@ -14,6 +14,23 @@ export type Course = {
   exige_projeto_final: boolean;
   emite_certificado: boolean;
   frequencia_minima: number;
+  criterio_entrada: string | null;
+  ementa: string | null;
+};
+
+export type CourseStage = {
+  id: string;
+  curso_id: string;
+  codigo: string;
+  nome: string;
+  descricao: string | null;
+  ordem: number;
+};
+
+export type AcademicStaff = {
+  id: string;
+  nome: string;
+  papel: "professor" | "coordenador";
 };
 
 export type SchoolClass = {
@@ -24,10 +41,19 @@ export type SchoolClass = {
   status: string;
   capacidade_maxima: number;
   professor_nome: string | null;
+  professor_id: string | null;
   dias_semana: string[] | null;
   horario_inicio: string | null;
+  horario_fim: string | null;
+  data_inicio: string | null;
+  data_fim: string | null;
+  sala: string | null;
   modalidade: string | null;
   coordenador_nome: string | null;
+  coordenador_id: string | null;
+  curso_etapa_id: string | null;
+  idade_minima: number | null;
+  idade_maxima: number | null;
   faixa_etaria: string | null;
   criterio_entrada: string | null;
   ementa: string | null;

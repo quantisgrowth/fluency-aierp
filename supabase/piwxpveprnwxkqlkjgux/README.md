@@ -48,6 +48,10 @@ pasta foram escritos para esse esquema já existente.
 12. Depois da etapa 016, execute
     `016_fundacao_academica_universal_verificacao.sql`. Todas as linhas devem
     retornar `OK` antes de publicar as telas que usam a nova estrutura.
+13. `017_planejamento_cursos_turmas.sql` estrutura etapas de curso, ementas,
+    documentos privados, faixa etária e modalidade das turmas. Execute em
+    seguida `017_planejamento_cursos_turmas_verificacao.sql` e confirme que
+    todas as linhas retornam `true`.
 
 Estes arquivos **não estão na pasta de migrações automática** porque
 `supabase/config.toml` referencia outro projeto e as três migrações
