@@ -132,6 +132,10 @@ function AdminModulosPage() {
 
   // Educational Products State
   const [products, setProducts] = useState<EducationalProduct[]>([]);
+  const activeProducts = products.filter((product) => product.ativo);
+  const averageCatalogPrice = activeProducts.length
+    ? activeProducts.reduce((total, product) => total + Number(product.valorBase || 0), 0) / activeProducts.length
+    : null;
 
   // School Costs State (for pricing calculation)
   const [costs, setCosts] = useState<SchoolCost[]>([]);
@@ -577,7 +581,7 @@ function AdminModulosPage() {
                 <span className="font-semibold uppercase tracking-wider">Cursos Ativos</span>
                 <GraduationCap className="size-4 text-primary" />
               </div>
-              <p className="text-2xl font-bold text-foreground">{products.filter((p) => p.ativo).length} Cursos</p>
+              <p className="text-2xl font-bold text-foreground">{activeProducts.length} Cursos</p>
               <p className="text-[11px] text-muted-foreground">{products.length} produtos cadastrados no total</p>
             </GlassCard>
 
@@ -592,11 +596,17 @@ function AdminModulosPage() {
 
             <GlassCard className="p-4 space-y-1">
               <div className="flex justify-between items-center text-xs text-muted-foreground">
-                <span className="font-semibold uppercase tracking-wider">Ticket Médio Estimado</span>
+                <span className="font-semibold uppercase tracking-wider">Preço Médio do Catálogo</span>
                 <DollarSign className="size-4 text-emerald-400" />
               </div>
-              <p className="text-2xl font-bold text-emerald-400">{brl(480)}/mês</p>
-              <p className="text-[11px] text-muted-foreground">Média ponderada por aluno ativo</p>
+              <p className="text-2xl font-bold text-emerald-400">
+                {averageCatalogPrice === null ? "Sem dados" : brl(averageCatalogPrice)}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {averageCatalogPrice === null
+                  ? "Cadastre um curso ativo para calcular"
+                  : `Média simples de ${activeProducts.length} curso${activeProducts.length === 1 ? "" : "s"} ativo${activeProducts.length === 1 ? "" : "s"}`}
+              </p>
             </GlassCard>
           </div>
 
