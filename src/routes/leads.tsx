@@ -916,7 +916,7 @@ function LeadsPage() {
       {/* --- MOCK MULTI-TAB LEAD CREATION DIALOG --- */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <GlassCard className="w-full max-w-lg p-6 space-y-5 shadow-2xl relative text-foreground">
+          <GlassCard className="w-full max-w-3xl max-h-[90vh] overflow-y-auto p-7 md:p-8 space-y-6 shadow-2xl relative text-foreground">
             
             <button
               onClick={() => setIsModalOpen(false)}
@@ -933,7 +933,7 @@ function LeadsPage() {
             <form onSubmit={handleCreateLeadSubmit} className="space-y-4">
               
               {/* Global Fields: Nome & Tags */}
-              <div className="space-y-3">
+              <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Nome</label>
                   <input
@@ -984,8 +984,8 @@ function LeadsPage() {
               <div className="min-h-[160px] py-1">
                 
                 {activeTab === "contato" && (
-                  <div className="space-y-3 animate-in fade-in duration-200">
-                    <div className="space-y-1.5">
+                  <div className="grid gap-4 md:grid-cols-2 animate-in fade-in duration-200">
+                    <div className="space-y-1.5 md:col-span-2">
                       <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Telefone</label>
                       <input
                         placeholder="+55 (11) 99999-9999"

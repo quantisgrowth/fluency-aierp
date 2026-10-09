@@ -56,6 +56,7 @@ export type Student = {
   objetivo_aprendizagem: string | null;
   meta_academica: string | null;
   observacoes: string | null;
+  foto_url: string | null;
 };
 
 export type StudentHistory = { id: string; tipo: string; titulo: string; descricao: string | null; created_at: string };
