@@ -1,324 +1,62 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { Award, BookOpen, BriefcaseBusiness, GraduationCap, Loader2, Plus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase";
 import { currentSchoolId, readableError, type Course, type SchoolClass } from "@/lib/academic";
 
-const selectStyle = "w-full rounded-md border border-white/20 bg-neutral-900 px-3 py-2 text-white";
+const selectStyle = "h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm text-foreground";
+type Category = Course["categoria"];
 
 export function AcademicClassesPage() {
-  const [schoolId, setSchoolId] = useState("");
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [classes, setClasses] = useState<SchoolClass[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [courseName, setCourseName] = useState("");
-  const [courseCode, setCourseCode] = useState("");
-  const [courseLevel, setCourseLevel] = useState("");
-  const [coursePrice, setCoursePrice] = useState("");
-  const [className, setClassName] = useState("");
-  const [classCourseId, setClassCourseId] = useState("");
-  const [classLevel, setClassLevel] = useState("");
-  const [classCapacity, setClassCapacity] = useState("15");
-  const [classTeacher, setClassTeacher] = useState("");
+  const [schoolId, setSchoolId] = useState(""); const [courses, setCourses] = useState<Course[]>([]); const [classes, setClasses] = useState<SchoolClass[]>([]);
+  const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [courseOpen, setCourseOpen] = useState(false); const [classOpen, setClassOpen] = useState(false);
+  const [course, setCourse] = useState({ nome: "", codigo: "", nivel: "", preco: "", categoria: "idioma" as Category, frequencia: "75", nivelamento: false, pratica: false, estagio: false, projeto: false, certificado: true });
+  const [group, setGroup] = useState({ nome: "", cursoId: "", nivel: "", capacidade: "15", professor: "", coordenador: "", modalidade: "presencial", faixa: "", criterio: "", ementa: "", objetivos: "", frequencia: "" });
 
   async function refresh(id: string) {
     const [courseResult, classResult] = await Promise.all([
-      supabase
-        .from("cursos")
-        .select("id,nome,codigo,nivel,valor_base,ativo")
-        .eq("escola_id", id)
-        .order("nome"),
-      supabase
-        .from("turmas")
-        .select(
-          "id,curso_id,nome,nivel,status,capacidade_maxima,professor_nome,dias_semana,horario_inicio",
-        )
-        .eq("escola_id", id)
-        .order("nome"),
+      supabase.from("cursos").select("id,nome,codigo,nivel,valor_base,ativo,categoria,exige_nivelamento,exige_avaliacao_pratica,exige_estagio,exige_projeto_final,emite_certificado,frequencia_minima").eq("escola_id", id).order("nome"),
+      supabase.from("turmas").select("id,curso_id,nome,nivel,status,capacidade_maxima,professor_nome,dias_semana,horario_inicio,modalidade,coordenador_nome,faixa_etaria,criterio_entrada,ementa,objetivos,frequencia_minima").eq("escola_id", id).order("nome"),
     ]);
-    if (courseResult.error) throw courseResult.error;
-    if (classResult.error) throw classResult.error;
-    setCourses((courseResult.data ?? []) as Course[]);
-    setClasses((classResult.data ?? []) as SchoolClass[]);
+    if (courseResult.error) throw courseResult.error; if (classResult.error) throw classResult.error; setCourses((courseResult.data ?? []) as Course[]); setClasses((classResult.data ?? []) as SchoolClass[]);
   }
+  useEffect(() => { let active = true; void (async () => { try { const id = await currentSchoolId(); if (!active) return; setSchoolId(id); await refresh(id); } catch (cause) { if (active) setError(readableError(cause)); } finally { if (active) setLoading(false); } })(); return () => { active = false; }; }, []);
 
-  useEffect(() => {
-    let active = true;
-    void (async () => {
-      try {
-        const id = await currentSchoolId();
-        if (!active) return;
-        setSchoolId(id);
-        await refresh(id);
-      } catch (cause) {
-        if (active) setError(readableError(cause));
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  async function createCourse(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!schoolId) return;
-    setBusy(true);
-    const { error: saveError } = await supabase.from("cursos").insert({
-      escola_id: schoolId,
-      nome: courseName.trim(),
-      codigo: courseCode.trim().toUpperCase(),
-      nivel: courseLevel.trim() || null,
-      valor_base: Number(coursePrice || 0),
-    });
-    if (saveError) toast.error(`Não foi possível criar o curso: ${saveError.message}`);
-    else {
-      toast.success("Curso criado.");
-      setCourseName("");
-      setCourseCode("");
-      setCourseLevel("");
-      setCoursePrice("");
-      try {
-        await refresh(schoolId);
-      } catch (cause) {
-        setError(readableError(cause));
-      }
-    }
-    setBusy(false);
+  async function createCourse(event: FormEvent) {
+    event.preventDefault(); setBusy(true);
+    const { error: saveError } = await supabase.from("cursos").insert({ escola_id: schoolId, nome: course.nome.trim(), codigo: course.codigo.trim().toUpperCase(), nivel: course.nivel.trim() || null, valor_base: Number(course.preco || 0), categoria: course.categoria, frequencia_minima: Number(course.frequencia || 75), exige_nivelamento: course.nivelamento, exige_avaliacao_pratica: course.pratica, exige_estagio: course.estagio, exige_projeto_final: course.projeto, emite_certificado: course.certificado });
+    if (saveError) toast.error(saveError.message); else { toast.success("Curso criado."); setCourse((old) => ({ ...old, nome: "", codigo: "", nivel: "", preco: "" })); setCourseOpen(false); await refresh(schoolId); } setBusy(false);
   }
-
-  async function createClass(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!schoolId || !classCourseId) return;
-    setBusy(true);
-    const { error: saveError } = await supabase.from("turmas").insert({
-      escola_id: schoolId,
-      curso_id: classCourseId,
-      nome: className.trim(),
-      nivel: classLevel.trim() || null,
-      capacidade_maxima: Number(classCapacity),
-      professor_nome: classTeacher.trim() || null,
-    });
-    if (saveError) toast.error(`Não foi possível criar a turma: ${saveError.message}`);
-    else {
-      toast.success("Turma criada.");
-      setClassName("");
-      setClassLevel("");
-      setClassTeacher("");
-      try {
-        await refresh(schoolId);
-      } catch (cause) {
-        setError(readableError(cause));
-      }
-    }
-    setBusy(false);
+  async function createClass(event: FormEvent) {
+    event.preventDefault(); setBusy(true);
+    const { error: saveError } = await supabase.from("turmas").insert({ escola_id: schoolId, curso_id: group.cursoId, nome: group.nome.trim(), nivel: group.nivel.trim() || null, capacidade_maxima: Number(group.capacidade), professor_nome: group.professor.trim() || null, coordenador_nome: group.coordenador.trim() || null, modalidade: group.modalidade, faixa_etaria: group.faixa.trim() || null, criterio_entrada: group.criterio.trim() || null, ementa: group.ementa.trim() || null, objetivos: group.objetivos.trim() || null, frequencia_minima: group.frequencia ? Number(group.frequencia) : null });
+    if (saveError) toast.error(saveError.message); else { toast.success("Turma criada."); setGroup((old) => ({ ...old, nome: "", nivel: "", professor: "", coordenador: "", faixa: "", criterio: "", ementa: "", objetivos: "" })); setClassOpen(false); await refresh(schoolId); } setBusy(false);
   }
+  async function toggleClass(item: SchoolClass) { const next = item.status === "ativa" ? "concluida" : "ativa"; const { error: saveError } = await supabase.from("turmas").update({ status: next }).eq("id", item.id).eq("escola_id", schoolId); if (saveError) toast.error(saveError.message); else { toast.success(next === "ativa" ? "Turma reativada." : "Turma concluída."); await refresh(schoolId); } }
 
-  async function toggleClass(item: SchoolClass) {
-    const next = item.status === "ativa" ? "encerrada" : "ativa";
-    const { error: saveError } = await supabase
-      .from("turmas")
-      .update({ status: next })
-      .eq("id", item.id)
-      .eq("escola_id", schoolId);
-    if (saveError) toast.error(saveError.message);
-    else {
-      toast.success(next === "ativa" ? "Turma reativada." : "Turma encerrada.");
-      try {
-        await refresh(schoolId);
-      } catch (cause) {
-        setError(readableError(cause));
-      }
-    }
-  }
-
-  if (loading) return <p className="p-8">Carregando cursos e turmas…</p>;
-  if (error)
-    return (
-      <p role="alert" className="p-8 text-red-400">
-        {error}
-      </p>
-    );
-  return (
-    <main className="mx-auto max-w-6xl space-y-8 p-6 text-white">
-      <header className="space-y-3">
-        <nav className="flex gap-4 text-sm text-primary">
-          <Link to="/boas-vindas">Seu ambiente</Link>
-          <Link to="/alunos">Alunos e matrículas</Link>
-        </nav>
-        <h1 className="text-3xl font-bold">Cursos e turmas</h1>
-        <p className="text-neutral-400">
-          Cadastros reais da sua escola. Comece pelo curso e depois crie a turma.
-        </p>
-      </header>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <form
-          onSubmit={createCourse}
-          className="space-y-4 rounded-xl border border-white/10 bg-neutral-900 p-5"
-        >
-          <h2 className="text-xl font-semibold">Novo curso</h2>
-          <div>
-            <Label htmlFor="course-name">Nome</Label>
-            <Input
-              id="course-name"
-              value={courseName}
-              onChange={(e) => setCourseName(e.target.value)}
-              required
-              minLength={3}
-              maxLength={120}
-            />
-          </div>
-          <div>
-            <Label htmlFor="course-code">Código</Label>
-            <Input
-              id="course-code"
-              value={courseCode}
-              onChange={(e) => setCourseCode(e.target.value)}
-              required
-              maxLength={30}
-              placeholder="ING-A1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="course-level">Nível</Label>
-            <Input
-              id="course-level"
-              value={courseLevel}
-              onChange={(e) => setCourseLevel(e.target.value)}
-              placeholder="A1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="course-price">Valor base (R$)</Label>
-            <Input
-              id="course-price"
-              type="number"
-              min="0"
-              step="0.01"
-              value={coursePrice}
-              onChange={(e) => setCoursePrice(e.target.value)}
-            />
-          </div>
-          <Button disabled={busy}>Criar curso</Button>
-        </form>
-        <form
-          onSubmit={createClass}
-          className="space-y-4 rounded-xl border border-white/10 bg-neutral-900 p-5"
-        >
-          <h2 className="text-xl font-semibold">Nova turma</h2>
-          <div>
-            <Label htmlFor="class-course">Curso</Label>
-            <select
-              id="class-course"
-              className={selectStyle}
-              value={classCourseId}
-              onChange={(e) => setClassCourseId(e.target.value)}
-              required
-            >
-              <option value="">Selecione</option>
-              {courses
-                .filter((c) => c.ativo)
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nome}
-                  </option>
-                ))}
-            </select>
-          </div>
-          <div>
-            <Label htmlFor="class-name">Nome da turma</Label>
-            <Input
-              id="class-name"
-              value={className}
-              onChange={(e) => setClassName(e.target.value)}
-              required
-              minLength={3}
-              maxLength={120}
-            />
-          </div>
-          <div>
-            <Label htmlFor="class-level">Nível</Label>
-            <Input
-              id="class-level"
-              value={classLevel}
-              onChange={(e) => setClassLevel(e.target.value)}
-              placeholder="A1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="class-capacity">Vagas</Label>
-            <Input
-              id="class-capacity"
-              type="number"
-              min="1"
-              max="1000"
-              value={classCapacity}
-              onChange={(e) => setClassCapacity(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="class-teacher">Professor</Label>
-            <Input
-              id="class-teacher"
-              value={classTeacher}
-              onChange={(e) => setClassTeacher(e.target.value)}
-              placeholder="Opcional"
-            />
-          </div>
-          <Button disabled={busy || courses.length === 0}>Criar turma</Button>
-        </form>
-      </div>
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">Cursos ({courses.length})</h2>
-        {courses.length === 0 ? (
-          <p className="text-neutral-400">Nenhum curso cadastrado.</p>
-        ) : (
-          <div className="grid gap-3 md:grid-cols-2">
-            {courses.map((c) => (
-              <div key={c.id} className="rounded-xl border border-white/10 p-4">
-                <strong>{c.nome}</strong>
-                <p className="text-sm text-neutral-400">
-                  {c.codigo} · {c.nivel || "Sem nível"} · R$ {Number(c.valor_base).toFixed(2)}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">Turmas ({classes.length})</h2>
-        {classes.length === 0 ? (
-          <p className="text-neutral-400">Nenhuma turma cadastrada.</p>
-        ) : (
-          <div className="grid gap-3 md:grid-cols-2">
-            {classes.map((item) => (
-              <div key={item.id} className="rounded-xl border border-white/10 p-4">
-                <strong>{item.nome}</strong>
-                <p className="text-sm text-neutral-400">
-                  {courses.find((c) => c.id === item.curso_id)?.nome || "Curso"} ·{" "}
-                  {item.nivel || "Sem nível"} · {item.capacidade_maxima} vagas · {item.status}
-                </p>
-                <p className="text-sm text-neutral-400">
-                  Professor: {item.professor_nome || "Não definido"}
-                </p>
-                <button
-                  className="mt-2 text-sm text-primary underline"
-                  onClick={() => void toggleClass(item)}
-                >
-                  {item.status === "ativa" ? "Encerrar turma" : "Reativar turma"}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-    </main>
-  );
+  if (loading) return <div className="grid min-h-72 place-items-center"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>;
+  if (error) return <p className="p-8 text-red-400">{error}</p>;
+  return <main className="space-y-6 p-6 text-foreground">
+    <header className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end"><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Estrutura pedagógica</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">Cursos e turmas</h1><p className="mt-2 text-sm text-muted-foreground">Uma estrutura flexível para idiomas, formação profissional, cursos livres e preparatórios.</p></div><div className="flex gap-2"><Button variant="outline" onClick={() => setCourseOpen(true)}><Plus className="mr-2 size-4" /> Novo curso</Button><Button onClick={() => setClassOpen(true)} disabled={!courses.length}><Users className="mr-2 size-4" /> Nova turma</Button></div></header>
+    <section className="grid gap-4 md:grid-cols-3"><Metric icon={BookOpen} label="Cursos ativos" value={courses.filter((item) => item.ativo).length} /><Metric icon={Users} label="Turmas ativas" value={classes.filter((item) => item.status === "ativa").length} /><Metric icon={Award} label="Cursos com certificado" value={courses.filter((item) => item.emite_certificado).length} /></section>
+    <section><h2 className="mb-3 text-lg font-semibold">Catálogo de cursos</h2><div className="grid gap-3 lg:grid-cols-2">{courses.map((item) => <article key={item.id} className="rounded-2xl border border-hairline bg-surface/50 p-5"><div className="flex justify-between gap-3"><div><h3 className="font-semibold">{item.nome}</h3><p className="text-sm text-muted-foreground">{item.codigo} · {item.nivel || "Nível livre"}</p></div><Badge variant="outline">{categoryLabel(item.categoria)}</Badge></div><div className="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">{item.exige_nivelamento && <Badge variant="secondary">Nivelamento</Badge>}{item.exige_avaliacao_pratica && <Badge variant="secondary">Prática</Badge>}{item.exige_estagio && <Badge variant="secondary">Estágio</Badge>}{item.exige_projeto_final && <Badge variant="secondary">Projeto final</Badge>}<Badge variant="secondary">Frequência {item.frequencia_minima}%</Badge></div></article>)}{!courses.length && <Empty text="Cadastre o primeiro curso para montar suas turmas." />}</div></section>
+    <section><h2 className="mb-3 text-lg font-semibold">Turmas</h2><div className="grid gap-3 lg:grid-cols-2">{classes.map((item) => <article key={item.id} className="rounded-2xl border border-hairline bg-surface/50 p-5"><div className="flex justify-between gap-3"><div><h3 className="font-semibold">{item.nome}</h3><p className="text-sm text-muted-foreground">{courses.find((c) => c.id === item.curso_id)?.nome || "Curso"} · {item.modalidade || "presencial"}</p></div><Badge variant="outline">{item.status}</Badge></div><div className="mt-4 grid grid-cols-2 gap-3 text-sm"><p><span className="text-muted-foreground">Professor</span><br />{item.professor_nome || "A definir"}</p><p><span className="text-muted-foreground">Coordenação</span><br />{item.coordenador_nome || "A definir"}</p><p><span className="text-muted-foreground">Capacidade</span><br />{item.capacidade_maxima} alunos</p><p><span className="text-muted-foreground">Nível</span><br />{item.nivel || "Livre"}</p></div><Button variant="link" className="mt-3 px-0" onClick={() => void toggleClass(item)}>{item.status === "ativa" ? "Concluir turma" : "Reativar turma"}</Button></article>)}{!classes.length && <Empty text="Nenhuma turma cadastrada." />}</div></section>
+    <Dialog open={courseOpen} onOpenChange={(open) => !busy && setCourseOpen(open)}><DialogContent className="max-h-[90vh] overflow-y-auto border-hairline bg-background sm:max-w-3xl"><DialogHeader><DialogTitle>Novo curso</DialogTitle><DialogDescription>Defina o modelo adequado à formação oferecida.</DialogDescription></DialogHeader><form id="course-form" onSubmit={createCourse} className="grid gap-4 py-2 md:grid-cols-2"><Field label="Nome" value={course.nome} set={(v) => setCourse({ ...course, nome: v })} required /><Field label="Código" value={course.codigo} set={(v) => setCourse({ ...course, codigo: v })} required /><div><Label>Categoria</Label><select className={selectStyle} value={course.categoria} onChange={(e) => setCourse({ ...course, categoria: e.target.value as Category })}><option value="idioma">Idioma</option><option value="profissionalizante">Profissionalizante</option><option value="livre">Curso livre</option><option value="preparatorio">Preparatório</option><option value="outro">Outro</option></select></div><Field label="Nível ou etapa" value={course.nivel} set={(v) => setCourse({ ...course, nivel: v })} /><Field label="Valor base" type="number" value={course.preco} set={(v) => setCourse({ ...course, preco: v })} /><Field label="Frequência mínima (%)" type="number" value={course.frequencia} set={(v) => setCourse({ ...course, frequencia: v })} /><div className="space-y-3 md:col-span-2"><Check label="Exige nivelamento" checked={course.nivelamento} set={(v) => setCourse({ ...course, nivelamento: v })} /><Check label="Exige avaliação prática" checked={course.pratica} set={(v) => setCourse({ ...course, pratica: v })} /><Check label="Exige estágio" checked={course.estagio} set={(v) => setCourse({ ...course, estagio: v })} /><Check label="Exige projeto final" checked={course.projeto} set={(v) => setCourse({ ...course, projeto: v })} /><Check label="Emite certificado" checked={course.certificado} set={(v) => setCourse({ ...course, certificado: v })} /></div></form><Footer form="course-form" busy={busy} close={() => setCourseOpen(false)} label="Salvar curso" /></DialogContent></Dialog>
+    <Dialog open={classOpen} onOpenChange={(open) => !busy && setClassOpen(open)}><DialogContent className="max-h-[90vh] overflow-y-auto border-hairline bg-background sm:max-w-4xl"><DialogHeader><DialogTitle>Nova turma</DialogTitle><DialogDescription>Vincule equipe, regras pedagógicas e planejamento.</DialogDescription></DialogHeader><form id="class-form" onSubmit={createClass} className="grid gap-4 py-2 md:grid-cols-2"><div><Label>Curso</Label><select required className={selectStyle} value={group.cursoId} onChange={(e) => setGroup({ ...group, cursoId: e.target.value })}><option value="">Selecione</option>{courses.filter((item) => item.ativo).map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}</select></div><Field label="Nome da turma" value={group.nome} set={(v) => setGroup({ ...group, nome: v })} required /><Field label="Nível ou etapa" value={group.nivel} set={(v) => setGroup({ ...group, nivel: v })} /><Field label="Capacidade" type="number" value={group.capacidade} set={(v) => setGroup({ ...group, capacidade: v })} /><Field label="Professor" value={group.professor} set={(v) => setGroup({ ...group, professor: v })} /><Field label="Coordenador" value={group.coordenador} set={(v) => setGroup({ ...group, coordenador: v })} /><Field label="Modalidade" value={group.modalidade} set={(v) => setGroup({ ...group, modalidade: v })} /><Field label="Faixa etária" value={group.faixa} set={(v) => setGroup({ ...group, faixa: v })} /><Field label="Critério de entrada" value={group.criterio} set={(v) => setGroup({ ...group, criterio: v })} /><Field label="Frequência mínima (%)" type="number" value={group.frequencia} set={(v) => setGroup({ ...group, frequencia: v })} /><Long label="Ementa" value={group.ementa} set={(v) => setGroup({ ...group, ementa: v })} /><Long label="Objetivos da turma" value={group.objetivos} set={(v) => setGroup({ ...group, objetivos: v })} /></form><Footer form="class-form" busy={busy} close={() => setClassOpen(false)} label="Salvar turma" /></DialogContent></Dialog>
+  </main>;
 }
+
+function categoryLabel(value: Category) { return ({ idioma: "Idioma", profissionalizante: "Profissionalizante", livre: "Livre", preparatorio: "Preparatório", outro: "Outro" })[value]; }
+function Metric({ icon: Icon, label, value }: { icon: typeof Users; label: string; value: number }) { return <div className="rounded-2xl border border-hairline bg-surface/50 p-5"><Icon className="size-5 text-primary" /><p className="mt-5 text-3xl font-semibold">{value}</p><p className="text-sm text-muted-foreground">{label}</p></div>; }
+function Field({ label, value, set, required = false, type = "text" }: { label: string; value: string; set: (v: string) => void; required?: boolean; type?: string }) { return <div><Label>{label}</Label><Input value={value} onChange={(e) => set(e.target.value)} required={required} type={type} min={type === "number" ? 0 : undefined} /></div>; }
+function Long({ label, value, set }: { label: string; value: string; set: (v: string) => void }) { return <div><Label>{label}</Label><Textarea value={value} onChange={(e) => set(e.target.value)} /></div>; }
+function Check({ label, checked, set }: { label: string; checked: boolean; set: (v: boolean) => void }) { return <label className="flex items-center gap-3 text-sm"><Checkbox checked={checked} onCheckedChange={(value) => set(Boolean(value))} />{label}</label>; }
+function Footer({ form, busy, close, label }: { form: string; busy: boolean; close: () => void; label: string }) { return <DialogFooter><Button variant="outline" disabled={busy} onClick={close}>Cancelar</Button><Button form={form} disabled={busy}>{busy ? <><Loader2 className="mr-2 size-4 animate-spin" />Salvando…</> : label}</Button></DialogFooter>; }
+function Empty({ text }: { text: string }) { return <div className="col-span-full rounded-2xl border border-dashed border-hairline p-10 text-center"><BriefcaseBusiness className="mx-auto size-6 text-muted-foreground" /><p className="mt-3 text-sm text-muted-foreground">{text}</p></div>; }
