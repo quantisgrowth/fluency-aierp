@@ -40,6 +40,25 @@ const selectStyle =
   "h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm text-foreground";
 type Category = Course["categoria"];
 
+function emptyCourseForm() {
+  return {
+    nome: "",
+    codigo: "",
+    nivel: "",
+    preco: "",
+    categoria: "idioma" as Category,
+    frequencia: "75",
+    nivelamento: false,
+    pratica: false,
+    estagio: false,
+    projeto: false,
+    certificado: true,
+    criterio: "",
+    ementa: "",
+    etapas: "",
+  };
+}
+
 function emptyClassForm() {
   return {
     nome: "",
@@ -75,24 +94,10 @@ export function AcademicClassesPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [courseOpen, setCourseOpen] = useState(false);
+  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [classOpen, setClassOpen] = useState(false);
   const [editingClassId, setEditingClassId] = useState<string | null>(null);
-  const [course, setCourse] = useState({
-    nome: "",
-    codigo: "",
-    nivel: "",
-    preco: "",
-    categoria: "idioma" as Category,
-    frequencia: "75",
-    nivelamento: false,
-    pratica: false,
-    estagio: false,
-    projeto: false,
-    certificado: true,
-    criterio: "",
-    ementa: "",
-    etapas: "",
-  });
+  const [course, setCourse] = useState(emptyCourseForm);
   const [syllabusFile, setSyllabusFile] = useState<File | null>(null);
   const [group, setGroup] = useState(emptyClassForm);
 
@@ -173,50 +178,120 @@ export function AcademicClassesPage() {
     };
   }, []);
 
-  async function createCourse(event: FormEvent) {
+  function openNewCourse() {
+    setEditingCourseId(null);
+    setCourse(emptyCourseForm());
+    setSyllabusFile(null);
+    setCourseOpen(true);
+  }
+
+  function openEditCourse(item: Course) {
+    setEditingCourseId(item.id);
+    setCourse({
+      nome: item.nome,
+      codigo: item.codigo,
+      nivel: item.nivel || "",
+      preco: String(item.valor_base || 0),
+      categoria: item.categoria,
+      frequencia: String(item.frequencia_minima),
+      nivelamento: item.exige_nivelamento,
+      pratica: item.exige_avaliacao_pratica,
+      estagio: item.exige_estagio,
+      projeto: item.exige_projeto_final,
+      certificado: item.emite_certificado,
+      criterio: item.criterio_entrada || "",
+      ementa: item.ementa || "",
+      etapas: stages
+        .filter((stage) => stage.curso_id === item.id)
+        .sort((a, b) => a.ordem - b.ordem)
+        .map((stage) => `${stage.codigo} | ${stage.nome}`)
+        .join("\n"),
+    });
+    setSyllabusFile(null);
+    setCourseOpen(true);
+  }
+
+  async function saveCourse(event: FormEvent) {
     event.preventDefault();
+    const stageLines = course.etapas
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line, index) => {
+        const [rawCode, ...nameParts] = line.split("|");
+        const hasName = nameParts.length > 0;
+        return {
+          codigo: (hasName ? rawCode : String(index + 1)).trim().toUpperCase(),
+          nome: (hasName ? nameParts.join("|") : rawCode).trim(),
+          ordem: index + 1,
+        };
+      });
+    if (new Set(stageLines.map((stage) => stage.codigo)).size !== stageLines.length) {
+      toast.error("Cada etapa precisa ter um código diferente.");
+      return;
+    }
+    if (syllabusFile && syllabusFile.size > 10 * 1024 * 1024) {
+      toast.error("O documento da ementa deve ter no máximo 10 MB.");
+      return;
+    }
     setBusy(true);
     try {
-      const { data: savedCourse, error: saveError } = await supabase
-        .from("cursos")
-        .insert({
-          escola_id: schoolId,
-          nome: course.nome.trim(),
-          codigo: course.codigo.trim().toUpperCase(),
-          nivel: course.nivel.trim() || null,
-          valor_base: Number(course.preco || 0),
-          categoria: course.categoria,
-          frequencia_minima: Number(course.frequencia || 75),
-          exige_nivelamento: course.nivelamento,
-          exige_avaliacao_pratica: course.pratica,
-          exige_estagio: course.estagio,
-          exige_projeto_final: course.projeto,
-          emite_certificado: course.certificado,
-          criterio_entrada: course.criterio.trim() || null,
-          ementa: course.ementa.trim() || null,
-        })
-        .select("id")
-        .single();
+      const coursePayload = {
+        escola_id: schoolId,
+        nome: course.nome.trim(),
+        codigo: course.codigo.trim().toUpperCase(),
+        nivel: course.nivel.trim() || null,
+        valor_base: Number(course.preco || 0),
+        categoria: course.categoria,
+        frequencia_minima: Number(course.frequencia || 75),
+        exige_nivelamento: course.nivelamento,
+        exige_avaliacao_pratica: course.pratica,
+        exige_estagio: course.estagio,
+        exige_projeto_final: course.projeto,
+        emite_certificado: course.certificado,
+        criterio_entrada: course.criterio.trim() || null,
+        ementa: course.ementa.trim() || null,
+      };
+      const courseResult = editingCourseId
+        ? await supabase
+            .from("cursos")
+            .update(coursePayload)
+            .eq("id", editingCourseId)
+            .eq("escola_id", schoolId)
+            .select("id")
+            .single()
+        : await supabase.from("cursos").insert(coursePayload).select("id").single();
+      const { data: savedCourse, error: saveError } = courseResult;
       if (saveError) throw saveError;
 
-      const parsedStages = course.etapas
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .map((line, index) => {
-          const [rawCode, ...nameParts] = line.split("|");
-          const hasName = nameParts.length > 0;
-          return {
-            escola_id: schoolId,
-            curso_id: savedCourse.id,
-            codigo: (hasName ? rawCode : String(index + 1)).trim().toUpperCase(),
-            nome: (hasName ? nameParts.join("|") : rawCode).trim(),
-            ordem: index + 1,
-          };
-        });
+      const parsedStages = stageLines.map((stage) => ({
+        ...stage,
+        escola_id: schoolId,
+        curso_id: savedCourse.id,
+        ativo: true,
+      }));
       if (parsedStages.length) {
-        const { error: stageError } = await supabase.from("curso_etapas").insert(parsedStages);
+        const { error: stageError } = await supabase.from("curso_etapas").upsert(parsedStages, {
+          onConflict: "escola_id,curso_id,codigo",
+        });
         if (stageError) throw stageError;
+      }
+      if (editingCourseId) {
+        const submittedCodes = new Set(parsedStages.map((stage) => stage.codigo));
+        const removedStageIds = stages
+          .filter(
+            (stage) =>
+              stage.curso_id === editingCourseId && !submittedCodes.has(stage.codigo.toUpperCase()),
+          )
+          .map((stage) => stage.id);
+        if (removedStageIds.length) {
+          const { error: archiveError } = await supabase
+            .from("curso_etapas")
+            .update({ ativo: false })
+            .eq("escola_id", schoolId)
+            .in("id", removedStageIds);
+          if (archiveError) throw archiveError;
+        }
       }
 
       if (syllabusFile) {
@@ -226,12 +301,23 @@ export function AcademicClassesPage() {
           .from("curso-documentos")
           .upload(storagePath, syllabusFile, { upsert: false });
         if (uploadError) throw uploadError;
+        const { data: latestDocument, error: versionError } = await supabase
+          .from("curso_documentos")
+          .select("versao")
+          .eq("escola_id", schoolId)
+          .eq("curso_id", savedCourse.id)
+          .eq("tipo", "ementa")
+          .order("versao", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (versionError) throw versionError;
         const { error: documentError } = await supabase.from("curso_documentos").insert({
           escola_id: schoolId,
           curso_id: savedCourse.id,
           tipo: "ementa",
           titulo: syllabusFile.name,
           storage_path: storagePath,
+          versao: (latestDocument?.versao || 0) + 1,
         });
         if (documentError) {
           await supabase.storage.from("curso-documentos").remove([storagePath]);
@@ -239,18 +325,10 @@ export function AcademicClassesPage() {
         }
       }
 
-      toast.success("Curso criado.");
-      setCourse((old) => ({
-        ...old,
-        nome: "",
-        codigo: "",
-        nivel: "",
-        preco: "",
-        criterio: "",
-        ementa: "",
-        etapas: "",
-      }));
+      toast.success(editingCourseId ? "Curso atualizado." : "Curso criado.");
+      setCourse(emptyCourseForm());
       setSyllabusFile(null);
+      setEditingCourseId(null);
       setCourseOpen(false);
       await refresh(schoolId);
     } catch (cause) {
@@ -431,7 +509,7 @@ export function AcademicClassesPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setCourseOpen(true)}>
+          <Button variant="outline" onClick={openNewCourse}>
             <Plus className="mr-2 size-4" /> Novo curso
           </Button>
           <Button onClick={openNewClass} disabled={!courses.length}>
@@ -477,6 +555,14 @@ export function AcademicClassesPage() {
                 {item.exige_projeto_final && <Badge variant="secondary">Projeto final</Badge>}
                 <Badge variant="secondary">Frequência {item.frequencia_minima}%</Badge>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => openEditCourse(item)}
+              >
+                <Pencil className="mr-2 size-4" /> Editar curso
+              </Button>
             </article>
           ))}
           {!courses.length && <Empty text="Cadastre o primeiro curso para montar suas turmas." />}
@@ -532,13 +618,28 @@ export function AcademicClassesPage() {
           {!classes.length && <Empty text="Nenhuma turma cadastrada." />}
         </div>
       </section>
-      <Dialog open={courseOpen} onOpenChange={(open) => !busy && setCourseOpen(open)}>
+      <Dialog
+        open={courseOpen}
+        onOpenChange={(open) => {
+          if (busy) return;
+          setCourseOpen(open);
+          if (!open) {
+            setEditingCourseId(null);
+            setCourse(emptyCourseForm());
+            setSyllabusFile(null);
+          }
+        }}
+      >
         <DialogContent className="max-h-[90vh] overflow-y-auto border-hairline bg-background sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Novo curso</DialogTitle>
-            <DialogDescription>Defina o modelo adequado à formação oferecida.</DialogDescription>
+            <DialogTitle>{editingCourseId ? "Editar curso" : "Novo curso"}</DialogTitle>
+            <DialogDescription>
+              {editingCourseId
+                ? "Atualize a estrutura pedagógica e publique novas versões da ementa."
+                : "Defina o modelo adequado à formação oferecida."}
+            </DialogDescription>
           </DialogHeader>
-          <form id="course-form" onSubmit={createCourse} className="grid gap-4 py-2 md:grid-cols-2">
+          <form id="course-form" onSubmit={saveCourse} className="grid gap-4 py-2 md:grid-cols-2">
             <Field
               label="Nome"
               value={course.nome}
@@ -651,8 +752,13 @@ export function AcademicClassesPage() {
           <Footer
             form="course-form"
             busy={busy}
-            close={() => setCourseOpen(false)}
-            label="Salvar curso"
+            close={() => {
+              setCourseOpen(false);
+              setEditingCourseId(null);
+              setCourse(emptyCourseForm());
+              setSyllabusFile(null);
+            }}
+            label={editingCourseId ? "Salvar alterações" : "Salvar curso"}
           />
         </DialogContent>
       </Dialog>

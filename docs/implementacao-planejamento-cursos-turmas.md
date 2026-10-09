@@ -17,6 +17,11 @@
 - [x] Permitir editar uma turma pelo mesmo formulário usado na criação.
 - [x] Preencher o formulário de edição com etapa, equipe, agenda, modalidade e regras atuais.
 - [x] Excluir a própria turma da validação de conflito durante a edição.
+- [x] Permitir editar cursos diretamente pelo card do catálogo.
+- [x] Atualizar dados gerais, critérios, ementa, etapas e exigências do curso.
+- [x] Arquivar etapas removidas sem apagar vínculos históricos das turmas.
+- [x] Reativar uma etapa quando seu código voltar ao planejamento do curso.
+- [x] Criar uma nova versão ao enviar outro documento de ementa.
 
 ## Próximas evoluções
 
@@ -40,6 +45,9 @@
 - **Falso conflito ao editar:** a turma que está sendo alterada é ignorada na comparação.
 - **Atualização de outra escola:** o `UPDATE` exige simultaneamente o ID da turma e o ID da escola.
 - **Dados perdidos ao cancelar:** o formulário só é limpo depois de fechar ou concluir o salvamento.
+- **Etapa já utilizada em turma:** remover a etapa do formulário apenas a arquiva; o registro não é apagado.
+- **Códigos de etapa duplicados:** o formulário bloqueia o salvamento antes de alterar o curso.
+- **Sobrescrita da ementa anterior:** cada novo arquivo recebe uma versão incremental.
 - **Ementa alterada silenciosamente:** os documentos possuem versão; a evolução seguinte
   deve fixar a versão escolhida em turmas já iniciadas.
 - **Colaborador removido:** os nomes são preservados como fotografia histórica do vínculo.
