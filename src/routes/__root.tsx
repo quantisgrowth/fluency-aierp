@@ -17,6 +17,7 @@ import { AppShell } from "@/components/app-shell";
 import { TenantProvider } from "@/modules/tenant-context";
 import { UserProvider } from "@/modules/user-context";
 import { AuthGuard } from "@/components/auth-guard";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -175,6 +176,7 @@ function RootComponent() {
                 </AppShell>
               </AuthGuard>
             )}
+            <Toaster richColors position="top-right" closeButton />
           </ModuleProvider>
         </UserProvider>
       </TenantProvider>

@@ -357,13 +357,17 @@ export function AcademicStudentsPage() {
 
   async function saveStudent(event: FormEvent) {
     event.preventDefault();
-    if (!schoolId) return;
+    if (!schoolId) {
+      toast.error("Não foi possível identificar a escola. Atualize a página e tente novamente.");
+      return;
+    }
     if (!form.nome.trim() || !form.nascimento || (!form.email.trim() && !form.telefone.trim())) {
       toast.error("Preencha nome, data de nascimento e ao menos um contato.");
       setActiveTab("pessoais");
       return;
     }
     setBusy(true);
+    const toastId = toast.loading(editingStudent ? "Salvando alterações…" : "Salvando aluno…");
     const address = [form.endereco.trim(), form.cep ? `CEP ${form.cep}` : ""]
       .filter(Boolean)
       .join(" · ");
@@ -390,24 +394,26 @@ export function AcademicStudentsPage() {
       observacoes: form.observacoes.trim() || null,
       foto_url: photo,
     };
-    const operation = editingStudent
-      ? supabase
-          .from("alunos")
-          .update(payload)
-          .eq("id", editingStudent.id)
-          .eq("escola_id", schoolId)
-          .select("id")
-          .single()
-      : supabase
-          .from("alunos")
-          .insert({ escola_id: schoolId, ...payload })
-          .select("id")
-          .single();
-    const { data, error: saveError } = await operation;
-    if (saveError) toast.error(`Não foi possível cadastrar: ${saveError.message}`);
-    else {
+    try {
+      const operation = editingStudent
+        ? supabase
+            .from("alunos")
+            .update(payload)
+            .eq("id", editingStudent.id)
+            .eq("escola_id", schoolId)
+            .select("id")
+            .single()
+        : supabase
+            .from("alunos")
+            .insert({ escola_id: schoolId, ...payload })
+            .select("id")
+            .single();
+      const { data, error: saveError } = await operation;
+      if (saveError) throw saveError;
+      if (!data?.id) throw new Error("O banco não confirmou a gravação do aluno.");
+
       if (!editingStudent && form.responsavelNome.trim() && data?.id) {
-        const { data: guardian } = await supabase
+        const { data: guardian, error: guardianError } = await supabase
           .from("responsaveis")
           .insert({
             escola_id: schoolId,
@@ -418,21 +424,33 @@ export function AcademicStudentsPage() {
           })
           .select("id")
           .single();
-        if (guardian)
-          await supabase.from("aluno_responsaveis").insert({
+        if (guardianError) throw guardianError;
+        if (guardian) {
+          const { error: linkError } = await supabase.from("aluno_responsaveis").insert({
             escola_id: schoolId,
             aluno_id: data.id,
             responsavel_id: guardian.id,
             responsavel_pedagogico: true,
           });
+          if (linkError) throw linkError;
+        }
       }
+      await refresh(schoolId);
       toast.success(
-        editingStudent ? "Cadastro atualizado." : "Aluno cadastrado com o dossiê inicial.",
+        editingStudent
+          ? "Alterações do aluno salvas com sucesso."
+          : "Aluno cadastrado com sucesso.",
+        { id: toastId },
       );
       closeStudentForm();
-      await refresh(schoolId);
+    } catch (cause) {
+      toast.error(
+        `${editingStudent ? "Não foi possível salvar as alterações" : "Não foi possível cadastrar o aluno"}: ${readableError(cause)}`,
+        { id: toastId, duration: 8000 },
+      );
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   function closeStudentForm() {
