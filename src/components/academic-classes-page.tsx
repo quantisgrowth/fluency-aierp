@@ -98,6 +98,11 @@ function estimatedEndDate(start: string, totalHours: number, encounters: Meeting
   return date.toISOString().slice(0, 10);
 }
 
+function formatDatePtBr(value: string) {
+  const [year, month, day] = value.split("-");
+  return year && month && day ? `${day}/${month}/${year}` : value;
+}
+
 function emptyClassForm() {
   return {
     nome: "",
@@ -1003,12 +1008,14 @@ export function AcademicClassesPage() {
               <Label>Previsão de término</Label>
               <Input
                 value={
-                  estimatedEndDate(
-                    group.dataInicio,
-                    Number(
-                      courses.find((item) => item.id === group.cursoId)?.carga_horaria_total || 0,
+                  formatDatePtBr(
+                    estimatedEndDate(
+                      group.dataInicio,
+                      Number(
+                        courses.find((item) => item.id === group.cursoId)?.carga_horaria_total || 0,
+                      ),
+                      group.encontros,
                     ),
-                    group.encontros,
                   ) || "Aguardando curso, início e horários"
                 }
                 readOnly
