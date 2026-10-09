@@ -39,6 +39,7 @@ import { supabase } from "@/lib/supabase";
 import {
   currentSchoolId,
   readableError,
+  type Course,
   type Enrollment,
   type SchoolClass,
   type Student,
@@ -167,6 +168,7 @@ function parseOccupation(value: string | null) {
 export function AcademicStudentsPage() {
   const [schoolId, setSchoolId] = useState("");
   const [students, setStudents] = useState<Student[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [selectedClasses, setSelectedClasses] = useState<Record<string, string>>({});
@@ -229,13 +231,30 @@ export function AcademicStudentsPage() {
       }),
     [students, search, statusFilter, classFilter, ageFilter, createdFrom, createdTo],
   );
+  const academicLinks = useMemo(() => {
+    if (!editingStudent) return [];
+    return enrollments
+      .filter((enrollment) => enrollment.aluno_id === editingStudent.id)
+      .map((enrollment) => {
+        const schoolClass = classes.find((item) => item.id === enrollment.turma_id);
+        const course = courses.find((item) => item.id === schoolClass?.curso_id);
+        return { enrollment, schoolClass, course };
+      });
+  }, [editingStudent, enrollments, classes, courses]);
 
   async function refresh(id: string) {
-    const [studentResult, classResult, enrollmentResult] = await Promise.all([
+    const [studentResult, courseResult, classResult, enrollmentResult] = await Promise.all([
       supabase
         .from("alunos")
         .select(
           "id,created_at,nome,nome_social,data_nascimento,cpf,email,telefone,endereco,profissao_ou_escola,idioma_principal,nivel_atual,status,responsavel_nome,responsavel_email,responsavel_telefone,responsavel_contato,turma_atual_id,necessidades_acessibilidade,contato_emergencia_nome,contato_emergencia_telefone,objetivo_aprendizagem,meta_academica,observacoes,foto_url",
+        )
+        .eq("escola_id", id)
+        .order("nome"),
+      supabase
+        .from("cursos")
+        .select(
+          "id,nome,codigo,nivel,valor_base,ativo,categoria,exige_nivelamento,exige_avaliacao_pratica,exige_estagio,exige_projeto_final,emite_certificado,frequencia_minima,criterio_entrada,ementa",
         )
         .eq("escola_id", id)
         .order("nome"),
@@ -253,9 +272,11 @@ export function AcademicStudentsPage() {
         .eq("status", "ativa"),
     ]);
     if (studentResult.error) throw studentResult.error;
+    if (courseResult.error) throw courseResult.error;
     if (classResult.error) throw classResult.error;
     if (enrollmentResult.error) throw enrollmentResult.error;
     setStudents((studentResult.data ?? []) as Student[]);
+    setCourses((courseResult.data ?? []) as Course[]);
     setClasses((classResult.data ?? []) as SchoolClass[]);
     setEnrollments((enrollmentResult.data ?? []) as Enrollment[]);
   }
@@ -1108,6 +1129,54 @@ export function AcademicStudentsPage() {
                 )}
                 {activeTab === "academico" && (
                   <Section title="Jornada de aprendizagem">
+                    <div className="space-y-3 md:col-span-2">
+                      <div>
+                        <Label>Vínculo acadêmico</Label>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Curso, turma e equipe são atualizados automaticamente pelas matrículas
+                          ativas.
+                        </p>
+                      </div>
+                      {academicLinks.length > 0 ? (
+                        <div className="grid gap-3">
+                          {academicLinks.map(({ enrollment, schoolClass, course }) => (
+                            <article
+                              key={enrollment.id}
+                              className="grid gap-3 rounded-xl border border-hairline bg-surface/40 p-4 sm:grid-cols-2 lg:grid-cols-4"
+                            >
+                              <AcademicValue label="Curso" value={course?.nome} />
+                              <AcademicValue label="Turma" value={schoolClass?.nome} />
+                              <AcademicValue
+                                label="Nível ou etapa"
+                                value={schoolClass?.nivel || course?.nivel}
+                              />
+                              <AcademicValue
+                                label="Professor"
+                                value={schoolClass?.professor_nome}
+                              />
+                              {schoolClass?.coordenador_nome && (
+                                <AcademicValue
+                                  label="Coordenador"
+                                  value={schoolClass.coordenador_nome}
+                                />
+                              )}
+                              <div>
+                                <span className="text-xs text-muted-foreground">Situação</span>
+                                <div className="mt-1">
+                                  <Badge variant="secondary">{enrollment.status}</Badge>
+                                </div>
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="rounded-xl border border-dashed border-hairline p-4 text-sm text-muted-foreground">
+                          {editingStudent
+                            ? "Este aluno ainda não possui matrícula ativa. Faça a matrícula na lista de alunos para vincular curso, turma e professor."
+                            : "O vínculo com curso, turma e professor aparecerá depois que o aluno for cadastrado e matriculado."}
+                        </div>
+                      )}
+                    </div>
                     <Field
                       label="Idioma ou área principal"
                       value={form.idioma}
@@ -1431,6 +1500,14 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
       <legend className="mb-3 font-semibold">{title}</legend>
       <div className="grid gap-4 md:grid-cols-2">{children}</div>
     </fieldset>
+  );
+}
+function AcademicValue({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div>
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <p className="mt-1 text-sm font-medium">{value || "Não informado"}</p>
+    </div>
   );
 }
 function Field({
