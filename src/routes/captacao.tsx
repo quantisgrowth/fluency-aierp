@@ -613,7 +613,7 @@ function CaptacaoPage() {
 
   // Dynamically calculate CEFR distribution for charts
   const cefrDistribution = submissions.reduce((acc: Record<string, number>, curr) => {
-    const mainLevel = curr.level.split(" ")[0]; // Get "A1", "A2", etc.
+    const mainLevel = curr.level.split(" ")[0] || "Sem nível"; // Get "A1", "A2", etc.
     acc[mainLevel] = (acc[mainLevel] || 0) + 1;
     return acc;
   }, {});

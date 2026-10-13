@@ -1144,15 +1144,15 @@ export function AcademicStudentsPage() {
                               key={enrollment.id}
                               className="grid gap-3 rounded-xl border border-hairline bg-surface/40 p-4 sm:grid-cols-2 lg:grid-cols-4"
                             >
-                              <AcademicValue label="Curso" value={course?.nome} />
-                              <AcademicValue label="Turma" value={schoolClass?.nome} />
+                              <AcademicValue label="Curso" value={course?.nome ?? null} />
+                              <AcademicValue label="Turma" value={schoolClass?.nome ?? null} />
                               <AcademicValue
                                 label="Nível ou etapa"
-                                value={schoolClass?.nivel || course?.nivel}
+                                value={schoolClass?.nivel || course?.nivel || null}
                               />
                               <AcademicValue
                                 label="Professor"
-                                value={schoolClass?.professor_nome}
+                                value={schoolClass?.professor_nome ?? null}
                               />
                               {schoolClass?.coordenador_nome && (
                                 <AcademicValue

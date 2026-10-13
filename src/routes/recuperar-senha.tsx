@@ -7,7 +7,7 @@ import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/recuperar-senha")({
   validateSearch: (search: Record<string, unknown>) => ({
-    origem: search.origem === "manager" ? ("manager" as const) : undefined,
+    origem: search["origem"] === "manager" ? ("manager" as const) : undefined,
   }),
   head: () => ({ meta: [{ title: "Recuperar senha — Fluency AI" }] }),
   component: RecoverPasswordPage,

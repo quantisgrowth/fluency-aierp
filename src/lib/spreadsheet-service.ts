@@ -194,7 +194,9 @@ export async function parseStudentSpreadsheet(file: File): Promise<{
   const data = await file.arrayBuffer();
   const workbook = XLSX.read(data, { type: "array" });
   const firstSheetName = workbook.SheetNames[0];
+  if (!firstSheetName) throw new Error("A planilha não possui nenhuma aba.");
   const worksheet = workbook.Sheets[firstSheetName];
+  if (!worksheet) throw new Error("Não foi possível ler a primeira aba da planilha.");
 
   // Convert to JSON array of objects
   const rawRows = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, { defval: "" });

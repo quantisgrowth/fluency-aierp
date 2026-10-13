@@ -76,8 +76,8 @@ function emptyMeeting(): MeetingDraft {
 }
 
 function minutesBetween(start: string, end: string) {
-  const [startHour, startMinute] = start.split(":").map(Number);
-  const [endHour, endMinute] = end.split(":").map(Number);
+  const [startHour = 0, startMinute = 0] = start.split(":").map(Number);
+  const [endHour = 0, endMinute = 0] = end.split(":").map(Number);
   return endHour * 60 + endMinute - (startHour * 60 + startMinute);
 }
 
@@ -267,7 +267,7 @@ export function AcademicClassesPage() {
       .map((line) => line.trim())
       .filter(Boolean)
       .map((line, index) => {
-        const [rawCode, ...nameParts] = line.split("|");
+        const [rawCode = "", ...nameParts] = line.split("|");
         const hasName = nameParts.length > 0;
         return {
           codigo: (hasName ? rawCode : String(index + 1)).trim().toUpperCase(),

@@ -239,7 +239,10 @@ function LeadsPage() {
       toast.error("Nenhum lead selecionado.");
       return;
     }
-    exportToCSV(selectedList);
+    const worksheet = XLSX.utils.json_to_sheet(selectedList);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Leads");
+    XLSX.writeFile(workbook, `leads_selecionados_${new Date().toISOString().slice(0, 10)}.xlsx`);
     toast.success(`${selectedList.length} leads exportados com sucesso!`);
   };
 
@@ -468,6 +471,7 @@ function LeadsPage() {
     try {
       const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
       const worksheet = workbook.Sheets[workbook.SheetNames[0]!];
+      if (!worksheet) throw new Error("A planilha não possui nenhuma aba legível.");
       const rows = XLSX.utils.sheet_to_csv(worksheet, { FS: "\t" });
       setImportRawText(rows);
       parseDelimitedText(rows);

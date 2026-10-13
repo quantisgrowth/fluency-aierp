@@ -2752,7 +2752,7 @@ function SuperAdminPage() {
                         onChange={(e) =>
                           setEditingPlan({
                             ...editingPlan,
-                            [key]: e.target.value === "" ? null : Number(e.target.value),
+                            [key!]: e.target.value === "" ? null : Number(e.target.value),
                           })
                         }
                         className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white"
@@ -2780,7 +2780,7 @@ function SuperAdminPage() {
                         onChange={(e) =>
                           setEditingPlan({
                             ...editingPlan,
-                            [key]: e.target.value === "" ? null : Number(e.target.value),
+                            [key!]: e.target.value === "" ? null : Number(e.target.value),
                           })
                         }
                         className="h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 text-white"

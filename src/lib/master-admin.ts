@@ -98,11 +98,11 @@ export type MasterAuditLog = {
 };
 
 export type MasterAuditFilters = {
-  school_id?: string;
-  actor_user_id?: string;
-  action?: string;
-  from?: string;
-  to?: string;
+  school_id?: string | undefined;
+  actor_user_id?: string | undefined;
+  action?: string | undefined;
+  from?: string | undefined;
+  to?: string | undefined;
   page?: number;
   page_size?: number;
 };
