@@ -8,8 +8,8 @@ import { Eye, EyeOff } from "lucide-react";
 
 export const Route = createFileRoute("/redefinir-senha")({
   validateSearch: (search: Record<string, unknown>) => ({
-    origem: search.origem === "manager" ? ("manager" as const) : undefined,
-    convite: search.convite === "1" ? true : undefined,
+    origem: search["origem"] === "manager" ? ("manager" as const) : undefined,
+    convite: search["convite"] === "1" ? true : undefined,
   }),
   head: () => ({ meta: [{ title: "Definir nova senha — Fluency AI" }] }),
   component: ResetPasswordPage,

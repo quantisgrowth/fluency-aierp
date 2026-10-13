@@ -853,7 +853,7 @@ function InventarioPage() {
                       linkedClasses.map((c: any) => {
                         const themeObj =
                           CLASS_COLOR_THEMES.find((t) => t.id === c.corTheme) ||
-                          CLASS_COLOR_THEMES[0];
+                          CLASS_COLOR_THEMES[0]!;
                         return (
                           <div
                             key={c.nome}
@@ -1667,7 +1667,7 @@ function InventarioPage() {
                                   {dailyClasses.map((c: any) => {
                                     const themeObj =
                                       CLASS_COLOR_THEMES.find((t) => t.id === c.corTheme) ||
-                                      CLASS_COLOR_THEMES[0];
+                                      CLASS_COLOR_THEMES[0]!;
 
                                     return (
                                       <button
@@ -1984,7 +1984,7 @@ function InventarioPage() {
         (() => {
           const themeObj =
             CLASS_COLOR_THEMES.find((t) => t.id === selectedMapClass.corTheme) ||
-            CLASS_COLOR_THEMES[0];
+            CLASS_COLOR_THEMES[0]!;
           const assignedRoom = rooms.find(
             (r) => r.id === selectedMapClass.salaId || r.nome === selectedMapClass.salaNome,
           );

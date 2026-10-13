@@ -59,7 +59,7 @@ function getContrastForeground(color: string): string {
   if (color.includes("oklch")) {
     const match = color.match(/oklch\(\s*([\d.]+)/);
     if (match) {
-      const lightness = parseFloat(match[1]);
+      const lightness = parseFloat(match[1] ?? "0");
       return lightness >= 0.65 ? "oklch(0.12 0.015 260)" : "oklch(0.99 0 0)";
     }
   }

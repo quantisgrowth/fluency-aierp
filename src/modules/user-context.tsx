@@ -26,7 +26,7 @@ export type AdminProfile = {
   email: string;
   phone: string;
   avatar: string;
-  avatarImage?: string;
+  avatarImage?: string | undefined;
 };
 
 type UserContextValue = {
@@ -118,14 +118,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
       const name =
         profileResult.data?.nome?.trim() ||
-        String(authUser.user_metadata?.name || authUser.user_metadata?.full_name || "").trim() ||
+        String(
+          authUser.user_metadata?.["name"] || authUser.user_metadata?.["full_name"] || "",
+        ).trim() ||
         authUser.email?.split("@")[0] ||
         "Usuário";
       const email = profileResult.data?.email || authUser.email || "";
       const avatar = name
         .split(/\s+/)
         .slice(0, 2)
-        .map((part) => part[0])
+        .map((part: string) => part[0])
         .join("")
         .toUpperCase();
       const scopedProfileKey = `${STORAGE_PROFILE_KEY}:${authUser.id}`;
@@ -137,7 +139,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       } catch {
         /* ignore */
       }
-      setAdminProfile({ name, email, phone: "", avatar: avatar || "U", ...local, email });
+      setAdminProfile({ name, phone: "", avatar: avatar || "U", ...local, email });
 
       const unitNames = (unitsResult.data ?? []).map((unit) => unit.nome);
       setCompanies(unitNames);

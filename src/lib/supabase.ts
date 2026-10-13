@@ -1,28 +1,38 @@
 import { createClient } from "@supabase/supabase-js";
 
-// The publishable key is safe to ship to the browser. RLS remains responsible
-// for protecting tenant data. Defaults keep the hosted Lovable build connected
-// when build-time environment variables are unavailable.
-const supabaseUrl =
-  import.meta.env["VITE_SUPABASE_URL"] || "https://piwxpveprnwxkqlkjgux.supabase.co";
+const supabaseUrl = import.meta.env["VITE_SUPABASE_URL"];
 const supabaseAnonKey =
-  import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
-  import.meta.env["VITE_SUPABASE_ANON_KEY"] ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBpd3hwdmVwcm53eGtxbGtqZ3V4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0MDE0MTgsImV4cCI6MjEwNDk3NzQxOH0.zRtboVqzZ6myjKQCG22qp4zHvTp9VsTuSwBLy-KNfb8";
+  import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] || import.meta.env["VITE_SUPABASE_ANON_KEY"];
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-export const supabase = createClient(
-  supabaseUrl || "https://invalid.supabase.co",
-  supabaseAnonKey || "not-configured",
-  {
+function createConfiguredClient() {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      "Supabase não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY.",
+    );
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
     },
+  });
+}
+
+let client: ReturnType<typeof createConfiguredClient> | undefined;
+
+// A criação tardia permite compilar a aplicação sem credenciais. Em execução,
+// o ambiente precisa declarar explicitamente o projeto correto; nunca há
+// fallback silencioso para produção.
+export const supabase = new Proxy({} as ReturnType<typeof createConfiguredClient>, {
+  get(_, property, receiver) {
+    client ??= createConfiguredClient();
+    return Reflect.get(client, property, receiver);
   },
-);
+});
 
 export interface ConnectionStatus {
   connected: boolean;
@@ -31,9 +41,6 @@ export interface ConnectionStatus {
   error?: string;
 }
 
-/**
- * Checks connectivity and latency with the Supabase project.
- */
 export async function checkSupabaseConnection(): Promise<ConnectionStatus> {
   if (!isSupabaseConfigured) {
     return {
@@ -45,10 +52,8 @@ export async function checkSupabaseConnection(): Promise<ConnectionStatus> {
 
   const start = performance.now();
   try {
-    // Attempt a light ping via auth session or schema info
     const { error } = await supabase.auth.getSession();
     const latencyMs = Math.round(performance.now() - start);
-
     if (error) {
       return {
         connected: false,
@@ -57,20 +62,14 @@ export async function checkSupabaseConnection(): Promise<ConnectionStatus> {
         error: error.message,
       };
     }
-
-    return {
-      connected: true,
-      latencyMs,
-      message: `Conectado com sucesso (${latencyMs}ms)`,
-    };
-  } catch (err: unknown) {
+    return { connected: true, latencyMs, message: `Conectado com sucesso (${latencyMs}ms)` };
+  } catch (error: unknown) {
     const latencyMs = Math.round(performance.now() - start);
-    const errorMessage = err instanceof Error ? err.message : String(err);
     return {
       connected: false,
       latencyMs,
       message: "Falha na comunicação com o Supabase.",
-      error: errorMessage,
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 }
