@@ -27,7 +27,7 @@ scope_check AS (
     CASE WHEN t.table_name IN (
       'escolas', 'platform_admins', 'modulos_catalogo', 'planos_catalogo',
       'plano_modulos', 'plano_versoes', 'cupons_desconto', 'cupom_planos',
-      'profiles', 'user_roles'
+      'profiles', 'user_roles', 'contrato_modulos', 'contrato_versoes'
     ) THEN 'GLOBAL_OU_RAIZ'
     WHEN coalesce(c.tem_escola_id, false) THEN 'OK_ESCOLA'
     ELSE 'REVISAR_SEM_ESCOLA' END AS status,
@@ -39,7 +39,10 @@ scope_check AS (
 policy_check AS (
   SELECT '03_POLITICAS'::text AS secao,
     schemaname || '.' || tablename || '.' || policyname AS objeto,
-    CASE WHEN coalesce(qual, '') ~* '^[[:space:]]*true[[:space:]]*$'
+    CASE WHEN tablename IN ('modulos_catalogo', 'planos_catalogo', 'plano_modulos')
+      AND cmd = 'SELECT' AND coalesce(qual, '') ~* '^[[:space:]]*true[[:space:]]*$'
+      THEN 'GLOBAL_CATALOGO_AUTENTICADO'
+    WHEN coalesce(qual, '') ~* '^[[:space:]]*true[[:space:]]*$'
       OR coalesce(with_check, '') ~* '^[[:space:]]*true[[:space:]]*$' THEN 'REVISAR_TRUE'
     WHEN cmd IN ('INSERT', 'UPDATE', 'ALL') AND with_check IS NULL
       THEN 'REVISAR_WITH_CHECK' ELSE 'OK_ESTRUTURAL' END AS status,
@@ -108,5 +111,5 @@ all_checks AS (
 SELECT secao, objeto, status, detalhes FROM all_checks
 ORDER BY CASE WHEN status LIKE 'CRITICO%' THEN 1
   WHEN status LIKE 'REVISAR%' OR status LIKE 'EXIGE%' THEN 2
-  WHEN status = 'GLOBAL_OU_RAIZ' THEN 3 ELSE 4 END,
+  WHEN status IN ('GLOBAL_OU_RAIZ', 'GLOBAL_CATALOGO_AUTENTICADO') THEN 3 ELSE 4 END,
   secao, objeto;

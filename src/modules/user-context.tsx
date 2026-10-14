@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { activeMemberships, activeSchoolStorageKey } from "@/lib/organization";
 
 export type UserRole = "admin" | "operador" | "professor" | "coordenador";
 
@@ -29,9 +30,16 @@ export type AdminProfile = {
   avatarImage?: string | undefined;
 };
 
+export type SchoolOption = { id: string; name: string; role: string };
+export type UnitOption = { id: string; name: string };
+
 type UserContextValue = {
   users: SchoolUser[];
   companies: string[];
+  schools: SchoolOption[];
+  units: UnitOption[];
+  activeSchoolId: string;
+  activeUnitId: string;
   adminProfile: AdminProfile;
   activeRole: UserRole;
   activeCompany: string;
@@ -54,6 +62,8 @@ type UserContextValue = {
   updateProfile: (profile: Partial<AdminProfile>) => void;
   setActiveRole: (role: UserRole) => void;
   setActiveCompany: (company: string) => void;
+  setActiveSchoolId: (schoolId: string) => void;
+  setActiveUnitId: (unitId: string) => void;
   resetPassword: (id: string) => void;
   resendInvite: (id: string) => void;
 };
@@ -64,6 +74,8 @@ const STORAGE_USERS_KEY = "fluency-ai:users";
 const STORAGE_PROFILE_KEY = "fluency-ai:profile";
 const STORAGE_ROLE_KEY = "fluency-ai:active-role";
 const STORAGE_COMPANY_KEY = "fluency-ai:active-company";
+const activeUnitStorageKey = (userId: string, schoolId: string) =>
+  `fluency-ai:active-unit:${userId}:${schoolId}`;
 
 const DEFAULT_PROFILE: AdminProfile = {
   name: "",
@@ -75,8 +87,11 @@ const DEFAULT_PROFILE: AdminProfile = {
 export function UserProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<SchoolUser[]>([]);
   const [companies, setCompanies] = useState<string[]>([]);
+  const [schools, setSchools] = useState<SchoolOption[]>([]);
+  const [units, setUnits] = useState<UnitOption[]>([]);
   const [authenticatedUserId, setAuthenticatedUserId] = useState("");
   const [schoolId, setSchoolId] = useState("");
+  const [activeUnitId, setActiveUnitIdState] = useState("");
   const [adminProfile, setAdminProfile] = useState<AdminProfile>(DEFAULT_PROFILE);
   const [activeRole, setActiveRoleState] = useState<UserRole>("admin");
   const [activeCompany, setActiveCompanyState] = useState<string>("");
@@ -91,30 +106,55 @@ export function UserProvider({ children }: { children: ReactNode }) {
       if (!authUser || !mounted) return;
       setAuthenticatedUserId(authUser.id);
 
-      const { data: membership } = await supabase
-        .from("escola_membros")
-        .select("escola_id,papel")
-        .eq("user_id", authUser.id)
-        .eq("status", "ativo")
-        .limit(1)
-        .maybeSingle();
+      const { memberships } = await activeMemberships();
+      const schoolIds = memberships.map((item) => item.escola_id);
+      const { data: schoolRows } = schoolIds.length
+        ? await supabase.from("escolas").select("id,nome").in("id", schoolIds).order("nome")
+        : { data: [] };
+      const schoolOptions = (schoolRows ?? []).map((school) => ({
+        id: school.id,
+        name: school.nome,
+        role: memberships.find((item) => item.escola_id === school.id)?.papel || "",
+      }));
+      setSchools(schoolOptions);
+
+      let preferredSchoolId = "";
+      try {
+        preferredSchoolId = window.localStorage.getItem(activeSchoolStorageKey(authUser.id)) || "";
+      } catch {
+        /* ignore */
+      }
+      const selectedSchoolId = schoolOptions.some((school) => school.id === preferredSchoolId)
+        ? preferredSchoolId
+        : schoolOptions.length === 1
+          ? schoolOptions[0]!.id
+          : "";
+      const membership = memberships.find((item) => item.escola_id === selectedSchoolId);
+      if (selectedSchoolId) {
+        try {
+          window.localStorage.setItem(activeSchoolStorageKey(authUser.id), selectedSchoolId);
+        } catch {
+          /* ignore */
+        }
+      }
 
       const [profileResult, unitsResult] = await Promise.all([
         supabase
           .from("usuarios")
           .select("nome,email,role")
           .eq("auth_user_id", authUser.id)
+          .eq("escola_id", selectedSchoolId || "00000000-0000-0000-0000-000000000000")
           .maybeSingle(),
         membership
           ? supabase
               .from("unidades")
-              .select("nome")
+              .select("id,nome")
               .eq("escola_id", membership.escola_id)
               .eq("status", "ativa")
           : Promise.resolve({ data: [], error: null }),
       ]);
       if (!mounted) return;
-      setSchoolId(membership?.escola_id || "");
+      setSchoolId(selectedSchoolId);
 
       const name =
         profileResult.data?.nome?.trim() ||
@@ -141,10 +181,33 @@ export function UserProvider({ children }: { children: ReactNode }) {
       }
       setAdminProfile({ name, phone: "", avatar: avatar || "U", ...local, email });
 
-      const unitNames = (unitsResult.data ?? []).map((unit) => unit.nome);
+      const unitOptions = (unitsResult.data ?? []).map((unit) => ({
+        id: unit.id,
+        name: unit.nome,
+      }));
+      const unitNames = unitOptions.map((unit) => unit.name);
+      setUnits(unitOptions);
       setCompanies(unitNames);
-      setActiveCompanyState((current) =>
-        unitNames.includes(current) ? current : unitNames[0] || "",
+      let storedUnitId = "";
+      try {
+        storedUnitId = selectedSchoolId
+          ? window.localStorage.getItem(activeUnitStorageKey(authUser.id, selectedSchoolId)) || ""
+          : "";
+      } catch {
+        /* ignore */
+      }
+      const selectedUnitId = unitOptions.some((unit) => unit.id === storedUnitId)
+        ? storedUnitId
+        : unitOptions.length === 1
+          ? unitOptions[0]!.id
+          : unitOptions.length > 1
+            ? "all"
+            : "";
+      setActiveUnitIdState(selectedUnitId);
+      setActiveCompanyState(
+        selectedUnitId === "all"
+          ? "Todas as Unidades"
+          : unitOptions.find((unit) => unit.id === selectedUnitId)?.name || "",
       );
       const roleMap: Partial<Record<string, UserRole>> = {
         gestor: "admin",
@@ -155,11 +218,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
         professor: "professor",
       };
       setActiveRoleState(roleMap[membership?.papel || profileResult.data?.role || ""] || "admin");
-      if (membership?.escola_id) {
+      if (selectedSchoolId) {
         const { data: directory } = await supabase
           .from("usuarios")
           .select("id,nome,email,role")
-          .eq("escola_id", membership.escola_id)
+          .eq("escola_id", selectedSchoolId)
           .eq("status", "ativo")
           .order("nome");
         if (mounted) {
@@ -344,6 +407,24 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const setActiveSchoolId = (nextSchoolId: string) => {
+    if (!authenticatedUserId || !schools.some((school) => school.id === nextSchoolId)) return;
+    window.localStorage.setItem(activeSchoolStorageKey(authenticatedUserId), nextSchoolId);
+    window.location.assign("/");
+  };
+
+  const setActiveUnitId = (nextUnitId: string) => {
+    if (!authenticatedUserId || !schoolId) return;
+    if (nextUnitId !== "all" && !units.some((unit) => unit.id === nextUnitId)) return;
+    window.localStorage.setItem(activeUnitStorageKey(authenticatedUserId, schoolId), nextUnitId);
+    setActiveUnitIdState(nextUnitId);
+    setActiveCompanyState(
+      nextUnitId === "all"
+        ? "Todas as Unidades"
+        : units.find((unit) => unit.id === nextUnitId)?.name || "",
+    );
+  };
+
   const resetPassword = (id: string) => {
     const user = users.find((u) => u.id === id);
     if (!user) return;
@@ -366,6 +447,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
       value={{
         users,
         companies,
+        schools,
+        units,
+        activeSchoolId: schoolId,
+        activeUnitId,
         adminProfile,
         activeRole,
         activeCompany,
@@ -375,6 +460,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
         updateProfile,
         setActiveRole,
         setActiveCompany,
+        setActiveSchoolId,
+        setActiveUnitId,
         resetPassword,
         resendInvite,
       }}

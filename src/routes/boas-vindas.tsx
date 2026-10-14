@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { currentMembership } from "@/lib/organization";
 
 type School = { nome: string; status: string; trial_ends_at: string };
 type Unit = { nome: string };
@@ -19,19 +20,9 @@ function WelcomePage() {
   useEffect(() => {
     let active = true;
     async function load() {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
-        if (active) setLoading(false);
-        return;
-      }
-      const { data: memberships, error: memberError } = await supabase
-        .from("escola_membros")
-        .select("escola_id")
-        .eq("user_id", userData.user.id)
-        .eq("status", "ativo")
-        .limit(1);
-      const schoolId = memberships?.[0]?.escola_id;
-      if (!schoolId || memberError) {
+      const membership = await currentMembership().catch(() => null);
+      const schoolId = membership?.escola_id;
+      if (!schoolId) {
         if (active) {
           setError("Não foi possível encontrar sua escola ativa.");
           setLoading(false);

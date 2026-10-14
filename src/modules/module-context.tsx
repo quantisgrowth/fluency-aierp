@@ -9,6 +9,7 @@ import {
 } from "react";
 import { MODULES, type ModuleId } from "./registry";
 import { supabase } from "@/lib/supabase";
+import { currentMembership } from "@/lib/organization";
 
 const DEFAULT_ACTIVE: ModuleId[] = [];
 
@@ -27,15 +28,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
     const loadContractedModules = async () => {
-      const { data: authData } = await supabase.auth.getUser();
-      if (!authData.user) return;
-      const { data: membership } = await supabase
-        .from("escola_membros")
-        .select("escola_id")
-        .eq("user_id", authData.user.id)
-        .eq("status", "ativo")
-        .limit(1)
-        .maybeSingle();
+      const membership = await currentMembership().catch(() => null);
       if (!membership) return;
       const { data: modules, error } = await supabase
         .from("escola_modulos")

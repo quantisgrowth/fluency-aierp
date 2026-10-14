@@ -17,6 +17,7 @@ import { StatusPill } from "@/components/kit/status-pill";
 import { useModules } from "@/modules/module-context";
 import { useUser } from "@/modules/user-context";
 import { supabase } from "@/lib/supabase";
+import { currentMembership } from "@/lib/organization";
 import {
   billingStatus,
   brl,
@@ -54,15 +55,7 @@ function Dashboard() {
   useEffect(() => {
     let mounted = true;
     async function loadRealCounts() {
-      const { data: authData } = await supabase.auth.getUser();
-      if (!authData.user) return;
-      const { data: membership } = await supabase
-        .from("escola_membros")
-        .select("escola_id")
-        .eq("user_id", authData.user.id)
-        .eq("status", "ativo")
-        .limit(1)
-        .maybeSingle();
+      const membership = await currentMembership().catch(() => null);
       if (!membership) return;
       const [students, classes] = await Promise.all([
         supabase
