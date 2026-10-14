@@ -12,6 +12,7 @@ A tela de colaboradores usava quatro flags fixas e agrupava módulos distintos. 
 - Administradores da escola recebem acesso integral aos módulos contratados.
 - A navegação e o `ModuleGate` consultam o usuário autenticado.
 - O banco rejeita módulos desconhecidos e permissões para módulos inativos.
+- A desativação de um módulo revoga automaticamente sua permissão de todos os colaboradores da escola.
 - Toda alteração é registrada em `audit_logs`.
 - A função `private.has_module_permission` fica disponível para políticas RLS específicas.
 
