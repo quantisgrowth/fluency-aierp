@@ -120,7 +120,19 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const { dark, toggle } = useTheme();
   const { isActive } = useModules();
-  const { activeRole, adminProfile, activeCompany, setActiveCompany, companies, users } = useUser();
+  const {
+    activeRole,
+    adminProfile,
+    activeCompany,
+    companies,
+    users,
+    schools,
+    units,
+    activeSchoolId,
+    activeUnitId,
+    setActiveSchoolId,
+    setActiveUnitId,
+  } = useUser();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
 
@@ -282,22 +294,42 @@ export function AppShell({ children }: { children: ReactNode }) {
             </span>
           </div>
 
+          {schools.length > 1 && (
+            <div className="flex items-center gap-2">
+              <span className="hidden text-xs text-muted-foreground sm:inline">Escola:</span>
+              <select
+                value={activeSchoolId}
+                onChange={(event) => setActiveSchoolId(event.target.value)}
+                className="rounded-lg border border-hairline bg-surface/60 px-2 py-1 text-xs font-semibold text-foreground outline-none cursor-pointer focus:border-primary hover:bg-surface transition-all"
+              >
+                <option value="" disabled>
+                  Selecione
+                </option>
+                {schools.map((school) => (
+                  <option key={school.id} value={school.id}>
+                    {school.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Units belonging to the authenticated school */}
           <div className="flex items-center gap-2">
             <span className="hidden text-xs text-muted-foreground sm:inline">Unidade:</span>
             <select
-              value={activeCompany}
-              onChange={(e) => setActiveCompany(e.target.value)}
-              disabled={companies.length <= 1}
+              value={activeUnitId}
+              onChange={(e) => setActiveUnitId(e.target.value)}
+              disabled={units.length <= 1}
               className="rounded-lg border border-hairline bg-surface/60 px-2 py-1 text-xs font-semibold text-foreground outline-none cursor-pointer focus:border-primary hover:bg-surface transition-all"
             >
-              {companies.length > 1 && <option value="Todas as Unidades">Todas as Unidades</option>}
-              {companies.map((c) => (
-                <option key={c} value={c}>
-                  {c}
+              {units.length > 1 && <option value="all">Todas as Unidades</option>}
+              {units.map((unit) => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.name}
                 </option>
               ))}
-              {companies.length === 0 && <option value="">Sem unidade cadastrada</option>}
+              {units.length === 0 && <option value="">Sem unidade cadastrada</option>}
             </select>
           </div>
 

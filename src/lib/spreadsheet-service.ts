@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 import { supabase } from "./supabase";
+import { currentMembership } from "./organization";
 
 export interface StudentSpreadsheetRow {
   // 1. Dados do Aluno
@@ -411,17 +412,7 @@ export async function saveBatchStudentsToSupabase(
   try {
     let resolvedSchoolId = schoolId;
     if (!resolvedSchoolId) {
-      const { data: authData } = await supabase.auth.getUser();
-      if (authData.user) {
-        const { data: membership } = await supabase
-          .from("escola_membros")
-          .select("escola_id")
-          .eq("user_id", authData.user.id)
-          .eq("status", "ativo")
-          .limit(1)
-          .maybeSingle();
-        resolvedSchoolId = membership?.escola_id;
-      }
+      resolvedSchoolId = (await currentMembership()).escola_id;
     }
     if (!resolvedSchoolId)
       return {

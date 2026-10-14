@@ -26,16 +26,17 @@
 
 - [x] Mapear consultas que escolhem a primeira escola ativa com `limit(1)`.
 - [x] Mapear a cobertura de `escola_id`, `unidade_id`, RLS, Storage e funções privilegiadas.
-- [ ] Executar `019_auditoria_isolamento_multiempresa.sql` no projeto canônico.
-- [ ] Salvar os resultados como evidência antes de criar a migração corretiva.
+- [x] Executar `019_auditoria_isolamento_multiempresa.sql` no projeto canônico.
+- [x] Salvar e classificar os resultados antes de criar a migração corretiva.
 
 ### 2. Contexto explícito no aplicativo
 
-- [ ] Criar um contexto único com `escolaId`, `unidadeId` e associações permitidas.
-- [ ] Exigir seleção quando o usuário possuir mais de uma escola ativa.
-- [ ] Trocar nomes de unidade usados como identificador por UUIDs.
-- [ ] Invalidar dados em memória ao trocar escola ou unidade.
-- [ ] Remover todos os usos operacionais de `limit(1)` em associações escolares.
+- [x] Criar uma resolução única de associação escolar ativa.
+- [x] Exigir seleção quando o usuário possuir mais de uma escola ativa.
+- [x] Trocar o seletor de unidade para UUIDs.
+- [x] Recarregar os dados ao trocar de escola.
+- [x] Remover os usos operacionais de `limit(1)` em associações escolares.
+- [ ] Aplicar `activeUnitId` aos módulos depois da migração de escopo por unidade.
 
 ### 3. Escopo por unidade no banco
 

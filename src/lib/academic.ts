@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { currentMembership } from "@/lib/organization";
 
 export type Course = {
   id: string;
@@ -127,18 +128,7 @@ export type Enrollment = {
 };
 
 export async function currentSchoolId(): Promise<string> {
-  const { data: user, error: authError } = await supabase.auth.getUser();
-  if (authError || !user.user) throw new Error("Entre na sua conta para continuar.");
-  const { data, error } = await supabase
-    .from("escola_membros")
-    .select("escola_id")
-    .eq("user_id", user.user.id)
-    .eq("status", "ativo")
-    .limit(1)
-    .maybeSingle();
-  if (error) throw error;
-  if (!data?.escola_id) throw new Error("Nenhuma escola ativa foi encontrada.");
-  return data.escola_id;
+  return (await currentMembership()).escola_id;
 }
 
 export function readableError(error: unknown): string {

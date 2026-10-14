@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
+import { currentMembership } from "@/lib/organization";
 
 export type TenantPreset = "lumen" | "apex" | "british";
 
@@ -86,15 +87,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
     async function loadTenant() {
-      const { data: authData } = await supabase.auth.getUser();
-      if (!authData.user) return;
-      const { data: membership } = await supabase
-        .from("escola_membros")
-        .select("escola_id")
-        .eq("user_id", authData.user.id)
-        .eq("status", "ativo")
-        .limit(1)
-        .maybeSingle();
+      const membership = await currentMembership().catch(() => null);
       if (!membership) return;
       const { data: school } = await supabase
         .from("escolas")
