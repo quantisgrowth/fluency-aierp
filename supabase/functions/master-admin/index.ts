@@ -286,6 +286,14 @@ Deno.serve(async (request) => {
       });
       if (error) throw error;
       const result = Array.isArray(data) ? data[0] : data;
+      const { error: contractError } = await userClient.rpc("master_save_contract", {
+        _school_id: result.school_id,
+        _plan_id: input.plan,
+        _cycle: "mensal",
+        _additional_units: 0,
+        _student_blocks: 0,
+      });
+      if (contractError) throw contractError;
       const inviteUrl = `${appUrl}/aceitar-convite?token=${encodeURIComponent(token)}`;
       const managerEmail = String(input.manager_email ?? "")
         .trim()

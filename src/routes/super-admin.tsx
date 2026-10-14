@@ -507,6 +507,13 @@ function SuperAdminPage() {
         additional_units: editingSchool.contract?.unidades_adicionais ?? 0,
         student_blocks: editingSchool.contract?.blocos_100_alunos ?? 0,
       });
+      if (editingSchool.contract?.forma_pagamento || editingSchool.contract?.pagamento_resumo) {
+        await masterAdmin.setContractPayment(
+          editingSchool.id,
+          editingSchool.contract.forma_pagamento,
+          editingSchool.contract.pagamento_resumo ?? "",
+        );
+      }
       await loadMasterData();
       setIsSchoolModalOpen(false);
       toast.success(`Dados da escola "${editingSchool.name}" salvos com sucesso!`);
@@ -846,6 +853,8 @@ function SuperAdminPage() {
   const contractCycle = editingSchool?.contract?.ciclo ?? "mensal";
   const extraUnits = editingSchool?.contract?.unidades_adicionais ?? 0;
   const studentBlocks = editingSchool?.contract?.blocos_100_alunos ?? 0;
+  const contractPaymentMethod = editingSchool?.contract?.forma_pagamento ?? "";
+  const contractPaymentSummary = editingSchool?.contract?.pagamento_resumo ?? "";
   const monthlyExtras = selectedPlan
     ? extraUnits * Number(selectedPlan.preco_unidade_adicional) +
       studentBlocks * Number(selectedPlan.preco_100_alunos_adicionais)
@@ -2270,6 +2279,8 @@ function SuperAdminPage() {
                               valor_total: 0,
                               mrr: 0,
                               proxima_cobranca: null,
+                              forma_pagamento: null,
+                              pagamento_resumo: null,
                             }),
                             ciclo: e.target.value as "mensal" | "anual",
                             unidades_adicionais: extraUnits,
@@ -2337,6 +2348,54 @@ function SuperAdminPage() {
                       <span className="text-[9px] font-normal text-neutral-400">
                         /{contractCycle === "anual" ? "ano" : "mês"}
                       </span>
+                    </p>
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label className="text-[9px] font-bold uppercase text-neutral-400">
+                      Forma de pagamento
+                    </label>
+                    <select
+                      value={contractPaymentMethod}
+                      onChange={(e) =>
+                        setEditingSchool({
+                          ...editingSchool,
+                          contract: {
+                            ...(editingSchool.contract as MasterContract),
+                            forma_pagamento: (e.target.value ||
+                              null) as MasterContract["forma_pagamento"],
+                          },
+                        })
+                      }
+                      className="h-9 w-full rounded-lg border border-white/5 bg-[#15161c] px-2 text-white"
+                    >
+                      <option value="">Não informado</option>
+                      <option value="pix">PIX</option>
+                      <option value="boleto">Boleto</option>
+                      <option value="cartao_credito">Cartão de crédito</option>
+                      <option value="transferencia">Transferência</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label className="text-[9px] font-bold uppercase text-neutral-400">
+                      Identificação exibida ao cliente
+                    </label>
+                    <input
+                      value={contractPaymentSummary}
+                      maxLength={80}
+                      placeholder="Ex.: Visa final 4242 ou PIX mensal"
+                      onChange={(e) =>
+                        setEditingSchool({
+                          ...editingSchool,
+                          contract: {
+                            ...(editingSchool.contract as MasterContract),
+                            pagamento_resumo: e.target.value,
+                          },
+                        })
+                      }
+                      className="h-9 w-full rounded-lg border border-white/5 bg-[#15161c] px-2 text-white"
+                    />
+                    <p className="text-[9px] text-neutral-500">
+                      Use somente dados mascarados. Não informe número completo ou código do cartão.
                     </p>
                   </div>
                   <div className="sm:col-span-4 flex flex-wrap gap-2 text-[9px]">

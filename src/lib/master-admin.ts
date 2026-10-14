@@ -35,6 +35,8 @@ export type MasterContract = {
   valor_total: number;
   mrr: number;
   proxima_cobranca: string | null;
+  forma_pagamento: "pix" | "boleto" | "cartao_credito" | "transferencia" | null;
+  pagamento_resumo: string | null;
 };
 
 export type MasterSchoolModule = {
@@ -280,6 +282,19 @@ export const masterAdmin = {
     additional_units: number;
     student_blocks: number;
   }) => invokeMaster<{ contract: MasterContract }>("save_contract", input),
+  setContractPayment: async (
+    schoolId: string,
+    paymentMethod: MasterContract["forma_pagamento"],
+    paymentSummary: string,
+  ) => {
+    const { data, error } = await supabase.rpc("master_set_contract_payment", {
+      _school_id: schoolId,
+      _payment_method: paymentMethod,
+      _payment_summary: paymentSummary || null,
+    });
+    if (error) throw error;
+    return data as MasterContract;
+  },
   updateTeamMember: (input: { user_id: string; name: string; role: string; status: string }) =>
     invokeMaster<{ member: MasterTeamMember }>("update_team_member", input),
   removeTeamMember: (userId: string) =>
