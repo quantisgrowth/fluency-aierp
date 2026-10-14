@@ -98,7 +98,14 @@ const MODALITY_LABELS: Record<
 
 function AdminModulosPage() {
   const storageKeys = useRef<{ products: string; levels: string; costs: string } | null>(null);
-  const { active, toggle: toggleModule, monthlyTotal } = useModules();
+  const {
+    active,
+    access: moduleAccess,
+    subscription,
+    loading: modulesLoading,
+    toggle: toggleModule,
+    monthlyTotal,
+  } = useModules();
   const { tenant, setTenantName, setPrimaryColor, applyPreset } = useTenant();
   const [activeTab, setActiveTab] = useState<"cursos" | "modules" | "branding">("cursos");
   const [customColor, setCustomColor] = useState(tenant.primaryColor);
@@ -217,6 +224,35 @@ function AdminModulosPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [cardNumber, setCardNumber] = useState("");
   const [cardName, setCardName] = useState("");
+
+  const moduleContract = (moduleId: ModuleDef["id"]) =>
+    moduleAccess.find((item) => item.id === moduleId);
+  const moduleStatusLabel = (module: ModuleDef) => {
+    const access = moduleContract(module.id);
+    if (access?.includedInPlan && active.includes(module.id)) return "Incluído no plano";
+    if (access?.includedInPlan && access.requiresConfiguration) return "Requer configuração";
+    if (active.includes(module.id)) return "Adicional ativo";
+    return "Disponível";
+  };
+  const modulePriceLabel = (module: ModuleDef) => {
+    const access = moduleContract(module.id);
+    if (access?.includedInPlan) return "Incluído";
+    if (active.includes(module.id) && access?.contractedPrice) {
+      return `${brl(access.contractedPrice)}/mês`;
+    }
+    return `${brl(module.price)}/mês`;
+  };
+  const paymentMethodLabel = (method: string | null | undefined) => {
+    const labels: Record<string, string> = {
+      pix: "PIX",
+      boleto: "Boleto",
+      cartao_credito: "Cartão de crédito",
+      transferencia: "Transferência",
+    };
+    return method ? labels[method] || method : "Não informado";
+  };
+  const formatContractDate = (value: string | null | undefined) =>
+    value ? new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(new Date(value)) : "—";
 
   // Sync to localStorage
   useEffect(() => {
@@ -1568,6 +1604,7 @@ function AdminModulosPage() {
               <div className="lg:col-span-2 space-y-4">
                 {MODULES.map((m) => {
                   const isEnabled = active.includes(m.id);
+                  const access = moduleContract(m.id);
                   const Icon = m.icon;
                   return (
                     <GlassCard
@@ -1598,7 +1635,7 @@ function AdminModulosPage() {
                                   : "bg-muted border-hairline text-muted-foreground"
                               }`}
                             >
-                              {isEnabled ? "Ativo" : "Bloqueado"}
+                              {moduleStatusLabel(m)}
                             </span>
                           </div>
                           <p className="text-xs text-muted-foreground leading-relaxed">
@@ -1609,9 +1646,13 @@ function AdminModulosPage() {
 
                       <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-hairline">
                         <span className="text-xs font-semibold text-foreground">
-                          {brl(m.price)}/mês
+                          {modulePriceLabel(m)}
                         </span>
-                        {isEnabled ? (
+                        {access?.includedInPlan ? (
+                          <span className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
+                            Contratado
+                          </span>
+                        ) : isEnabled ? (
                           <button
                             onClick={() => toggleModule(m.id)}
                             className="rounded-lg border border-hairline px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-overdue hover:bg-overdue/10 transition-colors cursor-pointer"
@@ -1634,8 +1675,25 @@ function AdminModulosPage() {
 
               <div className="space-y-4">
                 <GlassCard className="p-6 space-y-4 sticky top-6">
-                  <h3 className="text-sm font-semibold text-foreground">Resumo da Assinatura</h3>
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">Assinatura e cobrança</h3>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Dados do contrato da escola ativa.
+                    </p>
+                  </div>
                   <div className="space-y-2 text-xs divide-y divide-hairline">
+                    <div className="flex justify-between pt-2">
+                      <span className="text-muted-foreground">Plano atual</span>
+                      <span className="font-semibold text-foreground">
+                        {modulesLoading ? "Carregando…" : subscription?.planName || "Não informado"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between pt-2">
+                      <span className="text-muted-foreground">Status</span>
+                      <span className="font-semibold capitalize text-foreground">
+                        {subscription?.status || "—"}
+                      </span>
+                    </div>
                     <div className="flex justify-between pt-2">
                       <span className="text-muted-foreground">Módulos Ativos</span>
                       <span className="font-semibold text-foreground">
@@ -1643,77 +1701,148 @@ function AdminModulosPage() {
                       </span>
                     </div>
                     <div className="flex justify-between pt-2">
-                      <span className="text-muted-foreground">Total Mensal</span>
+                      <span className="text-muted-foreground">Valor do contrato</span>
                       <span className="font-bold text-foreground text-sm">
-                        {brl(monthlyTotal)}/mês
+                        {subscription ? `${brl(monthlyTotal)}/mês` : "—"}
                       </span>
                     </div>
                     <div className="flex justify-between pt-2">
-                      <span className="text-muted-foreground">Próxima Fatura</span>
-                      <span className="font-semibold text-foreground">05/09/2026</span>
+                      <span className="text-muted-foreground">Ciclo</span>
+                      <span className="font-semibold capitalize text-foreground">
+                        {subscription?.cycle || "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-4 pt-2">
+                      <span className="text-muted-foreground">Pagamento</span>
+                      <span className="text-right font-semibold text-foreground">
+                        {paymentMethodLabel(subscription?.paymentMethod)}
+                        {subscription?.paymentSummary ? ` · ${subscription.paymentSummary}` : ""}
+                      </span>
+                    </div>
+                    <div className="flex justify-between pt-2">
+                      <span className="text-muted-foreground">Próxima cobrança</span>
+                      <span className="font-semibold text-foreground">
+                        {formatContractDate(subscription?.nextBillingDate)}
+                      </span>
                     </div>
                   </div>
                 </GlassCard>
               </div>
             </div>
           ) : (
-            <GlassCard className="overflow-hidden p-0">
-              <table className="w-full text-left text-xs">
-                <thead className="border-b border-hairline bg-surface/40 text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <tr>
-                    <th className="px-6 py-3.5 font-bold">Módulo</th>
-                    <th className="px-6 py-3.5 font-bold">Descrição</th>
-                    <th className="px-6 py-3.5 font-bold">Valor Mensal</th>
-                    <th className="px-6 py-3.5 font-bold">Status</th>
-                    <th className="px-6 py-3.5 font-bold text-right">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-hairline">
-                  {MODULES.map((m) => {
-                    const isEnabled = active.includes(m.id);
-                    const Icon = m.icon;
-                    return (
-                      <tr key={m.id} className="hover:bg-surface/40 transition-colors">
-                        <td className="px-6 py-4 font-bold text-foreground flex items-center gap-2.5">
-                          <span
-                            className={`grid size-7 place-items-center rounded-md border ${isEnabled ? "bg-primary/10 border-primary/20 text-primary" : "bg-surface text-muted-foreground"}`}
-                          >
-                            <Icon className="size-3.5" />
-                          </span>
-                          {m.name}
-                        </td>
-                        <td className="px-6 py-4 text-muted-foreground max-w-md">
-                          {m.description}
-                        </td>
-                        <td className="px-6 py-4 font-bold text-foreground">{brl(m.price)}/mês</td>
-                        <td className="px-6 py-4">
-                          <StatusPill tone={isEnabled ? "paid" : "due"}>
-                            {isEnabled ? "Ativo" : "Bloqueado"}
-                          </StatusPill>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          {isEnabled ? (
-                            <button
-                              onClick={() => toggleModule(m.id)}
-                              className="rounded-lg border border-hairline px-3 py-1 text-xs font-semibold text-muted-foreground hover:text-overdue hover:bg-overdue/10 transition-colors cursor-pointer"
+            <div className="space-y-4">
+              <GlassCard className="p-5">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">Plano</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">
+                      {modulesLoading ? "Carregando…" : subscription?.planName || "Não informado"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">Status</p>
+                    <p className="mt-1 text-sm font-semibold capitalize text-foreground">
+                      {subscription?.status || "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">Valor</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">
+                      {subscription ? `${brl(monthlyTotal)}/mês` : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">Ciclo</p>
+                    <p className="mt-1 text-sm font-semibold capitalize text-foreground">
+                      {subscription?.cycle || "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                      Pagamento
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">
+                      {paymentMethodLabel(subscription?.paymentMethod)}
+                    </p>
+                    {subscription?.paymentSummary && (
+                      <p className="text-[10px] text-muted-foreground">
+                        {subscription.paymentSummary}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                      Próxima cobrança
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">
+                      {formatContractDate(subscription?.nextBillingDate)}
+                    </p>
+                  </div>
+                </div>
+              </GlassCard>
+              <GlassCard className="overflow-hidden p-0">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-hairline bg-surface/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+                    <tr>
+                      <th className="px-6 py-3.5 font-bold">Módulo</th>
+                      <th className="px-6 py-3.5 font-bold">Descrição</th>
+                      <th className="px-6 py-3.5 font-bold">Valor Mensal</th>
+                      <th className="px-6 py-3.5 font-bold">Status</th>
+                      <th className="px-6 py-3.5 font-bold text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-hairline">
+                    {MODULES.map((m) => {
+                      const isEnabled = active.includes(m.id);
+                      const access = moduleContract(m.id);
+                      const Icon = m.icon;
+                      return (
+                        <tr key={m.id} className="hover:bg-surface/40 transition-colors">
+                          <td className="px-6 py-4 font-bold text-foreground flex items-center gap-2.5">
+                            <span
+                              className={`grid size-7 place-items-center rounded-md border ${isEnabled ? "bg-primary/10 border-primary/20 text-primary" : "bg-surface text-muted-foreground"}`}
                             >
-                              Desativar
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleOpenCheckout(m)}
-                              className="rounded-lg bg-primary px-3 py-1 text-xs font-bold text-primary-foreground hover:bg-primary/95 shadow transition-all cursor-pointer inline-flex items-center gap-1"
-                            >
-                              <Sparkles className="size-3" /> Contratar
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </GlassCard>
+                              <Icon className="size-3.5" />
+                            </span>
+                            {m.name}
+                          </td>
+                          <td className="px-6 py-4 text-muted-foreground max-w-md">
+                            {m.description}
+                          </td>
+                          <td className="px-6 py-4 font-bold text-foreground">
+                            {modulePriceLabel(m)}
+                          </td>
+                          <td className="px-6 py-4">
+                            <StatusPill tone={isEnabled ? "paid" : "due"}>
+                              {moduleStatusLabel(m)}
+                            </StatusPill>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            {access?.includedInPlan ? (
+                              <span className="text-xs font-semibold text-primary">Contratado</span>
+                            ) : isEnabled ? (
+                              <button
+                                onClick={() => toggleModule(m.id)}
+                                className="rounded-lg border border-hairline px-3 py-1 text-xs font-semibold text-muted-foreground hover:text-overdue hover:bg-overdue/10 transition-colors cursor-pointer"
+                              >
+                                Desativar
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleOpenCheckout(m)}
+                                className="rounded-lg bg-primary px-3 py-1 text-xs font-bold text-primary-foreground hover:bg-primary/95 shadow transition-all cursor-pointer inline-flex items-center gap-1"
+                              >
+                                <Sparkles className="size-3" /> Contratar
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </GlassCard>
+            </div>
           )}
         </div>
       )}
