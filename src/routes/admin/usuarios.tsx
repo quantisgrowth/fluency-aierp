@@ -29,6 +29,9 @@ import {
   type SchoolUser,
 } from "@/modules/user-context";
 import { toast } from "sonner";
+import { useModules } from "@/modules/module-context";
+import { MODULES, type ModuleId } from "@/modules/registry";
+import { defaultModulePermissions } from "@/modules/user-context";
 
 export const Route = createFileRoute("/admin/usuarios")({
   head: () => ({
@@ -46,14 +49,26 @@ const userSchema = z.object({
   role: z.enum(["admin", "operador", "professor", "coordenador"] as const),
   companies: z.array(z.string()),
   permissions: z.object({
-    crm: z.boolean(),
+    core: z.boolean(),
     financeiro: z.boolean(),
-    pedagogico: z.boolean(),
+    crm: z.boolean(),
     success: z.boolean(),
+    captacao: z.boolean(),
+    portal_aluno: z.boolean(),
+    asaas: z.boolean(),
+    nota_fiscal: z.boolean(),
   }),
 });
 
 type UserFormValues = z.infer<typeof userSchema>;
+
+const permissionsForActiveModules = (role: UserRole, activeModules: ModuleId[]) => {
+  const permissions = defaultModulePermissions(role);
+  MODULES.forEach((module) => {
+    if (!activeModules.includes(module.id)) permissions[module.id] = false;
+  });
+  return permissions;
+};
 
 // ── Tooltip wrapper ──────────────────────────────────────────────────────────
 function Tooltip({ label, children }: { label: string; children: React.ReactNode }) {
@@ -71,6 +86,7 @@ function Tooltip({ label, children }: { label: string; children: React.ReactNode
 function UsuariosPage() {
   const { users, companies, addUser, updateUser, deleteUser, resetPassword, resendInvite } =
     useUser();
+  const { active: activeModules } = useModules();
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState<SchoolUser | null>(null);
   const [confirmInviteUser, setConfirmInviteUser] = useState<SchoolUser | null>(null);
@@ -110,12 +126,7 @@ function UsuariosPage() {
       email: "",
       role: "professor",
       companies: ["Unidade Pinheiros"],
-      permissions: {
-        crm: false,
-        financeiro: false,
-        pedagogico: true,
-        success: false,
-      },
+      permissions: permissionsForActiveModules("professor", activeModules),
     },
   });
 
@@ -126,16 +137,8 @@ function UsuariosPage() {
   useEffect(() => {
     if (editingUser) return; // Don't overwrite when editing
 
-    if (selectedRole === "admin") {
-      setValue("permissions", { crm: true, financeiro: true, pedagogico: true, success: true });
-    } else if (selectedRole === "operador") {
-      setValue("permissions", { crm: true, financeiro: true, pedagogico: true, success: false });
-    } else if (selectedRole === "coordenador") {
-      setValue("permissions", { crm: false, financeiro: false, pedagogico: true, success: true });
-    } else if (selectedRole === "professor") {
-      setValue("permissions", { crm: false, financeiro: false, pedagogico: true, success: false });
-    }
-  }, [selectedRole, setValue, editingUser]);
+    setValue("permissions", permissionsForActiveModules(selectedRole, activeModules));
+  }, [selectedRole, setValue, editingUser, activeModules]);
 
   const handleOpenCreate = () => {
     setEditingUser(null);
@@ -144,12 +147,7 @@ function UsuariosPage() {
       email: "",
       role: "professor",
       companies: ["Unidade Pinheiros"],
-      permissions: {
-        crm: false,
-        financeiro: false,
-        pedagogico: true,
-        success: false,
-      },
+      permissions: permissionsForActiveModules("professor", activeModules),
     });
     setShowForm(true);
   };
@@ -515,75 +513,31 @@ function UsuariosPage() {
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
                     Flags de Permissões Granulares (Acesso aos Módulos)
                   </label>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 p-4 rounded-xl border border-hairline bg-surface-elevated/20">
-                    {/* CRM flag */}
-                    <Controller
-                      name="permissions.crm"
-                      control={control}
-                      render={({ field }) => (
-                        <label className="flex items-center gap-2.5 cursor-pointer text-xs text-foreground font-semibold">
-                          <input
-                            type="checkbox"
-                            checked={field.value}
-                            onChange={(e) => field.onChange(e.target.checked)}
-                            className="size-4.5 rounded border-hairline text-primary focus:ring-primary cursor-pointer"
-                          />
-                          <span>CRM / Captação</span>
-                        </label>
-                      )}
-                    />
-
-                    {/* Financeiro flag */}
-                    <Controller
-                      name="permissions.financeiro"
-                      control={control}
-                      render={({ field }) => (
-                        <label className="flex items-center gap-2.5 cursor-pointer text-xs text-foreground font-semibold">
-                          <input
-                            type="checkbox"
-                            checked={field.value}
-                            onChange={(e) => field.onChange(e.target.checked)}
-                            className="size-4.5 rounded border-hairline text-primary focus:ring-primary cursor-pointer"
-                          />
-                          <span>Motor Financeiro</span>
-                        </label>
-                      )}
-                    />
-
-                    {/* Pedagógico flag */}
-                    <Controller
-                      name="permissions.pedagogico"
-                      control={control}
-                      render={({ field }) => (
-                        <label className="flex items-center gap-2.5 cursor-pointer text-xs text-foreground font-semibold">
-                          <input
-                            type="checkbox"
-                            checked={field.value}
-                            onChange={(e) => field.onChange(e.target.checked)}
-                            className="size-4.5 rounded border-hairline text-primary focus:ring-primary cursor-pointer"
-                          />
-                          <span>Core Pedagógico</span>
-                        </label>
-                      )}
-                    />
-
-                    {/* Retenção/Success flag */}
-                    <Controller
-                      name="permissions.success"
-                      control={control}
-                      render={({ field }) => (
-                        <label className="flex items-center gap-2.5 cursor-pointer text-xs text-foreground font-semibold">
-                          <input
-                            type="checkbox"
-                            checked={field.value}
-                            onChange={(e) => field.onChange(e.target.checked)}
-                            className="size-4.5 rounded border-hairline text-primary focus:ring-primary cursor-pointer"
-                          />
-                          <span>Retenção & Portais</span>
-                        </label>
-                      )}
-                    />
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 p-4 rounded-xl border border-hairline bg-surface-elevated/20">
+                    {MODULES.filter((module) => activeModules.includes(module.id)).map((module) => (
+                      <Controller
+                        key={module.id}
+                        name={`permissions.${module.id}` as `permissions.${ModuleId}`}
+                        control={control}
+                        render={({ field }) => (
+                          <label className="flex items-center gap-2.5 cursor-pointer text-xs text-foreground font-semibold">
+                            <input
+                              type="checkbox"
+                              checked={field.value}
+                              disabled={selectedRole === "admin"}
+                              onChange={(e) => field.onChange(e.target.checked)}
+                              className="size-4.5 rounded border-hairline text-primary focus:ring-primary cursor-pointer disabled:opacity-60"
+                            />
+                            <span>{module.name}</span>
+                          </label>
+                        )}
+                      />
+                    ))}
                   </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Somente módulos ativos no contrato da escola podem ser concedidos.
+                    Administradores possuem acesso completo.
+                  </p>
                 </div>
 
                 <button

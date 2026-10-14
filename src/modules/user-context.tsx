@@ -2,14 +2,37 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { activeMemberships, activeSchoolStorageKey } from "@/lib/organization";
+import { MODULES, type ModuleId } from "@/modules/registry";
 
 export type UserRole = "admin" | "operador" | "professor" | "coordenador";
 
-export type UserPermissions = {
-  crm: boolean;
-  financeiro: boolean;
-  pedagogico: boolean;
-  success: boolean;
+export type UserPermissions = Record<ModuleId, boolean>;
+
+const emptyModulePermissions = (): UserPermissions =>
+  Object.fromEntries(MODULES.map((module) => [module.id, false])) as UserPermissions;
+
+export const defaultModulePermissions = (role: UserRole): UserPermissions => {
+  const permissions = emptyModulePermissions();
+  const defaults: Record<UserRole, ModuleId[]> = {
+    admin: MODULES.map((module) => module.id),
+    operador: ["core", "financeiro", "crm", "captacao", "portal_aluno"],
+    coordenador: ["core", "success", "captacao", "portal_aluno"],
+    professor: ["core", "portal_aluno"],
+  };
+  defaults[role].forEach((moduleId) => {
+    permissions[moduleId] = true;
+  });
+  return permissions;
+};
+
+const normalizeModulePermissions = (value: unknown, role: UserRole): UserPermissions => {
+  const defaults = defaultModulePermissions(role);
+  if (!value || typeof value !== "object" || Array.isArray(value)) return defaults;
+  const saved = value as Record<string, unknown>;
+  MODULES.forEach((module) => {
+    if (typeof saved[module.id] === "boolean") defaults[module.id] = saved[module.id] as boolean;
+  });
+  return defaults;
 };
 
 export type SchoolUser = {
@@ -42,6 +65,7 @@ type UserContextValue = {
   activeUnitId: string;
   adminProfile: AdminProfile;
   activeRole: UserRole;
+  activePermissions: UserPermissions;
   activeCompany: string;
   addUser: (
     name: string,
@@ -94,6 +118,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [activeUnitId, setActiveUnitIdState] = useState("");
   const [adminProfile, setAdminProfile] = useState<AdminProfile>(DEFAULT_PROFILE);
   const [activeRole, setActiveRoleState] = useState<UserRole>("admin");
+  const [activePermissions, setActivePermissions] = useState<UserPermissions>(
+    defaultModulePermissions("admin"),
+  );
   const [activeCompany, setActiveCompanyState] = useState<string>("");
 
   // Load the authenticated user's real school identity. Legacy prototype data
@@ -141,7 +168,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       const [profileResult, unitsResult] = await Promise.all([
         supabase
           .from("usuarios")
-          .select("nome,email,role")
+          .select("nome,email,role,permissoes_modulos")
           .eq("auth_user_id", authUser.id)
           .eq("escola_id", selectedSchoolId || "00000000-0000-0000-0000-000000000000")
           .maybeSingle(),
@@ -217,11 +244,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
         pedagogico: "coordenador",
         professor: "professor",
       };
-      setActiveRoleState(roleMap[membership?.papel || profileResult.data?.role || ""] || "admin");
+      const currentRole = roleMap[membership?.papel || profileResult.data?.role || ""] || "admin";
+      setActiveRoleState(currentRole);
+      setActivePermissions(
+        currentRole === "admin"
+          ? defaultModulePermissions("admin")
+          : normalizeModulePermissions(profileResult.data?.permissoes_modulos, currentRole),
+      );
       if (selectedSchoolId) {
         const { data: directory } = await supabase
           .from("usuarios")
-          .select("id,nome,email,role")
+          .select("id,nome,email,role,permissoes_modulos")
           .eq("escola_id", selectedSchoolId)
           .eq("status", "ativo")
           .order("nome");
@@ -241,12 +274,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 name: item.nome,
                 email: item.email,
                 role: mappedRole,
-                permissions: {
-                  crm: mappedRole === "admin" || mappedRole === "operador",
-                  financeiro: mappedRole === "admin" || mappedRole === "operador",
-                  pedagogico: true,
-                  success: mappedRole === "admin" || mappedRole === "coordenador",
-                },
+                permissions: normalizeModulePermissions(item.permissoes_modulos, mappedRole),
                 companies: unitNames,
               };
             }),
@@ -306,6 +334,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           nome: name.trim(),
           email: email.trim().toLowerCase(),
           role: roleMap[role],
+          permissoes_modulos: permissions,
           cargo: role === "coordenador" ? "Coordenador" : role === "professor" ? "Professor" : null,
           status: "ativo",
         })
@@ -354,6 +383,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
         .eq("escola_id", schoolId)
         .then(({ error }) => {
           if (error) toast.error(`Não foi possível atualizar o usuário: ${error.message}`);
+        });
+      void supabase
+        .rpc("school_set_user_module_permissions", {
+          _school_id: schoolId,
+          _user_id: id,
+          _permissions: permissions,
+        })
+        .then(({ error }) => {
+          if (error) toast.error(`Não foi possível atualizar as permissões: ${error.message}`);
         });
     }
   };
@@ -453,6 +491,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         activeUnitId,
         adminProfile,
         activeRole,
+        activePermissions,
         activeCompany,
         addUser,
         updateUser,

@@ -125,7 +125,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     adminProfile,
     activeCompany,
     companies,
-    users,
+    activePermissions,
     schools,
     units,
     activeSchoolId,
@@ -150,39 +150,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   // Permission gating by role and custom flags
-  const isRoleAllowed = (role: string, path: string) => {
+  const isRoleAllowed = (role: string, path: string, module?: ModuleId) => {
     if (role === "admin") return true;
-
-    // Find the user profile simulating this role in the current unit or with global access
-    const simulatedUser = users.find(
-      (u) =>
-        u.role === role &&
-        (!u.companies ||
-          u.companies.length === 0 ||
-          u.companies.includes(activeCompany) ||
-          activeCompany === "Todas as Unidades" ||
-          u.company === activeCompany),
-    );
-
-    if (simulatedUser) {
-      if (path === "/financeiro") return simulatedUser.permissions.financeiro;
-      if (path === "/crm") return simulatedUser.permissions.crm;
-      if (path === "/retencao") return simulatedUser.permissions.success;
-      if (path === "/alunos" || path === "/turmas") return simulatedUser.permissions.pedagogico;
-      if (path === "/admin/usuarios" || path === "/admin/modulos") return false; // Non-admins cannot access admin panels
-    }
-
-    // Fallbacks if no user matches in this unit
-    if (role === "operador") {
-      return !["/admin/modulos", "/admin/usuarios", "/retencao"].includes(path);
-    }
-    if (role === "coordenador") {
-      return !["/financeiro", "/crm", "/retencao", "/admin/modulos"].includes(path);
-    }
-    if (role === "professor") {
-      return ["/", "/portal/aluno", "/turmas", "/admin/perfil"].includes(path);
-    }
-    return true;
+    if (["/admin/modulos", "/admin/usuarios", "/admin/inventario"].includes(path)) return false;
+    if (path === "/admin/perfil" || path === "/") return true;
+    return module ? Boolean(activePermissions[module]) : false;
   };
 
   return (
@@ -218,7 +190,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </p>
               )}
               {group.items.map((item) => {
-                const allowedByRole = isRoleAllowed(activeRole, item.to);
+                const allowedByRole = isRoleAllowed(activeRole, item.to, item.module);
                 const enabled = allowedByRole && (!item.module || isActive(item.module));
                 const active = pathname === item.to;
                 return (
